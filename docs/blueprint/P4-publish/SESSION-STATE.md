@@ -173,7 +173,10 @@
    su `/s/<slug>` + asset caricato + JSON-LD, canary rosso). Il blueprint resta la fonte di verità approvata.
 2. **Deploy-coupling = `coupled` RICONFERMATO** (§3): il merge è avvenuto su autorizzazione esplicita; nessun deploy
    innescato dall'agente. Un deploy dell'hosting pubblico resta un'azione umana supervisionata (P4-D1: pass hosting
-   dedicato ancora rimandato).
+   dedicato ancora rimandato). **Nota:** un pass trasversale `deploy-hardening` (staging privato dietro Cloudflare
+   Access: T-1 muro signup, T-2 gate env, T-3 CSP/header `/s/`, T-4 cap generazioni, CI build-gate, runbook) è stato
+   costruito e mergiato ff su `main` (`1d6bb8f`, checkpoint 4/4) — stato in
+   `docs/blueprint/deploy-hardening/SESSION-STATE.md`.
 3. **Nessun residuo P4.** Il lavoro successivo del progetto Belora (P5, secondo la mappa dei 10 sotto-progetti —
    billing/crediti, gating a pagamento, ritocco/sfondi AI delle foto, rimozione badge, P4-D5/P4-D7) partirà da un
    proprio blueprint (BOOTSTRAP) e una propria SESSION-STATE, non da questa.
