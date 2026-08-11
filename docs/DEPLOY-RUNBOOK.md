@@ -15,6 +15,44 @@
 
 ---
 
+## ✅ Stato esecuzione — ESEGUITO (2026-08-08→10)
+
+> Registrato a posteriori (allineamento 2026-08-11) dalla sessione `b2d3d745`. Il runbook qui sotto
+> **è stato percorso**; questa sezione ne fissa l'esito reale e le deviazioni. Dettaglio narrativo in
+> `docs/blueprint/deploy-hardening/SESSION-STATE.md §9`.
+
+**Staging privato LIVE su `https://ulaba.net`, dietro Cloudflare Access, con `/s/*` pubblico.**
+
+- [x] **Repo** trasferito `claudiosnivel-dot` → **`ulabaservice-star/progetto-web-ai`** (prima di Vercel/CI).
+- [x] **① Cloudflare dominio** — NS Hostinger→Cloudflare (`lindsey`/`razvan.ns.cloudflare.com`), DNSSEC OFF,
+      **Active**. Record `A ulaba.net → 76.76.21.21`, **Proxied (arancione)**, SSL/TLS **Full (strict)**.
+- [x] **② Supabase Cloud** (`swpnvtgmcvzsfzrmhgew`, EU) — `db push`: **12 migrazioni** + bucket `site-assets`.
+      🔴 signup **OFF** · utente self (ricreato con **password + Auto-Confirm**) · OAuth **OFF** ·
+      Site URL `https://ulaba.net` + Redirect `…/**`.
+- [x] **③ Anthropic** — API key + **spending limit** impostato.
+- [x] **④ Vercel** (`progetto-web-ai`, team `ulaba`) — repo importato, **7 env** su Prod/Preview, deploy live.
+- [x] **⑤ Dominio → Vercel** — `ulaba.net` apex (no redirect-to-www); balletto grigio→arancione per il cert.
+- [x] **⑥ Cloudflare Access** — **App A** (`ulaba.net`, path vuoto, OTP, allow tua email) + **App B**
+      (`s/*`, Bypass/Everyone). **Testati in incognito**: muro OK, bypass `/s/*` OK. Login app e2e OK.
+
+**Deviazioni reali incontrate (utili se rifai il giro):**
+- 🔧 **Nome env critico:** salvare la anon key come `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (nome Supabase)
+  invece di **`NEXT_PUBLIC_SUPABASE_ANON_KEY`** (nome del codice) → 1° deploy crasha
+  `MIDDLEWARE_INVOCATION_FAILED`. È il **fail-fast T-2** che funziona: fix = rinomina env + redeploy, zero codice.
+- 🔧 **Invito Supabase senza password** → "credenziali non valide" al login: ricrea l'utente con
+  **Add user → password + Auto Confirm**.
+- 🔧 **Cloudflare proxy vs verifica Vercel:** metti il record **DNS-only (grigio)** finché Vercel dice
+  "Valid" ed emette il certificato, **poi** rimetti **Proxied (arancione)**. Mai spostare i NS su Vercel.
+
+**⛔ Passo 7 (smoke test + MISURA COSTO) — BLOCCATO / NON completato:**
+- L'onboarding non conclude: **`POST /api/onboarding/turn` → 502** (prima chiamata Anthropic reale).
+  Sospetto **model id** intervista `claude-haiku-4-5` (`src/config/env.ts:47`; id valido
+  `claude-haiku-4-5-20251001`). **Fix non ancora fatta** ⇒ nessuna generazione ⇒ **costo non misurato**.
+- Aperti minori: **rebrand** Belora→Ulaba (l'app mostra ancora "Belora"); **Vercel Deployment Protection**
+  sull'URL grezzo `*.vercel.app` (ancora pubblico, bypassa Access).
+
+---
+
 ## 0. Prerequisiti (una tantum, sulla tua macchina)
 
 - **Supabase CLI** installata (serve per applicare le migrazioni al cloud). Verifica: `supabase --version`.

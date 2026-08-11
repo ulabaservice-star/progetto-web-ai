@@ -176,7 +176,11 @@
    dedicato ancora rimandato). **Nota:** un pass trasversale `deploy-hardening` (staging privato dietro Cloudflare
    Access: T-1 muro signup, T-2 gate env, T-3 CSP/header `/s/`, T-4 cap generazioni, CI build-gate, runbook) è stato
    costruito e mergiato ff su `main` (`1d6bb8f`, checkpoint 4/4) — stato in
-   `docs/blueprint/deploy-hardening/SESSION-STATE.md`.
+   `docs/blueprint/deploy-hardening/SESSION-STATE.md`. **Il pass è poi stato ESEGUITO (8-10 ago):**
+   staging privato **LIVE su `https://ulaba.net`** dietro Cloudflare Access (Vercel + Supabase Cloud EU +
+   dominio + Access App A/B testati in incognito; repo trasferito a `ulabaservice-star`). Resta aperto solo
+   lo **smoke test + misura del costo**, **bloccato** dal 502 dell'intervista onboarding
+   (`/api/onboarding/turn`, model id) — dettaglio in `deploy-hardening/SESSION-STATE.md §9`.
 3. **Nessun residuo P4.** Il lavoro successivo del progetto Belora (P5, secondo la mappa dei 10 sotto-progetti —
    billing/crediti, gating a pagamento, ritocco/sfondi AI delle foto, rimozione badge, P4-D5/P4-D7) partirà da un
    proprio blueprint (BOOTSTRAP) e una propria SESSION-STATE, non da questa.
