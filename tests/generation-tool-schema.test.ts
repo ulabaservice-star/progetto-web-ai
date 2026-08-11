@@ -414,9 +414,12 @@ describe('T-222 tool strict del pool: chiusura di ogni nodo e conformita al sott
   });
 
   // covers: AC-222-5
-  it('il tool dichiara strict: true', () => {
+  it('il tool NON dichiara strict (2026-08-11: lo strict reale rifiuta lo schema come "too complex")', () => {
     const tool = buildPoolTool(SLOT_DEL_TURNO, SLUG_DEL_TURNO);
-    expect(tool.strict).toBe(true); // covers: AC-222-5
+    // Lo schema del pool (pagine x slot, coppie QA annidate) supera il tetto di complessita'
+    // dello strict tool use → `400 "Schema is too complex."` alla chiamata reale. La garanzia
+    // resta `parsePool`, che scarta l'intero pool non conforme. AC-222-5 aggiornato.
+    expect(tool.strict).toBeUndefined(); // covers: AC-222-5
   });
 
   // NON deriva da un AC: e' la definition_of_done ("un oggetto tool", "lo schema enumera

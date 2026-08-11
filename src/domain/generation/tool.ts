@@ -110,7 +110,7 @@ const DESCRIZIONE_DEL_TOOL = [
  *   `hero_title_kicker` sono due slot diversi, e uno e' prefisso dell'altro.
  * @param pageSlugs gli slug delle pagine di questa generazione (T-213). Sono l'allowlist
  *   che entra nello schema; i duplicati collassano, perche' una property e' una sola.
- * @returns l'oggetto tool con `strict: true`, pronto per `messages.create`.
+ * @returns l'oggetto tool (SENZA `strict` — vedi il commento alla `return`), pronto per `messages.create`.
  * @throws se non resta alcuno slot del catalogo o alcuna pagina: uno schema con
  *   `properties` vuoto avrebbe un `required` vuoto, cioe' violerebbe l'invariante che
  *   questo modulo dichiara, e sarebbe comunque una richiesta senza contenuto.
@@ -152,7 +152,11 @@ export function buildPoolTool(
   return {
     name: NOME_DEL_TOOL,
     description: DESCRIZIONE_DEL_TOOL,
-    strict: true,
+    // NIENTE `strict: true` (2026-08-11): con lo schema del pool (pagine x slot, con le
+    // coppie QA annidate) la chiamata REALE torna `400 "Schema is too complex."`, lo stesso
+    // tetto di complessita' che ha colpito update_brief in onboarding. Lo strict non era
+    // portante: `parsePool` (in src/data/anthropic.ts) ri-valida l'INTERO pool e lo scarta
+    // se non conforme. Lo schema resta nel sottoinsieme pulito e guida comunque il modello.
     input_schema: {
       type: 'object',
       properties: { pages: schemaDellePagine },

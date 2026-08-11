@@ -87,7 +87,16 @@ const UPDATE_BRIEF_TOOL: Anthropic.Tool = {
     'Registra nel brief i dati appresi dalla conversazione. Invia solo i campi che l utente ha comunicato davvero.',
     CAPS_HINT,
   ].join(' '),
-  strict: true,
+  // NIENTE `strict: true` (2026-08-11): la prima chiamata REALE all'API torna
+  // `400 invalid_request_error: "Schema is too complex."`. Lo strict tool use compila lo
+  // schema in una grammatica a decodifica vincolata con un TETTO di complessita', e questo
+  // oggetto (updates con ~15 campi + geo annidato + offerings array-di-oggetti + tre enum)
+  // lo supera. Era il rischio DICHIARATO e mai verificato di P1 (§6-bis p.2), qui
+  // MANIFESTATO in produzione: la rotta lo mascherava in un 502 opaco (catch senza log).
+  // La garanzia sulla forma dell'output resta quella VERA: l'input della tool-call e'
+  // ri-validato da UpdateBriefInputSchema.safeParse + applyBriefUpdate (sotto), che scartano
+  // campo per campo cio' che non e' conforme. Lo schema resta nel sottoinsieme pulito
+  // (niente maxLength/maxItems): guida il modello anche senza l'enforcement dello strict.
   input_schema: {
     type: 'object',
     properties: {

@@ -120,7 +120,10 @@ const EXTRACT_TOOL: Anthropic.Tool = {
   name: 'extract_brief',
   description:
     'Registra i dati dell attivita che compaiono nel testo della pagina. Ometti i campi che il testo non dichiara.',
-  strict: true,
+  // NIENTE `strict: true` (2026-08-11): stesso `400 "Schema is too complex."` reale degli
+  // altri due tool (update_brief in onboarding, emit_pool in generazione). La forma
+  // dell'output resta garantita dalla ri-validazione a valle (lo stesso schema zod di
+  // T-121). Lo schema resta nel sottoinsieme pulito e guida comunque il modello.
   input_schema: {
     type: 'object',
     properties: {

@@ -267,7 +267,11 @@ describe('T-132 orchestrazione dell intervista di onboarding', () => {
 
     expect(updateBrief).toBeDefined(); // covers: AC-132-2
     expect(markReady).toBeDefined(); // covers: AC-132-2
-    expect(updateBrief?.strict).toBe(true); // covers: AC-132-2 — strict tool use
+    // 2026-08-11: `strict: true` RIMOSSO — la chiamata reale lo rifiuta con
+    // `400 "Schema is too complex."` (vedi interview.ts). La garanzia sulla forma
+    // dell'output resta la ri-validazione zod (UpdateBriefInputSchema + applyBriefUpdate),
+    // provata dagli altri test qui. AC-132-2 aggiornato di conseguenza.
+    expect(updateBrief?.strict).toBeUndefined(); // covers: AC-132-2 — niente strict (schema too complex sul reale)
     expect(updateBrief?.input_schema.additionalProperties).toBe(false); // covers: AC-132-2
     expect(updateBrief?.input_schema.required).toEqual(['updates']); // covers: AC-132-2 — required valorizzato
     expect(updateBrief?.input_schema.required?.length).toBeGreaterThan(0); // covers: AC-132-2 — non vuoto

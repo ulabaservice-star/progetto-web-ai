@@ -437,7 +437,9 @@ describe('T-141 estrazione del brief proposto da un URL', () => {
     const turn = boundary.mock.calls[0][0];
     const tools = turn.tools.filter(isCustomTool);
     expect(tools).toHaveLength(1); // DoD T-141
-    expect(tools[0].strict).toBe(true); // DoD T-141 — structured output
+    // 2026-08-11: `strict: true` RIMOSSO (stesso `400 "Schema is too complex."` reale degli
+    // altri tool). La forma resta garantita dalla ri-validazione a valle (zod di T-121). DoD T-141 aggiornata.
+    expect(tools[0].strict).toBeUndefined(); // DoD T-141 — niente strict
     expect(tools[0].input_schema.additionalProperties).toBe(false); // DoD T-141
     expect(tools[0].input_schema.required).toEqual(['updates']); // DoD T-141
     expect(tools[0].input_schema).toMatchObject({

@@ -261,7 +261,13 @@ export async function POST(request: NextRequest, context: TurnContext): Promise<
       },
       onboardingLlmPort,
     );
-  } catch {
+  } catch (error) {
+    // Il confine col modello ha lanciato. Il client riceve un 502 GENERICO (anti-enum,
+    // nessun dettaglio interno), ma il server LOGGA la causa reale: senza, ogni guasto
+    // upstream (400 di schema, auth, rate limit, rete) diventa un 502 opaco impossibile da
+    // diagnosticare in produzione — e' esattamente cio' che e' successo col
+    // `400 "Schema is too complex."` dello strict tool use, rimasto invisibile per sessioni.
+    console.error('[onboarding/turn] runInterviewTurn ha lanciato:', error);
     return jsonError(502, 'turn-failed');
   }
 
