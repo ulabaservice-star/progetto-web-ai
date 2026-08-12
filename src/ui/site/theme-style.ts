@@ -15,6 +15,20 @@
 
 import type { CSSProperties } from 'react';
 import type { SiteTheme } from '@/domain/generation/themes';
+import { FONT_VAR_BY_FAMILY } from '@/ui/site/site-fonts';
+
+/**
+ * DE-103 — antepone allo stack tipografico del tema la variabile next/font della sua famiglia
+ * PRIMARIA, quando questa e' nel catalogo self-host: il valore diventa `var(--font-x), <stack del
+ * tema>`, cioe' il font caricato PRIMA e lo stack del tema come FALLBACK. La famiglia primaria si
+ * estrae con uno split su ',' + trim (deterministico). Nessuna regressione se una famiglia non
+ * fosse mappata: resta lo stack grezzo del tema.
+ */
+function fontStackWithVariable(stack: string): string {
+  const primary = stack.split(',')[0].trim();
+  const variable = FONT_VAR_BY_FAMILY[primary];
+  return variable ? `var(${variable}), ${stack}` : stack;
+}
 
 /**
  * Le custom property del sito, derivate TOTALMENTE dalle tabelle del tema: un token nuovo in
@@ -28,8 +42,8 @@ export function siteThemeStyle(theme: SiteTheme): CSSProperties {
   for (const [token, value] of Object.entries(theme.colors)) {
     style[`--site-color-${token.replace(/_/g, '-')}`] = value;
   }
-  style['--site-font-heading'] = theme.typography.font_family.heading;
-  style['--site-font-body'] = theme.typography.font_family.body;
+  style['--site-font-heading'] = fontStackWithVariable(theme.typography.font_family.heading);
+  style['--site-font-body'] = fontStackWithVariable(theme.typography.font_family.body);
   for (const [step, value] of Object.entries(theme.typography.scale)) {
     style[`--site-scale-${step}`] = value;
   }

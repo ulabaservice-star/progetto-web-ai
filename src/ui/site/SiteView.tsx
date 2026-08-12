@@ -15,10 +15,17 @@
 // asincroni annidati. Un blocco senza componente (un blocco di dati prima di T-237) rende
 // `null` ed e' saltato.
 
+// DE-101 (macrotask visual-skin) — il foglio UNICO del sito generato importato UNA SOLA VOLTA
+// dal renderer condiviso: SitePageView + SiteView sono l'unico punto da cui i blocchi (card,
+// anteprima, /s/) discendono, quindi un import qui copre ogni superficie senza una seconda
+// copia altrove. Consuma i token che siteThemeStyle proietta alla radice (--site-scale-*,
+// --site-space-*, --site-radius-*, --site-color-*).
+import './site.css';
 import type { ReactElement } from 'react';
 import type { SiteDocument, SitePage } from '@/domain/generation/document';
 import type { SiteTheme } from '@/domain/generation/themes';
 import { siteThemeStyle } from '@/ui/site/theme-style';
+import { SITE_FONT_VARIABLE_CLASSNAME } from '@/ui/site/site-fonts';
 import { renderBlock } from '@/ui/site/registry';
 
 export async function SitePageView({
@@ -37,7 +44,11 @@ export async function SitePageView({
   );
 
   return (
-    <div className="site-page" data-site-page={page.slug} style={siteThemeStyle(theme)}>
+    <div
+      className={`site-page ${SITE_FONT_VARIABLE_CLASSNAME}`}
+      data-site-page={page.slug}
+      style={siteThemeStyle(theme)}
+    >
       {rendered.map((element, index) =>
         element ? (
           <div key={index} className="site-block">
@@ -71,7 +82,7 @@ export async function SiteView({
   );
 
   return (
-    <div className="site-view" style={siteThemeStyle(theme)}>
+    <div className={`site-view ${SITE_FONT_VARIABLE_CLASSNAME}`} style={siteThemeStyle(theme)}>
       {pages.map((element, index) => (
         <div key={index}>{element}</div>
       ))}

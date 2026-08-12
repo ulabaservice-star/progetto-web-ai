@@ -1,12 +1,14 @@
-// T-231 (macrotask generation-ui, P2) / T-415 (macrotask media-editor-render, P4) — lo slot
-// immagine reso.
+// T-231 (macrotask generation-ui, P2) / T-415 (macrotask media-editor-render, P4) / DE-104
+// (macrotask visual-skin) — lo slot immagine reso.
 //
 // Lo slot immagine del documento (T-202) e' un'unione discriminata su `source` e NESSUNA delle
 // due varianti ha un campo url/src/href: e' irrappresentabile per tipo (P2-D12). Qui quella
-// proprieta' diventa rendering. Un `theme-placeholder` e' un riquadro decorativo riempito con un
-// colore del tema (via `var(--site-...)`) e nominato dal suo token in un data-attribute: NON nasce
-// alcun <img> ne alcun src da questa variante, quindi il testo libero di un brief non puo' diventare
-// una richiesta di rete per questa strada (la prova sull'EFFETTO e' T-241).
+// proprieta' diventa rendering. Un `theme-placeholder` e' un riquadro decorativo nominato dal suo
+// token in un data-attribute e riempito col trattamento RICCO del tema: la classe
+// `site-image--placeholder` gli da' in site.css un gradiente derivato da var(--site-color-*)
+// (DE-104), cosi' l'hero senza foto dell'utente non e' mai una scatola grigia. NON nasce alcun
+// <img> ne alcun src da questa variante, quindi il testo libero di un brief non puo' diventare una
+// richiesta di rete per questa strada (la prova sull'EFFETTO e' T-241).
 //
 // Un `uploaded` (da P4) rende un <img> VERO, ma il suo `src` NON viene da testo libero: lo COSTRUIAMO
 // noi dal solo `asset_id` (un uuid) tramite l'unico builder `assetPublicUrl` (P4-D6a, src/config), mai
@@ -25,7 +27,12 @@ export function SiteImage({ image }: { image: ImageSlot }) {
 
   if (image.source === 'theme-placeholder') {
     return (
-      <div className="site-image" data-image-token={image.token} aria-hidden="true" style={style} />
+      <div
+        className="site-image site-image--placeholder"
+        data-image-token={image.token}
+        aria-hidden="true"
+        style={style}
+      />
     );
   }
   return (

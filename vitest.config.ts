@@ -10,6 +10,14 @@ export default defineConfig({
       // usa in quella condizione. Solo infrastruttura di test: la guardia di
       // build resta intatta nei moduli server (src/data/**).
       'server-only': fileURLToPath(new URL('./node_modules/server-only/empty.js', import.meta.url)),
+      // DE-103: next/font/google e' una trasformazione di build del compilatore Next — a runtime
+      // il modulo e' vuoto (i loader Fraunces/Inter/... sono undefined). Nei test lo risolviamo a
+      // un doppio che ne riproduce la forma (className/variable/style), cosi' src/ui/site/site-fonts.ts
+      // (chiamato al caricamento da SiteView) non lancia sotto vitest. Solo infrastruttura di test:
+      // l'effetto reale dei font (self-host) e' provato dall'e2e in un browser vero.
+      'next/font/google': fileURLToPath(
+        new URL('./tests/helpers/next-font-google-stub.ts', import.meta.url),
+      ),
     },
   },
   test: {

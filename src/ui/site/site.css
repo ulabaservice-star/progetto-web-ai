@@ -1,0 +1,155 @@
+/* DE-101 (macrotask visual-skin) — IL FOGLIO UNICO del sito generato. Consuma i token che
+   siteThemeStyle (theme-style.ts) proietta alla RADICE del render (SitePageView / SiteView):
+   --site-scale-*, --site-space-*, --site-radius-*, --site-color-*. Prima di questo foglio
+   NESSUN CSS li leggeva e i titoli restavano alla dimensione di default del browser.
+
+   REGOLE DEL LAYER (le stesse dei componenti, AC-231-4 / DE-101): i COLORI arrivano SOLO da
+   var(--site-color-*), i RAGGI da var(--site-radius-*) — nessun letterale esadecimale, rgb o
+   hsl; nessuna dimensione hardcoded dove esiste un token di scala o di spazio. I valori del
+   tema vivono nelle custom property, mai qui: cambiare tema riscrive l'aspetto senza toccare
+   questo foglio. */
+
+/* RITMO VERTICALE — la pagina spazia i blocchi col passo piu' largo, la sezione i propri
+   elementi con un passo intermedio. */
+.site-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--site-space-2xl);
+}
+
+/* INVOLUCRO DELLA SEZIONE — gli stili STATICI che DE-101 teneva inline in SiteSection ora vivono
+   qui (DE-102): fondo, testo, bordo, font e padding. Solo var(--site-...), nessun letterale.
+   L'unico stile inline del render resta siteThemeStyle alla radice (dinamico). */
+.site-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--site-space-md);
+  background-color: var(--site-color-surface);
+  color: var(--site-color-text);
+  border-color: var(--site-color-border);
+  font-family: var(--site-font-body);
+  padding: var(--site-space-xl);
+}
+
+/* HERO DISTINTO — non l'ennesima scheda uguale alle altre: fondo della PAGINA invece della surface
+   delle altre sezioni, e respiro maggiore col passo piu' largo. Il selettore d'attributo
+   (data-block-kind="hero", posto da SiteSection) vince per specificita' sulla regola base
+   .site-section, cosi' l'hero riceve un trattamento pieno diverso dal resto. */
+.site-section[data-block-kind='hero'] {
+  background-color: var(--site-color-background);
+  padding: var(--site-space-2xl);
+}
+
+/* HERO — la TIPOGRAFIA FLUIDA del titolo: floor di sicurezza, termine viewport generoso, e
+   tetto = il 3xl del tema. Su desktop (1280px) il termine 5vw supera ogni 3xl del catalogo,
+   quindi il clamp risolve al tetto — abbondantemente sopra i 40px per ogni tema. line-height
+   stretta perche' un titolo grande non respiri troppo fra le righe. */
+.site-hero__title {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, var(--site-scale-3xl));
+  line-height: 1.08;
+}
+
+.site-hero__brand {
+  margin: 0;
+  font-size: var(--site-scale-lg);
+  letter-spacing: 0.02em;
+}
+
+.site-hero__kicker {
+  margin: 0;
+  font-size: var(--site-scale-sm);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.site-hero__subtitle {
+  margin: 0;
+  font-size: var(--site-scale-xl);
+  line-height: 1.35;
+}
+
+/* GERARCHIA DEI TITOLI DI SEZIONE — un gradino sotto l'hero (2xl). Il selettore prende ogni
+   <h2> della sezione, quelli con classe (offerte, contatti, orari, recensioni) e quelli senza
+   (chi-siamo, faq), cosi' la gerarchia e' uniforme senza dipendere da una classe per blocco. */
+.site-section h2 {
+  margin: 0;
+  font-size: var(--site-scale-2xl);
+  line-height: 1.15;
+}
+
+/* INTRO di sezione — testo di raccordo un gradino sopra il corpo. */
+.site-offerings__intro,
+.site-contact__intro,
+.site-reviews__intro,
+.site-hours__intro {
+  margin: 0;
+  font-size: var(--site-scale-lg);
+  line-height: 1.4;
+}
+
+/* LISTE — nessun elenco puntato: layout a colonna con ritmo interno dai token di spazio. */
+.site-offerings__items,
+.site-faq__items,
+.site-contact__channels,
+.site-hours {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--site-space-sm);
+}
+
+/* VOCE DI OFFERTA — il nome un gradino sopra il corpo, il riquadro col raggio del tema. */
+.site-offerings__name {
+  font-size: var(--site-scale-lg);
+}
+
+.site-offerings__item {
+  padding: var(--site-space-sm);
+  border: 1px solid var(--site-color-border);
+  border-radius: var(--site-radius-md);
+}
+
+/* RIGA DEGLI ORARI — giorno e valore accostati con il passo piu' stretto. */
+.site-hours__row {
+  display: flex;
+  gap: var(--site-space-xs);
+}
+
+/* CTA WHATSAPP — il bottone a pillola: raggio e colori dal tema, mai letterali. */
+.site-cta__button {
+  display: inline-block;
+  padding: var(--site-space-sm) var(--site-space-lg);
+  font-size: var(--site-scale-base);
+  text-decoration: none;
+  background-color: var(--site-color-accent);
+  color: var(--site-color-accent-contrast);
+  border-radius: var(--site-radius-pill);
+}
+
+/* IMMAGINI — mai oltre il proprio contenitore, angoli col raggio ampio del tema. */
+.site-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--site-radius-lg);
+}
+
+/* PLACEHOLDER RICCO (DE-104) — lo slot immagine SENZA asset dell'utente non e' una scatola grigia:
+   un lume radiale in alto a sinistra (surface) sfuma verso l'accent e poi il fondo della pagina,
+   dando profondita' non-fotografica con la personalita' del tema. TUTTI gli stop sono
+   var(--site-color-*): nessuna keyword-colore (niente 'transparent'), nessun letterale, nessun
+   data-URI. Un <div> non ha dimensione intrinseca: senza aspect-ratio + larghezza l'hero senza foto
+   collasserebbe a zero, quindi qui lo slot occupa spazio reale. Il raggio ampio arriva gia' da
+   .site-image. */
+.site-image--placeholder {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background-image: radial-gradient(
+    circle at 30% 20%,
+    var(--site-color-surface),
+    var(--site-color-accent) 55%,
+    var(--site-color-background)
+  );
+}

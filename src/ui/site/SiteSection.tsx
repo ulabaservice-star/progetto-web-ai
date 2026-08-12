@@ -9,8 +9,17 @@
 // dei blocchi resi, che e' cio' su cui T-232 verifichera' che card e anteprima passino dallo
 // stesso renderer (AC-232-1).
 //
-// TUTTI i colori arrivano da `var(--site-...)`, impostate alla radice del render da
-// `siteThemeStyle`: nessun valore letterale, come pretende AC-231-4 su tutta la directory.
+// DE-102 (macrotask visual-skin) — gli STILI STATICI della sezione (fondo, testo, bordo, font,
+// padding) non stanno piu' inline: vivono in site.css sotto `.site-section`, e l'unico stile
+// inline del render resta `siteThemeStyle` alla RADICE (dinamico, dipende dal tema). Ogni sezione
+// porta inoltre `data-block-kind` col TIPO del blocco: per l'invariante del registry (registry.ts)
+// `block.id` E' la chiave del catalogo, cioe' la kind (hero, offerte, orari, chi-siamo, faq,
+// contatti, cta-whatsapp, recensioni), quindi la STESSA stringa serve da id di sequenza
+// (`data-block-id`) e da tipo per il CSS — site.css distingue l'hero via
+// `.site-section[data-block-kind="hero"]`.
+//
+// I colori arrivano SOLO da `var(--site-...)` (in site.css e nei figli), impostate alla radice del
+// render da `siteThemeStyle`: nessun valore letterale, come pretende AC-231-4 su tutta la directory.
 
 import type { ReactNode } from 'react';
 import type { ImageSlot } from '@/domain/generation/document';
@@ -28,14 +37,8 @@ export function SiteSection({ blockId, label, images, children }: SiteSectionPro
     <section
       aria-label={label}
       data-block-id={blockId}
+      data-block-kind={blockId}
       className="site-section"
-      style={{
-        backgroundColor: 'var(--site-color-surface)',
-        color: 'var(--site-color-text)',
-        borderColor: 'var(--site-color-border)',
-        fontFamily: 'var(--site-font-body)',
-        padding: 'var(--site-space-xl)',
-      }}
     >
       {images.map((image, index) => (
         <SiteImage key={index} image={image} />
