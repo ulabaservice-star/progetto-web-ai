@@ -9,8 +9,8 @@
 |---|---|
 | **Progetto** | Belora/Ulaba |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase) |
-| **Ultimo aggiornamento** | 2026-08-13 (**BUILD `visual-skin` COMPLETO, checkpoint VERDE 4/4 sul branch**: DE-101…104 costruiti (workflow 8 agenti, 0 errori) + 4 fix orchestratore; checkpoint decomposto tutto verde + e2e Chromium 13/13 + batteria di mutazione 4/4 uccise. **Merge su `main` in attesa del gate umano** — deploy-coupling `coupled`) |
-| **Sessione corrente** | BUILD `visual-skin` — costruito e verificato sul branch `trueline/build/visual-skin`; commit atomico fatto; **merge su `main` = gate umano** (push su `main` = deploy su `ulaba.net`). Prossima sessione = BUILD `design-select` |
+| **Ultimo aggiornamento** | 2026-08-13 (**BUILD `visual-skin` COMPLETO E MERGIATO su `main`** `4739be5`, fast-forward, gate umano approvato → **deploy Vercel su `ulaba.net` innescato**: DE-101…104 (workflow 8 agenti, 0 errori) + 4 fix orchestratore; checkpoint decomposto VERDE 4/4 + e2e Chromium 13/13 + mutazioni 4/4 uccise) |
+| **Sessione corrente** | — (**sessione chiusa dopo il merge di `visual-skin`**). Prossima sessione = BUILD `design-select`: aprire `prompts/session-start.md` |
 
 ---
 
@@ -38,9 +38,9 @@
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | **`trueline/build/visual-skin`** (aperto da `main` pulito). Contiene il commit atomico di `visual-skin` (codice + baseline igiene ratchettata). |
-| Ultimo commit | commit atomico `visual-skin` sul branch (DE-101…104 + fix orchestratore + hygiene-baseline 136). Base: `3627b1d` (blueprint su `main`). |
-| Stato merge su `main` | **PENDING gate umano.** Checkpoint VERDE 4/4 sul branch, ma il merge su `main` innesca il deploy → resta un "vai" umano. Non ancora mergiato. |
+| Branch di lavoro | `trueline/build/visual-skin` (aperto da `main` pulito, pushato su origin). **Mergiato su `main` in fast-forward** → prossimo macrotask aprirà `trueline/build/design-select`. |
+| Ultimo commit | **`4739be5`** feat(design-engine): visual-skin (DE-101…104 + fix orchestratore + hygiene-baseline 136), su `main`. |
+| Stato merge su `main` | **MERGIATO** (fast-forward, gate umano approvato 2026-08-13). Checkpoint VERDE 4/4 verificato in locale prima del merge. **Deploy Vercel su `ulaba.net` innescato dal push su `main`.** |
 | Deploy-coupling | **`coupled`** — Vercel è connesso al repo (`ulabaservice-star/progetto-web-ai`): **push su `main` = deploy in produzione** su `ulaba.net`. Il merge di ogni macrotask resta **human-gated anche sul verde**; deploy non supervisionato BLOCCATO. Verificato **in locale** (vitest 1450, e2e 13/13, computed-style) prima del merge |
 
 ## 4. Baseline & budget
