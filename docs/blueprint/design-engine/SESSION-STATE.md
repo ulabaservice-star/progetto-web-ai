@@ -9,8 +9,8 @@
 |---|---|
 | **Progetto** | Belora/Ulaba |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase) |
-| **Ultimo aggiornamento** | 2026-08-12 (**BOOTSTRAP completo**: blueprint generato dalla spec approvata, self-check strutturale + semantico da eseguire. Nessun macrotask ancora costruito) |
-| **Sessione corrente** | BOOTSTRAP → pronto per BUILD del primo macrotask `visual-skin` |
+| **Ultimo aggiornamento** | 2026-08-12 (**BOOTSTRAP COMPLETO e CHIUSO**: blueprint generato dalla spec approvata, `validate_blueprint` VERDE 6/6, self-check semantico eseguito con 2 gap corretti, blueprint committato+pushato su `main` `3627b1d`. Nessun macrotask ancora costruito) |
+| **Sessione corrente** | — (**sessione chiusa dopo il BOOTSTRAP**). **Prossima sessione = BUILD del primo macrotask `visual-skin`**: aprire `prompts/session-start.md` |
 
 ---
 
@@ -37,9 +37,9 @@
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | — (BOOTSTRAP: nessun branch di build ancora aperto; il blueprint è documentazione su `main`) |
-| Ultimo commit | (BOOTSTRAP) commit del blueprint design-engine |
-| Stato merge su `main` | n/a (nessun macrotask costruito) |
+| Branch di lavoro | — (BOOTSTRAP: nessun branch di build ancora aperto; il blueprint è documentazione su `main`). Prossima sessione: aprire `trueline/build/visual-skin` |
+| Ultimo commit | `3627b1d` docs(design-engine): blueprint del motore visivo v1 (su `main`, pushato origin). Spec: `d0347fc` |
+| Stato merge su `main` | n/a (nessun macrotask costruito). I commit su `main` finora sono **solo documentazione** (spec + blueprint), coerenti con la cronologia docs del progetto; nessun codice, nessun deploy di sostanza innescato |
 | Deploy-coupling | **`coupled`** — Vercel è connesso al repo (`ulabaservice-star/progetto-web-ai`): **push su `main` = deploy in produzione** su `ulaba.net`. Il merge di ogni macrotask resta **human-gated anche sul verde**; deploy non supervisionato BLOCCATO. Verificare le fix **in locale** prima del merge |
 
 ## 4. Baseline & budget
