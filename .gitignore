@@ -39,3 +39,7 @@ next-env.d.ts
 # supabase local
 /supabase/.branches
 /supabase/.temp
+.superpowers/
+
+# dump grezzi di template/siti di terzi (copyright + peso) — solo fonte per il design-system, non nel repo
+/siti css/
