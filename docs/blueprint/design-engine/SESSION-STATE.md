@@ -20,7 +20,7 @@
 
 | Macrotask | Stato | Checkpoint | Note |
 |---|---|---|---|
-| `visual-skin` | **done** | **VERDE 4/4** (branch) | 4 task (DE-101…DE-104): `site.css` + consumo token/tipografia fluida hero (clamp), stili inline→css + `data-block-kind` (hero distinto), font self-host `next/font` (CSP intatta), placeholder ricco. e2e 13/13 + mutazioni 4/4. **Merge su `main` gated dall'umano** |
+| `visual-skin` | **done** | **VERDE 4/4** (`4739be5`) | 4 task (DE-101…DE-104): `site.css` + consumo token/tipografia fluida hero (clamp), stili inline→css + `data-block-kind` (hero distinto), font self-host `next/font` (CSP intatta), placeholder ricco. vitest 1450/1450 · e2e 13/13 · mutazioni 4/4 · igiene ratchet 125→136. **Mergiato su `main`** (gate umano approvato) |
 | `design-select` | **todo** | — | 7 task (DE-201…DE-207): cataloghi puri, THEMES cresciuti+disaccoppiati, `design-matrix`, `design-select` deterministico, freeze schema documento, wiring `variant-document`, CSS varianti |
 | `effects-runtime` | **todo** | — | 2 task (DE-301…DE-302): CSS effetti L0–L4 + progressive-enhancement/reduced-motion, isola client `SiteMotion` |
 | `e2e-visual` | **todo** | — | 1 task (DE-401): e2e Chromium su `/s/` (pelle + varietà + effetti + anti-injection + canary rosso). **Ultimo nodo** |
