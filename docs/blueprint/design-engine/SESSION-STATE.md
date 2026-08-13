@@ -9,8 +9,8 @@
 |---|---|
 | **Progetto** | Belora/Ulaba |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase) |
-| **Ultimo aggiornamento** | 2026-08-13 (**BUILD `design-select` COMPLETO E MERGIATO su `main`** `29969f3`, fast-forward, gate umano approvato → **deploy Vercel su `ulaba.net` innescato**: DE-201…207 (workflow 14 agenti = 7 builder + 7 verifier BLIND, 0 errori) + 7 fix orchestratore su rilievi verifier confermati + 1 DRY refactor; checkpoint decomposto VERDE 4/4 + suite 1509/1509 + e2e Chromium 13/13 + mutazioni 5/5 uccise) |
-| **Sessione corrente** | — (**sessione chiusa dopo il merge di `design-select`**). Prossima sessione = BUILD `effects-runtime`: aprire `prompts/session-start.md` |
+| **Ultimo aggiornamento** | 2026-08-13 (**BUILD `effects-runtime` COMPLETO E MERGIATO su `main`** `9c7b0ed`, fast-forward, gate umano approvato → **deploy Vercel su `ulaba.net` innescato**: DE-301…302 (workflow 4 agenti = 2 builder + 2 verifier BLIND, 0 errori) + 7 interventi orchestratore su rilievi verifier confermati; checkpoint decomposto VERDE 4/4 + suite 1521/1521 + e2e Chromium 18/18 + mutazioni 6/6 uccise) |
+| **Sessione corrente** | — (**sessione chiusa dopo il merge di `effects-runtime`**). Prossima sessione = BUILD `e2e-visual` (DE-401, **ULTIMO nodo del DAG**): aprire `prompts/session-start.md` |
 
 ---
 
@@ -22,17 +22,20 @@
 |---|---|---|---|
 | `visual-skin` | **done** | **VERDE 4/4** (`4739be5`) | 4 task (DE-101…DE-104): `site.css` + consumo token/tipografia fluida hero (clamp), stili inline→css + `data-block-kind` (hero distinto), font self-host `next/font` (CSP intatta), placeholder ricco. vitest 1450/1450 · e2e 13/13 · mutazioni 4/4 · igiene ratchet 125→136. **Mergiato su `main`** (gate umano approvato) |
 | `design-select` | **done** | **VERDE 4/4** (`29969f3`) | 7 task (DE-201…207): cataloghi puri (hero-layouts/section-treatments/effects L0..L4/ornaments, `xFor` proto-safe su array), THEMES 5→8 + `themeFor` esportato/disaccoppiato, `design-matrix` (`isAllowed`/`allowedCombinations` ≥5/vertical), `design-select` deterministico (FNV-1a+mulberry32, 5 distinte su asse strutturale), freeze schema documento (opzionali+default, gate), wiring `resolveVariantHome`+call-site al seed, CSS varianti + data-attribute radice. suite 1509/1509 · e2e 13/13 · mutazioni 5/5 · igiene ratchet 136→138. **Mergiato su `main`** (gate umano approvato) |
-| `effects-runtime` | **todo** | — | 2 task (DE-301…DE-302): CSS effetti L0–L4 + progressive-enhancement/reduced-motion, isola client `SiteMotion` |
+| `effects-runtime` | **done** | **VERDE 4/4** (`9c7b0ed`) | 2 task (DE-301…302): CSS effetti L0–L4 in `site.css` (micro-transizione per i soli L1..L4 a uguaglianza esatta, stato nascosto SOLO sotto `.site-motion-ready`, `.is-visible`, cascata-hero L2, hover color-swap + sliding-fill, consumo `--progress` con fallback statico, `@media reduce` che forza lo stato finale) + gancio `data-reveal` sul wrapper `.site-block` (un solo punto) + isola client `SiteMotion` (gate solo se rivelerà davvero, observer scopato alla propria radice, `editable→L0`, driver scroll L3/L4). suite 1521/1521 · e2e 18/18 · mutazioni 6/6 · **igiene INVARIATA 138** (nessuna ri-baselina). **Mergiato su `main`** (gate umano approvato) |
 | `e2e-visual` | **todo** | — | 1 task (DE-401): e2e Chromium su `/s/` (pelle + varietà + effetti + anti-injection + canary rosso). **Ultimo nodo** |
 
 ## 2. Macrotask corrente
 
-- **Prossimo da costruire**: `effects-runtime` (2 task DE-301…302; dipende da DE-101 [pelle, done] e
-  DE-206 [wiring + gancio `data-effects`, done] — dipendenze verdi). CSS effetti L0–L4 (stato
-  finale/hover, keyframe) + progressive-enhancement/`prefers-reduced-motion`, e **isola client
-  `SiteMotion`** (`IntersectionObserver`, driver rAF per L3/L4, nessuno `<script>` inline → CSP intatta).
-  Il gancio è già in place: `SiteView` scrive `data-effects` alla radice dal campo `effect_level`.
-- Ordine del DAG: `visual-skin` ✅ → `design-select` ✅ → **`effects-runtime`** → `e2e-visual`.
+- **Prossimo da costruire**: `e2e-visual` (1 task DE-401, **ultimo nodo**; dipende da pelle + varietà +
+  effetti, tutte verdi). e2e Chromium su `/s/` che prova a RUNTIME ciò che i macrotask precedenti hanno
+  dichiarato solo nel markup: che due `hero_layout` diversi producano layout **computati** diversi
+  (computed-style, non pixel-diff), con anti-injection e **canary rosso PRIMA del verde**.
+  - Il target dichiarato dal blueprint è **`e2e/visual-engine.spec.ts`** ed è l'unico target_test del
+    workstream ancora assente (verificato da `c4trace`): è il file da creare.
+  - Nota di scope: `e2e/effects.spec.ts` (DE-301/302) copre già reveal, reduce e gating per livello —
+    DE-401 non li ripete, prova la **varietà strutturale**.
+- Ordine del DAG: `visual-skin` ✅ → `design-select` ✅ → `effects-runtime` ✅ → **`e2e-visual`**.
 
 ## 3. Stato git
 
@@ -40,12 +43,28 @@
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `trueline/build/design-select` (aperto da `main` pulito, pushato su origin). **Mergiato su `main` in fast-forward** (`42b2680..29969f3`) → prossimo macrotask aprirà `trueline/build/effects-runtime`. |
-| Ultimo commit | **`29969f3`** feat(design-engine): design-select (DE-201…207 + 7 fix orchestratore + DRY `DesignSelection=Combo&{recipe_id}` + hygiene-baseline 138), su `main`. |
-| Stato merge su `main` | **MERGIATO** (fast-forward, gate umano approvato 2026-08-13). Checkpoint decomposto VERDE 4/4 + suite 1509/1509 + e2e Chromium 13/13 + `next build` verificati in locale prima del merge. **Deploy Vercel su `ulaba.net` innescato dal push su `main`.** |
+| Branch di lavoro | `trueline/build/effects-runtime` (aperto da `main` pulito, pushato su origin). **Mergiato su `main` in fast-forward** (`f8d3ec6..9c7b0ed`) → prossimo macrotask aprirà `trueline/build/e2e-visual`. |
+| Ultimo commit | **`9c7b0ed`** feat(design-engine): effects-runtime (DE-301…302 + 7 interventi orchestratore su rilievi verifier), su `main`. |
+| Stato merge su `main` | **MERGIATO** (fast-forward, gate umano approvato 2026-08-13). Checkpoint decomposto VERDE 4/4 + suite 1521/1521 + e2e Chromium 18/18 + `eslint .` + `next build` verificati in locale prima del merge. **Deploy Vercel su `ulaba.net` innescato dal push su `main`.** |
 | Deploy-coupling | **`coupled`** — Vercel è connesso al repo (`ulabaservice-star/progetto-web-ai`): **push su `main` = deploy in produzione** su `ulaba.net`. Il merge di ogni macrotask resta **human-gated anche sul verde**; deploy non supervisionato BLOCCATO. Verificato **in locale** (vitest 1450, e2e 13/13, computed-style) prima del merge |
 
 ## 4. Baseline & budget
+
+> **effects-runtime (aggiornamento 2026-08-13)** — **Baseline di sicurezza**: mantenuta la P4, NON
+> ri-catturata (0 finding nuovo committabile: superficie = CSS + un componente client + test). Il
+> **gotcha del driver in-place si è ripresentato identico**: gitleaks segnala 2 CRITICAL nei
+> **gitignorati** (`.env.local`, `siti css/`), `git check-ignore -v` li conferma esclusi e gitleaks sui
+> **478 file tracciati+nuovi** (copiati in dir pulita) = **0 leak** → FP fuori scope. osv 2 e rls 1
+> baselinati, semgrep 0. **Baseline d'igiene: INVARIATA a 138 — R-04 NON è scattato** (dead-code 0,
+> dup 141 finding tutti `pre-existing`, cycle 0, twin 0, arch 0): è la prima volta nel workstream che
+> due file nuovi in `tests/` non forzano una ri-baselina — il `vi.mock('next-intl/server')` idiomatico
+> e il blocco di import non superano la soglia dell'oracolo (la misura `jscpd --min-tokens 50` del
+> builder, +4 coppie, è più aggressiva della configurazione reale: **non confondere le due**).
+> **Budget**: nessun retry consumato (0 checkpoint rossi di merito). 7 interventi orchestratore, tutti
+> su rilievi verifier CONFERMATI leggendo il codice — 3 di produzione (deps sulla forma dell'albero,
+> reveal sincrono di ciò che è già in vista, driver rAF armato da scroll/resize invece che perpetuo) e
+> 4 sugli oracoli (contro-prova del `@media` nell'e2e, `tests/site-effects-css.test.ts` per il
+> keyframe, ramo reduce in vitest, `--progress` in vitest). Mutazione **6/6 uccise**.
 
 - **Baseline di sicurezza**: **mantenuta la P4** (`.trueline/checkpoint-baseline.json`, ARRAY, 2 fp = osv
   postcss MEDIUM + rls FP anon-policy) — NON ri-catturata. design-select: **0 finding NUOVO committabile**
@@ -79,7 +98,17 @@
 - **DB parametri di design**: `docs/design-system/ristorazione.md` è la bussola del catalogo (Parte 2:
   7 famiglie-palette, coppie tipografiche, hero-layout, varianti-sezione, effetti E1–E6 + L0–L4,
   ornamenti, foto).
-- **CHECKPOINT DECOMPOSTO — ricetta provata (design-select)**: driver in
+- **`scratchpad/` NON è gitignorato**: il driver del checkpoint va **cancellato prima del commit** (o
+  finisce nel diff e nello scope degli oracoli). Ricostruirlo costa ~10 minuti dalla ricetta qui
+  sotto; una copia dell'ultimo driver funzionante è fuori dal repo in
+  `%TEMP%\ckpt-driver.mjs` (`C:\Users\claud\AppData\Local\Temp`), non versionata e non garantita.
+- **`matchMedia` è una proprietà ACCESSOR** in questo ambiente di test: salvare il descrittore,
+  assegnare uno stub e ri-definire il descrittore **NON ripristina nulla** (l'assegnazione passa dal
+  setter, e il getter ripristinato continua a restituire lo stub) → ogni test successivo del file
+  girerebbe in un mondo `prefers-reduced-motion: reduce` senza accorgersene. Si usa **`vi.stubGlobal`
+  + `vi.unstubAllGlobals`**, e si ASSERISCE il ripristino con lo stesso predicato del codice di
+  produzione (jsdom non implementa `matchMedia`: "assente" è un esito legittimo quanto "falso").
+- **CHECKPOINT DECOMPOSTO — ricetta provata (design-select, ri-provata su effects-runtime)**: driver in
   `scratchpad/ckpt-driver.mjs` che importa da `checkpoint.mjs` `control1Hygiene`/`control2Security`/
   `control4Conformance` + `classify`/`loadManifest` + `loadHygieneBaseline` + `loadTasks`/`assertionTrace`,
   e li invoca **UNO alla volta in foreground** su `PROJECT` in-place (manifest `supabase-jsts`, baseline
@@ -96,6 +125,47 @@
   regressione: un tema non citato lo offre già la ThemeSwitcher e lo sceglie `selectDesign`.
 
 ## 6. Copertura dichiarata
+
+**`effects-runtime` — tutti gli AC coperti e provati (checkpoint VERDE 4/4):**
+
+- **DE-301** — `e2e/effects.spec.ts` (Chromium, ANON su `/s/<slug>`, viewport 1280×720): AC-1 in un
+  describe con `javaScriptEnabled: false` — la radice **non** porta `.site-motion-ready` (asserito, non
+  assunto), ≥3 `[data-reveal]`, ognuno visibile con `opacity` **computata** 1 e `transform: none`, e
+  l'ultimo **sotto la piega** · AC-2 in un describe con `contextOptions.reducedMotion: 'reduce'` e JS
+  attivo (la preferenza è verificata via `matchMedia().matches`): visibile, `opacity 1`, `transform none`,
+  `animation-name none`, `transition-duration 0s` + **contro-prova del `@media`** (si aggiunge a mano il
+  solo gate `.site-motion-ready` e il contenuto resta intero: senza quel blocco cadrebbe) · **controllo
+  di non-vacuità** in un terzo describe: a L1 la transizione esiste (durata > 0) e a **L0** è `0s`
+  (trappola del prefisso: `[data-effects^='L']` confonderebbe i cinque livelli).
+  `tests/site-effects-css.test.ts` copre i bullet di DoD senza AC: il keyframe dichiara **solo**
+  `opacity`/`transform` (ritaglio a conteggio di graffe + contro-prova su fixture virtuale) e le due
+  regole hover L2 esistono e puntano a classi che i blocchi rendono davvero (nessun CSS morto).
+- **DE-302** — `e2e/effects.spec.ts`: AC-1 il reveal sotto la piega è `opacity 0` **prima** dello scroll
+  (metà causale) e ottiene `.is-visible` dopo · AC-2 sotto `reduce` l'isola **monta** (`data-motion-level`
+  = ancora di non-vacuità) ma è no-op: zero gate, zero `.is-visible`, contenuto intero anche dopo aver
+  percorso la pagina. `tests/site-motion.test.ts`: AC-3 stesso documento `L3` reso **due volte** —
+  editable → `L0`, nessun gate, nessun observer; read-only → `L3`, gate, observer **scopato alla propria
+  radice** (l'altra radice è già nel DOM: una query su `document` cadrebbe) · AC-4 nessun `<script>` nel
+  markup reso in entrambe le modalità + nessuna via di HTML grezzo nel sorgente + `'use client'`, col
+  predicato che **discrimina**. Aggiunte dell'orchestratore nello stesso file: ramo `reduce` in vitest
+  (`vi.stubGlobal`, con ripristino asserito), `--progress` scritto a L3 e **non** a L1, e la
+  **regressione dell'albero che cresce** (rerender con un blocco in più sotto la stessa radice → il
+  blocco nuovo viene osservato, non resta nascosto per sempre).
+
+**Batteria di mutazione — 6/6 uccise** (backup + `sha256sum -c`, mai `git checkout`): stato nascosto
+neutralizzato → e2e AC-302-1 ROSSO · `@media reduce` rimosso → AC-301-2 ROSSO · `@media` privato del
+**solo** stato finale → ROSSO sulla contro-prova nuova (`effects.spec.ts:226`, prova che non è cosmetica)
+· `blocks` fuori dalle dipendenze → regressione dell'albero ROSSA · gating `reduce` rimosso → ramo reduce
+vitest ROSSO · driver che non scrive `--progress` → ROSSO.
+
+**Non coperto / dichiarato**: il **FOUC inverso** è mitigato (i reveal già in vista sono marcati in modo
+sincrono al mount) ma la mitigazione **non ha un test proprio** — nessun oracolo misura "non c'è lampo".
+Il consumo visivo di `--progress` (la scala del placeholder che segue lo scroll) è provato solo lato
+scrittura: nessun AC misura la trasformazione risultante in browser. `data-motion-level` è un attributo
+di produzione che nasce come **osservabile di test**: giustificato (è l'ancora anti-vacuità di 6
+asserzioni in 2 file) ma è comportamento oltre il DoD, e va detto.
+
+---
 
 **`design-select` — tutti gli AC coperti e provati (checkpoint VERDE 4/4):**
 
@@ -124,7 +194,13 @@
   hero_layout→attributi diversi · AC-3 scanner colore **importato** da `tests/helpers/css-literal-color.ts`
   (no clone R-04). `render-draft-page` ora propaga `design` (fix DoD).
 
-**Prove d'insieme**: vitest **1509/1509** (155 file; era 1450 a fine visual-skin) · e2e Chromium **13/13**
+**Prove d'insieme (effects-runtime)**: vitest **1521/1521** (157 file; erano 1509 a fine design-select),
+eseguiti in 2 shard `--shard=1/2`/`2/2` = controlli 3 e 4 · e2e Chromium **18/18** (13 di regressione + 5
+nuovi) · `c4trace`: **ogni AC valutato è tracciato** da un `// covers:` in un target_test in scope; unico
+target dichiarato e **assente** = `e2e/visual-engine.spec.ts` di **DE-401** (macrotask successivo, non un
+buco di questo) · `eslint .` 0 · `tsc --noEmit` 0 · `next build` OK.
+
+**Prove d'insieme (design-select)**: vitest **1509/1509** (155 file; era 1450 a fine visual-skin) · e2e Chromium **13/13**
 (regressione: computed-style visual-skin + anti-injection editor/public/hostile, nessun nuovo spec di
 questo macrotask) · batteria di mutazione **5/5 uccise** (index-ignored, matrice-ceiling, proto-effect,
 ornament-fabricated, css-literal) con ripristino sha256 bit-identico · `next build` OK · typecheck+lint 0.
