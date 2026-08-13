@@ -9,8 +9,8 @@
 |---|---|
 | **Progetto** | Belora/Ulaba |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase) |
-| **Ultimo aggiornamento** | 2026-08-13 (**BUILD `effects-runtime` COMPLETO E MERGIATO su `main`** `9c7b0ed`, fast-forward, gate umano approvato → **deploy Vercel su `ulaba.net` innescato**: DE-301…302 (workflow 4 agenti = 2 builder + 2 verifier BLIND, 0 errori) + 7 interventi orchestratore su rilievi verifier confermati; checkpoint decomposto VERDE 4/4 + suite 1521/1521 + e2e Chromium 18/18 + mutazioni 6/6 uccise) |
-| **Sessione corrente** | — (**sessione chiusa dopo il merge di `effects-runtime`**). Prossima sessione = BUILD `e2e-visual` (DE-401, **ULTIMO nodo del DAG**): aprire `prompts/session-start.md` |
+| **Ultimo aggiornamento** | 2026-08-13 (**BUILD `e2e-visual` COMPLETO E MERGIATO su `main`** `d8e6020`, fast-forward, gate umano approvato → **deploy Vercel su `ulaba.net` innescato**: DE-401 (workflow 2 agenti = 1 builder + 1 verifier BLIND, 0 errori) + 3 rilievi MINOR/NIT applicati dall'orchestratore; checkpoint decomposto VERDE 4/4 + suite 1521/1521 + e2e Chromium 26/26 + mutazioni 2/2 uccise selettive) → **design-engine COMPLETO 4/4, DAG CHIUSO** |
+| **Sessione corrente** | — (**sessione chiusa dopo il merge di `e2e-visual`, ULTIMO nodo**). Il workstream design-engine è **COMPLETO**: nessun macrotask residuo. Prossimo lavoro **FUORI design-engine** (DS-D9: fix del flusso-intervista, spec propria; poi P5 billing) |
 
 ---
 
@@ -23,19 +23,16 @@
 | `visual-skin` | **done** | **VERDE 4/4** (`4739be5`) | 4 task (DE-101…DE-104): `site.css` + consumo token/tipografia fluida hero (clamp), stili inline→css + `data-block-kind` (hero distinto), font self-host `next/font` (CSP intatta), placeholder ricco. vitest 1450/1450 · e2e 13/13 · mutazioni 4/4 · igiene ratchet 125→136. **Mergiato su `main`** (gate umano approvato) |
 | `design-select` | **done** | **VERDE 4/4** (`29969f3`) | 7 task (DE-201…207): cataloghi puri (hero-layouts/section-treatments/effects L0..L4/ornaments, `xFor` proto-safe su array), THEMES 5→8 + `themeFor` esportato/disaccoppiato, `design-matrix` (`isAllowed`/`allowedCombinations` ≥5/vertical), `design-select` deterministico (FNV-1a+mulberry32, 5 distinte su asse strutturale), freeze schema documento (opzionali+default, gate), wiring `resolveVariantHome`+call-site al seed, CSS varianti + data-attribute radice. suite 1509/1509 · e2e 13/13 · mutazioni 5/5 · igiene ratchet 136→138. **Mergiato su `main`** (gate umano approvato) |
 | `effects-runtime` | **done** | **VERDE 4/4** (`9c7b0ed`) | 2 task (DE-301…302): CSS effetti L0–L4 in `site.css` (micro-transizione per i soli L1..L4 a uguaglianza esatta, stato nascosto SOLO sotto `.site-motion-ready`, `.is-visible`, cascata-hero L2, hover color-swap + sliding-fill, consumo `--progress` con fallback statico, `@media reduce` che forza lo stato finale) + gancio `data-reveal` sul wrapper `.site-block` (un solo punto) + isola client `SiteMotion` (gate solo se rivelerà davvero, observer scopato alla propria radice, `editable→L0`, driver scroll L3/L4). suite 1521/1521 · e2e 18/18 · mutazioni 6/6 · **igiene INVARIATA 138** (nessuna ri-baselina). **Mergiato su `main`** (gate umano approvato) |
-| `e2e-visual` | **todo** | — | 1 task (DE-401): e2e Chromium su `/s/` (pelle + varietà + effetti + anti-injection + canary rosso). **Ultimo nodo** |
+| `e2e-visual` | **done** | **VERDE 4/4** (`d8e6020`) | 1 task (DE-401): `e2e/visual-engine.spec.ts` (Chromium, ANON su `/s/<slug>`, viewport 1280×720). Pelle (font hero ≥40 **computato** + webfont Fraunces **loaded** via `document.fonts.check`); varietà (`centrato@1` flex vs `split@1` grid → layout **computati** distinti + trappola-prefisso `centrato-foto@1` su id esatto); effetti (reveal→`.is-visible` allo scroll, reduce no-op + contenuto visibile con ancora `data-motion-level`, no-JS visibile); anti-injection (doc pubblicato ostile → selezione design invariata [id catalogo, nessun payload] + `assertNoInjectionEffect` nullo, near-collision uuid); 2 canary (pelle font-8px + injection sink-innerHTML) sugli STESSI oracoli del reale. **Solo test, zero `src/`**; riusa harness P4. suite 1521/1521 · e2e 26/26 (18 regressione + 8 nuovi) · mutazioni 2/2 uccise **selettive** (pelle+varietà rossi, resto verde) · **igiene INVARIATA 138** (`e2e/` escluso da jscpd) · sicurezza 0-nuovi (2 gitleaks = FP gitignorati in-place, provati con dir pulita). **Mergiato su `main`** (gate umano approvato). **ULTIMO nodo → DAG CHIUSO** |
 
 ## 2. Macrotask corrente
 
-- **Prossimo da costruire**: `e2e-visual` (1 task DE-401, **ultimo nodo**; dipende da pelle + varietà +
-  effetti, tutte verdi). e2e Chromium su `/s/` che prova a RUNTIME ciò che i macrotask precedenti hanno
-  dichiarato solo nel markup: che due `hero_layout` diversi producano layout **computati** diversi
-  (computed-style, non pixel-diff), con anti-injection e **canary rosso PRIMA del verde**.
-  - Il target dichiarato dal blueprint è **`e2e/visual-engine.spec.ts`** ed è l'unico target_test del
-    workstream ancora assente (verificato da `c4trace`): è il file da creare.
-  - Nota di scope: `e2e/effects.spec.ts` (DE-301/302) copre già reveal, reduce e gating per livello —
-    DE-401 non li ripete, prova la **varietà strutturale**.
-- Ordine del DAG: `visual-skin` ✅ → `design-select` ✅ → `effects-runtime` ✅ → **`e2e-visual`**.
+- **DAG COMPLETO**: `visual-skin` ✅ → `design-select` ✅ → `effects-runtime` ✅ → `e2e-visual` ✅.
+  **Nessun macrotask residuo** nel workstream design-engine. `c4trace`: ogni target_test dichiarato è in
+  scope e ogni AC è tracciato — non resta alcun target assente.
+- **Prossimo lavoro (FUORI design-engine)**: **DS-D9** — fix del flusso-intervista (`update_brief` in
+  ritardo/inaffidabile, prompt debole in `interview.ts`) come spec/blueprint propri; poi **P5**
+  billing/crediti. Vedi `00-INDEX §7` (fuori scope di design-engine v1) e la memoria di progetto.
 
 ## 3. Stato git
 
@@ -43,12 +40,24 @@
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `trueline/build/effects-runtime` (aperto da `main` pulito, pushato su origin). **Mergiato su `main` in fast-forward** (`f8d3ec6..9c7b0ed`) → prossimo macrotask aprirà `trueline/build/e2e-visual`. |
-| Ultimo commit | **`9c7b0ed`** feat(design-engine): effects-runtime (DE-301…302 + 7 interventi orchestratore su rilievi verifier), su `main`. |
-| Stato merge su `main` | **MERGIATO** (fast-forward, gate umano approvato 2026-08-13). Checkpoint decomposto VERDE 4/4 + suite 1521/1521 + e2e Chromium 18/18 + `eslint .` + `next build` verificati in locale prima del merge. **Deploy Vercel su `ulaba.net` innescato dal push su `main`.** |
-| Deploy-coupling | **`coupled`** — Vercel è connesso al repo (`ulabaservice-star/progetto-web-ai`): **push su `main` = deploy in produzione** su `ulaba.net`. Il merge di ogni macrotask resta **human-gated anche sul verde**; deploy non supervisionato BLOCCATO. Verificato **in locale** (vitest 1450, e2e 13/13, computed-style) prima del merge |
+| Branch di lavoro | `trueline/build/e2e-visual` (aperto da `main` pulito, pushato su origin). **Mergiato su `main` in fast-forward** (`f1b45e9..d8e6020`). **Workstream design-engine CHIUSO**: la prossima sessione (fuori design-engine) aprirà un nuovo branch. |
+| Ultimo commit | **`d8e6020`** feat(design-engine): e2e-visual (DE-401 + 3 rilievi MINOR/NIT applicati), su `main`. |
+| Stato merge su `main` | **MERGIATO** (fast-forward, gate umano approvato 2026-08-13). Checkpoint decomposto VERDE 4/4 + suite 1521/1521 + e2e Chromium 26/26 + `eslint .` + `tsc --noEmit` + `next build` verificati in locale prima del merge. **Deploy Vercel su `ulaba.net` innescato dal push su `main`.** |
+| Deploy-coupling | **`coupled`** — Vercel è connesso al repo (`ulabaservice-star/progetto-web-ai`): **push su `main` = deploy in produzione** su `ulaba.net`. Il merge di ogni macrotask resta **human-gated anche sul verde**; deploy non supervisionato BLOCCATO. Verificato **in locale** (vitest 1521, e2e 26/26, computed-style) prima del merge |
 
 ## 4. Baseline & budget
+
+> **e2e-visual (aggiornamento 2026-08-13)** — **Baseline di sicurezza**: mantenuta la P4, NON
+> ri-catturata (superficie nulla: **un solo file `e2e/`**, nessun `src/`/tabella/RLS/dep/segreto). Il
+> **gotcha in-place si è ripresentato identico**: il driver decomposto gira in-place → gitleaks segnala
+> **2 CRITICAL** nei **gitignorati** (`.env.local` anthropic-api-key riga 21 di `.gitignore`; `siti css/`
+> riga 45), classificati `new` solo perché il path esce dal PROJECT. Contro-prova canonica: `git
+> check-ignore -v` li conferma esclusi + gitleaks su dir PULITA (`git archive HEAD` + il solo spec nuovo)
+> = **"no leaks found"** → FP fuori scope. osv 2 e rls 1 baselinati, semgrep 0. **Baseline d'igiene:
+> INVARIATA a 138 — R-04 NON scattato** (`e2e/` è **escluso da jscpd**: un file e2e nuovo non
+> ri-fingerprinta nulla; dup 140 tutti `pre-existing`, per lo più in `eval/reference-app/`, dead-code 0,
+> arch 0). **Budget**: nessun retry consumato (0 checkpoint rossi di merito; il C2 "red" era solo il FP
+> gitignorato). 3 rilievi verifier applicati, tutti MINOR/NIT (vedi §6). Mutazione **2/2 uccise selettive**.
 
 > **effects-runtime (aggiornamento 2026-08-13)** — **Baseline di sicurezza**: mantenuta la P4, NON
 > ri-catturata (0 finding nuovo committabile: superficie = CSS + un componente client + test). Il
@@ -117,7 +126,14 @@
   del controllo 4 NON gira via driver. Ricostruzione fedele: **c4trace** (Fase A scope + Fase B
   `assertionTrace` covers) via driver + **esecuzione dei target_test dentro la suite vitest in 2 shard**
   (`--shard=1/2`,`2/2`; = controlli 3 e 4) + **potere via batteria di mutazione manuale**. Verdetto dal
-  JSON per-controllo, mai dall'exit code.
+  JSON per-controllo, mai dall'exit code. **Gotcha del driver `c4trace` (provato su e2e-visual)**:
+  `assertionTrace` ritorna un **oggetto** `{ok, detail, untracked}`, non un array → la riga `green` del
+  driver che faceva `untracked.length === 0` dava `undefined === 0` = **falso spurio** anche con
+  `missing:[]` e `untracked:[]`. Leggere il verdetto reale dai campi (`missing.length===0 &&
+  untracked.ok && untracked.untracked.length===0`), non dal `green` calcolato. Per un macrotask di soli
+  test e2e la batteria di mutazione muta la **PRODUZIONE** (es. `site.css`: font-hero → 8px, `split@1`
+  `display:grid`→`flex`) e verifica il rosso dell'e2e dopo `next build` (il CSS è compilato nel bundle),
+  ripristino `site.css` con **backup+sha256** — il file è tracciato ma il macrotask è uncommitted.
 - **THEMES 5→8 (DS-D3) tocca molti test esistenti**: la crescita dei temi + il disaccoppiamento hanno
   forzato aggiornamenti a ~10 test di generazione/editor (conteggi 5→8, coppie 10→28) e la **rimozione
   della biiezione `Set(theme_id citati) == Set(THEMES)`** in `generation-recipes.test.ts` (era proprio
@@ -125,6 +141,52 @@
   regressione: un tema non citato lo offre già la ThemeSwitcher e lo sceglie `selectDesign`.
 
 ## 6. Copertura dichiarata
+
+**`e2e-visual` — tutti gli AC coperti e provati (checkpoint VERDE 4/4):**
+
+- **DE-401** — `e2e/visual-engine.spec.ts` (Chromium, ANON `storageState` vuoto su `/s/<slug>`, viewport
+  1280×720; 8 test): **AC-1 (pelle)** oracolo condiviso `assertHeroTitleFontSize` legge la `fontSize`
+  **computata** di `h1.site-hero__title` ≥40 (il clamp `clamp(2rem,5vw,--site-scale-3xl)` risolve al 3xl
+  del tema `sole-mediterraneo@1` = 52px) + `fontFamily` contiene `fraunces` e **non** un fallback +
+  `document.fonts.check('40px "Fraunces"')` (webfont **loaded**, non solo registrato) · **AC-2 (varietà)**
+  TRE varianti: `getComputedStyle(section[data-block-kind=hero]).display` = `flex` (`centrato@1`) vs `grid`
+  (`split@1`) + `gridTemplateColumns` `none` vs 2 tracce; trappola-prefisso `centrato-foto@1` provata sul
+  `data-hero-layout` alla radice (id ESATTO, il ramo CSS è condiviso con `centrato@1` → non distinguibile
+  per layout; la discriminazione-per-selezione è dominio, DE-201) · **AC-3 (effetti)** tre describe:
+  motion-default reveal sotto-piega `opacity 0`→scroll→`.is-visible`+`opacity 1` (ancora `data-motion-level`);
+  `reducedMotion:'reduce'` contenuto intero + `transition-duration 0s`, `.site-motion-ready` count 0, ancora
+  `data-motion-level`; `javaScriptEnabled:false` contenuto visibile, nessun `.site-motion-ready` · **AC-4
+  (anti-injection)** `buildPublishedHostileDocument(used)` + `seedAsset` used/sibling near-collision → i
+  `data-*` di design matchano id catalogo (`^[a-z0-9]+(-[a-z0-9]+)*@[0-9]+$`, `^L[0-4]$`), nessun payload;
+  `assertNoInjectionEffect` (allowlist `[APP_HOST, storageHostOf(used)]` DERIVATA da `assetPublicUrl`,
+  esclude `attacker.example`; `attachObservables` prima del goto; `expectedUrl` fissato) risolve; `<img>`
+  src esatto su `used` mai `sibling` · **AC-5 (canary)** DUE canary via `setContent` (mai una rotta): pelle
+  (`h1` font-8px → `assertHeroTitleFontSize` `rejects`) e injection (`insecureCanaryHtml` sink innerHTML →
+  `assertNoInjectionEffect` `rejects`), STESSI oracoli e STESSA forma di allowlist del reale.
+- **Rilievi verifier BLIND applicati (3, tutti MINOR/NIT, nessun BLOCKER/MAJOR)**: (#1) il check
+  `document.fonts` era tautologico (`some(includes('fraunces'))` vero per ogni tema perché next/font
+  registra le 10 famiglie) → sostituito con `document.fonts.check('40px "Fraunces"')` (loaded) + commento
+  che la prova PORTANTE della mappatura tema→font è la riga `fontFamily` computed; (#2) rimossa
+  l'asserzione ridondante `not.toBe('centrato@1')` e chiarito che il render prova la proiezione fedele
+  dell'id; (#3) aggiunta l'ancora anti-vacuità `data-motion-level` al caso reduce (parità col
+  motion-default: l'isola monta anche sotto reduce — `SiteMotion.tsx:84` scrive il livello PRIMA del ramo
+  reduce).
+- **Batteria di mutazione — 2/2 uccise, SELETTIVE** (backup+`sha256sum -c`, mai `git checkout`; entrambe in
+  un solo `next build`): `.site-hero__title` font-size → `8px` → **AC-1 ROSSO**; `[data-hero-layout=split@1]`
+  `display:grid`→`flex` → **AC-2 ROSSO**; **AC-3/4/5 restano VERDI** (nessun falso rosso globale). `site.css`
+  ripristinato bit-identico.
+- **Prove d'insieme**: vitest **1521/1521** (invariata — vitest non raccoglie `e2e/`) · e2e Chromium
+  **26/26** (18 di regressione + 8 nuovi) · `eslint .` 0 · `tsc --noEmit` 0 · `next build` OK · checkpoint
+  decomposto VERDE 4/4 (igiene 138 invariata, sicurezza 0-nuovi, c4trace ogni AC tracciato).
+- **Non coperto / dichiarato**: la **bellezza estetica non è oracolabile** (la giudica l'utente, merge
+  human-gated) — l'e2e prova struttura e difetto specifico, non il gusto. La varietà è provata su UNA
+  coppia di layout (`flex`↔`grid`) più robusta e tema-indipendente: gli altri assi (`immagine-piena@1`
+  vs `scena-scura@1` per `backgroundColor`, `data-section-treatment`, `data-ornament`) non hanno un test
+  computed proprio qui. La prova a runtime che `document.fonts` corrisponda al FONT EFFETTIVAMENTE reso
+  (non solo caricato) resta indiretta: la mappatura tema→font è inchiodata dalla riga `fontFamily`
+  computed, non dal check `document.fonts`.
+
+---
 
 **`effects-runtime` — tutti gli AC coperti e provati (checkpoint VERDE 4/4):**
 
