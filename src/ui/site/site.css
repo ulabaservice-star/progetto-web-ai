@@ -258,3 +258,144 @@
   border-radius: var(--site-radius-pill);
   background-color: var(--site-color-accent);
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   DE-301 (macrotask effects-runtime) — GLI EFFETTI L0-L4. Il CSS fa quasi tutto (stato dei reveal,
+   hover, micro-transizioni, keyframe); l'isola client (DE-302) si limitera' a marcare la radice, a
+   scandire il reveal e a scrivere --progress. Le invarianti dure di questa sezione:
+
+   (1) PROGRESSIVE ENHANCEMENT. Lo stato NASCOSTO di un reveal esiste SOLO sotto .site-motion-ready,
+       la classe che l'isola aggiunge su mount. Senza JS (crawler, hydration fallita, JS spento)
+       quella classe non c'e' e gli stessi elementi restano a stato PIENO: il contenuto non dipende
+       mai dal JS. Il join fra livello e classe e' un COMPOUND
+       ([data-effects='L1'].site-motion-ready) e NON un discendente, perche' la radice del render —
+       sia .site-view sia .site-page — porta gia' data-effects (DE-207): l'isola DE-302 deve percio'
+       marcare quella STESSA radice (su un antenato privo di data-effects non scatterebbe nulla).
+
+   (2) SOLO transform E opacity, in ogni transizione e in ogni keyframe: nessuna proprieta' che
+       ricalcoli il layout. Durate e curve sono costanti del foglio.
+
+   (3) prefers-reduced-motion: reduce FORZA LO STATO FINALE e vince su tutto (in fondo alla sezione).
+
+   Le regole di livello leggono data-effects per UGUAGLIANZA ESATTA ([data-effects='L2']), mai per
+   prefisso: un selettore ^= o *= confonderebbe i cinque livelli fra loro (tutti cominciano per 'L').
+   L0 (statico) non compare in nessuna regola di movimento: e' l'assenza di effetti. I COLORI, qui
+   come in tutto il foglio, arrivano SOLO da var(--site-color-*). */
+
+/* REVEAL — la MICRO-TRANSIZIONE, dichiarata sull'elemento rivelabile per i soli livelli in movimento
+   (L1..L4). Da sola non muove nulla: anima l'ANDATA verso lo stato pieno quando l'isola toglie lo
+   stato nascosto. Il gancio [data-reveal] sta sul wrapper .site-block, l'UNICO punto per-blocco del
+   renderer (SiteView). */
+:is([data-effects='L1'], [data-effects='L2'], [data-effects='L3'], [data-effects='L4']) [data-reveal] {
+  transition: opacity 480ms ease, transform 480ms ease;
+}
+
+/* REVEAL — lo STATO NASCOSTO. Esiste SOLO sotto .site-motion-ready: e' l'intera promessa di
+   progressive enhancement in una riga di selettore. */
+:is([data-effects='L1'], [data-effects='L2'], [data-effects='L3'], [data-effects='L4']).site-motion-ready [data-reveal] {
+  opacity: 0;
+  transform: translateY(var(--site-space-md));
+}
+
+/* REVEAL — lo STATO RIVELATO. .is-visible arriva dall'IntersectionObserver dell'isola (DE-302)
+   all'ingresso nel viewport; la specificita' e' un gradino sopra lo stato nascosto, cosi' vince. */
+:is([data-effects='L1'], [data-effects='L2'], [data-effects='L3'], [data-effects='L4']).site-motion-ready [data-reveal].is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* L2 CASCATA-HERO — 'ricco' e' un gradino sopra 'vivo' (catalogo effects.ts): al reveal il titolo
+   dell'hero sale con un tempo suo, dentro al blocco che sta comparendo. Keyframe di SOLE
+   transform/opacity, non ciclico (una volta all'ingresso), e solo con l'isola montata. */
+@keyframes site-hero-rise {
+  from {
+    opacity: 0;
+    transform: translateY(var(--site-space-lg));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+[data-effects='L2'].site-motion-ready [data-reveal].is-visible .site-hero__title {
+  animation: site-hero-rise 640ms ease both;
+}
+
+/* L2 HOVER (color-swap) — sotto il puntatore la CTA scambia i colori con la coppia a CONTRASTO
+   MASSIMO del tema (testo/fondo pagina): leggibile per costruzione, qualunque sia il tema. Lo
+   scambio e' ISTANTANEO — la transizione riguarda la sola transform (il sollevamento), perche'
+   animare un colore non e' fra le due proprieta' ammesse. */
+[data-effects='L2'] .site-cta__button {
+  transition: transform 200ms ease;
+}
+
+[data-effects='L2'] .site-cta__button:hover {
+  background-color: var(--site-color-text);
+  color: var(--site-color-background);
+  transform: translateY(calc(-1 * var(--site-space-xs)));
+}
+
+/* L2 HOVER (sliding-fill) — una barretta in accento scorre lungo il bordo interno della voce di
+   offerta. Anima scaleX, non la larghezza: nessun ricalcolo di layout. Lo stato di riposo e'
+   scaleX(0), quindi senza puntatore la voce e' quella di sempre. */
+[data-effects='L2'] .site-offerings__item {
+  position: relative;
+  overflow: hidden;
+}
+
+[data-effects='L2'] .site-offerings__item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--site-space-xs);
+  background-color: var(--site-color-accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 240ms ease;
+}
+
+[data-effects='L2'] .site-offerings__item:hover::before {
+  transform: scaleX(1);
+}
+
+/* L3/L4 — IL DRIVER DI SCROLL. L'isola (DE-302) scrivera' --progress sulla radice (0 -> 1 mentre la
+   pagina scorre); qui il foglio lo CONSUMA su una sola superficie, lo slot immagine. FALLBACK
+   STATICO: senza JS la custom property non esiste, var(--progress, 1) vale 1 e la scala risolve
+   esattamente a 1 — cioe' lo STATO FINALE, visibile e fermo. Solo transform. */
+[data-effects='L3'] .site-image--placeholder,
+[data-effects='L4'] .site-image--placeholder {
+  transform: scale(calc(1 + 0.04 * (1 - var(--progress, 1))));
+}
+
+/* PREFERS-REDUCED-MOTION: REDUCE — lo STATO FINALE forzato. `!important` e' deliberato: queste
+   regole devono vincere sullo stato nascosto e su .is-visible, che sono piu' specifici, e
+   l'accessibilita' non e' negoziabile ne' subordinata all'ordine in cui il foglio cresce. Il CSS non
+   si appoggia al fatto che l'isola sia no-op sotto reduce (DE-302): il movimento e' zero anche se la
+   classe e la .is-visible ci fossero. */
+@media (prefers-reduced-motion: reduce) {
+  /* I REVEAL: contenuto INTERO e fermo. Una sola regola basta a coprire anche lo stato .is-visible,
+     perche' una dichiarazione `!important` batte comunque ogni regola che non lo sia. */
+  [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+    animation: none !important;
+  }
+
+  /* Nessuna animazione d'ingresso ne' micro-transizione altrove: l'hover resta (e' voluto
+     dall'utente) ma diventa istantaneo. */
+  .site-hero__title,
+  .site-cta__button,
+  .site-offerings__item::before {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  /* Il driver di scroll non deforma nulla: la scala e' quella naturale. */
+  .site-image--placeholder {
+    transform: none !important;
+  }
+}

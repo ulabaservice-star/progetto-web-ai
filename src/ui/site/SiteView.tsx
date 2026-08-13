@@ -23,9 +23,11 @@
 import './site.css';
 import type { ReactElement } from 'react';
 import type { SiteDocument, SitePage } from '@/domain/generation/document';
+import type { EffectLevel } from '@/domain/generation/effects';
 import type { SiteTheme } from '@/domain/generation/themes';
 import { siteThemeStyle } from '@/ui/site/theme-style';
 import { SITE_FONT_VARIABLE_CLASSNAME } from '@/ui/site/site-fonts';
+import { SiteMotion } from '@/ui/site/SiteMotion';
 import { renderBlock } from '@/ui/site/registry';
 
 // DE-207 (macrotask design-select) — LA SELEZIONE DESIGN CONGELATA nel documento (DS-D4): i quattro
@@ -75,7 +77,12 @@ export async function SitePageView({
     >
       {rendered.map((element, index) =>
         element ? (
-          <div key={index} className="site-block">
+          // DE-301 (macrotask effects-runtime) — IL GANCIO DEL REVEAL, in un solo punto: il wrapper
+          // per-blocco. E' INCONDIZIONATO — il markup non sa nulla del livello di effetto — perche'
+          // a decidere se e quanto quel gancio si muove sono il CSS (data-effects alla radice) e
+          // l'isola (DE-302). Senza .site-motion-ready il gancio non ha alcuno stato nascosto:
+          // l'attributo da solo non toglie nulla al contenuto.
+          <div key={index} className="site-block" data-reveal="">
             {element}
           </div>
         ) : null,
@@ -112,6 +119,20 @@ export async function SiteView({
     ornament_id: siteDocument.ornament_id,
   };
 
+  // DE-302 — IL LIVELLO EFFETTIVO del movimento, deciso QUI e in un solo posto. In modalita EDITABLE
+  // scende a 'L0': mentre si scrive nel sito, un reveal che nasconde il blocco appena toccato e' un
+  // difetto, non un effetto. Un documento senza `effect_level` (il campo e' opzionale nel tipo, il
+  // gate lo normalizza) non porta nemmeno `data-effects`: senza quel gancio il foglio non stila alcun
+  // movimento, quindi il livello effettivo e' 'L0' — l'isola resta un no-op invece di nascondere cio'
+  // che nessuna regola tornerebbe a rivelare.
+  const motionLevel: EffectLevel = editable ? 'L0' : (design.effect_level ?? 'L0');
+
+  // DE-302 — LA FIRMA DELLA FORMA DELL'ALBERO: quanti blocchi il documento rende in tutto. Non e' un
+  // conteggio di nodi (un blocco senza componente rende `null` e non porta wrapper), e' il segnale che
+  // dice all'isola "l'albero non e' piu' quello di prima": senza, un render server-side che aggiunge
+  // una sezione sotto una radice gia' marcata lascerebbe quel blocco nascosto per sempre.
+  const blockCount = siteDocument.pages.reduce((total, page) => total + page.blocks.length, 0);
+
   const pages: ReactElement[] = await Promise.all(
     siteDocument.pages.map((page) => SitePageView({ page, theme, locale, editable, design })),
   );
@@ -128,6 +149,11 @@ export async function SiteView({
       data-ornament={design.ornament_id}
       data-effects={design.effect_level}
     >
+      {/* DE-302 — L'ISOLA DEL MOVIMENTO, resa UNA SOLA VOLTA e proprio QUI: il suo marcatore deve
+          avere per padre questa radice, che e' l'elemento che porta `data-effects` e su cui il foglio
+          aggancia il compound con .site-motion-ready. Non sta in SitePageView perche' quella e' resa
+          anche standalone (la pagina del draft dell'editor) e ne nascerebbe un'isola per pagina. */}
+      <SiteMotion level={motionLevel} blocks={blockCount} />
       {pages.map((element, index) => (
         <div key={index}>{element}</div>
       ))}
