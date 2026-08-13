@@ -35,6 +35,7 @@ vi.mock('@/data/supabase-ssr', () => ({
 }));
 
 import { publishSite, type PublishSiteResult } from '@/data/site-publications';
+import { DESIGN_SELECTION_DEFAULTS } from '@/domain/generation/document';
 
 // ── fixture del documento (forma di parseDocument, T-202; clonata da save-revision.test.ts) ──────
 const RICETTA = 'aurora-lineare@3';
@@ -294,11 +295,13 @@ describe.skipIf(!SB)('T-403 publishSite — gate parseDocument, snapshot congela
 
     // ORACOLO INDIPENDENTE: la riga scritta e' pubblicata, ancorata alla generazione corrente, con
     // lo snapshot uguale alla COPIA VALIDATA del documento corrente (parseDocument e' identita' su un
-    // documento gia' ben formato, quindi == docOne, il letterale seminato).
+    // documento gia' ben formato, quindi == docOne PIU' i default di selezione applicati dal gate).
     const pub = await publicationOf(siteOne);
     expect(pub).not.toBeNull(); // covers: AC-403-1
     expect(pub?.is_published).toBe(true); // covers: AC-403-1
-    expect(pub?.document).toEqual(docOne); // covers: AC-403-1
+    // DE-205: lo snapshot pubblicato e' la copia validata, che il gate arricchisce coi default di
+    // selezione (docOne e' P4, seminato grezzo → acquista la sua pelle alla pubblicazione).
+    expect(pub?.document).toEqual({ ...docOne, ...DESIGN_SELECTION_DEFAULTS }); // covers: AC-403-1
     expect(pub?.source_generation_id).toBe(genOne); // covers: AC-403-1
     expect(pub?.published_at).toBeTruthy(); // covers: AC-403-1
     expect(pub?.account_id).toBe(accountAId); // covers: AC-403-1
@@ -354,8 +357,12 @@ describe.skipIf(!SB)('T-403 publishSite — gate parseDocument, snapshot congela
     if (!res1.ok) throw new Error('primo publishSite doveva riuscire');
     expect(res1.public_slug).toBe('osteria-quattro'); // covers: AC-403-4
     const pub1 = await publicationOf(siteFour);
-    // Al primo publish lo snapshot e' la baseline 'quattro-v1' (nessuna revisione ancora).
-    expect(pub1?.document).toEqual(documentoValido('quattro-v1')); // covers: AC-403-4
+    // Al primo publish lo snapshot e' la baseline 'quattro-v1' (nessuna revisione ancora), piu' i
+    // default di selezione applicati dal gate (DE-205).
+    expect(pub1?.document).toEqual({
+      ...documentoValido('quattro-v1'),
+      ...DESIGN_SELECTION_DEFAULTS,
+    }); // covers: AC-403-4
 
     // Nuova modifica: una revisione corrente (seq 1) col documento aggiornato 'quattro-v2'.
     const { error: revErr } = await adminClient().from('site_document_revisions').insert({
@@ -378,7 +385,7 @@ describe.skipIf(!SB)('T-403 publishSite — gate parseDocument, snapshot congela
     // aggiornato a 'quattro-v2' e diverso dalla vecchia baseline 'quattro-v1'.
     const pub2 = await publicationOf(siteFour);
     expect(pub2?.public_slug).toBe('osteria-quattro'); // covers: AC-403-4
-    expect(pub2?.document).toEqual(docFourV2); // covers: AC-403-4
+    expect(pub2?.document).toEqual({ ...docFourV2, ...DESIGN_SELECTION_DEFAULTS }); // covers: AC-403-4
     expect(pub2?.document).not.toEqual(documentoValido('quattro-v1')); // covers: AC-403-4
     expect(pub2?.id).toBe(pub1?.id); // covers: AC-403-4
   });
@@ -412,7 +419,8 @@ describe.skipIf(!SB)('T-403 publishSite — gate parseDocument, snapshot congela
     expect(res.ok).toBe(true); // covers: AC-403-6
     if (!res.ok) throw new Error('publishSite doveva riuscire');
     const pubPrima = await publicationOf(siteSix);
-    expect(pubPrima?.document).toEqual(docSnapSix); // covers: AC-403-6
+    // DE-205: lo snapshot e' la copia validata + i default di selezione applicati dal gate.
+    expect(pubPrima?.document).toEqual({ ...docSnapSix, ...DESIGN_SELECTION_DEFAULTS }); // covers: AC-403-6
 
     // POTATURA FIFO simulata (T-303): una nuova revisione (seq 2) e' scritta e la piu' VECCHIA (seq 1,
     // la FONTE dello snapshot) e' eliminata. La publication vive in un'ALTRA tabella: la potatura non
@@ -440,6 +448,6 @@ describe.skipIf(!SB)('T-403 publishSite — gate parseDocument, snapshot congela
     // ORACOLO: lo snapshot pubblicato e' comunque INVARIATO (copia congelata, non un riferimento alla
     // revisione potata).
     const pubDopo = await publicationOf(siteSix);
-    expect(pubDopo?.document).toEqual(docSnapSix); // covers: AC-403-6
+    expect(pubDopo?.document).toEqual({ ...docSnapSix, ...DESIGN_SELECTION_DEFAULTS }); // covers: AC-403-6
   });
 });

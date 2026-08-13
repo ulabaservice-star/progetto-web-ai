@@ -330,6 +330,37 @@ const VersionedIdSchema = z
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*@[0-9]+$/)
   .max(DOCUMENT_LIMITS.versioned_id);
 
+// I CINQUE LIVELLI DI EFFETTO, ESATTAMENTE {L0, L1, L2, L3, L4} — il vocabolario CHIUSO del
+// movimento del sito (docs/design-system/ristorazione.md §2.5). E' un ENUM, non un id versionato:
+// `effect_level` congela il LIVELLO canonico (che il render DE-207 mappera' su `data-effects`), non
+// l'id di una voce di catalogo. Un valore fuori da questi cinque fa cadere l'intero documento, come
+// ogni altro campo del gate. NON e' confrontato con effects.ts (DE-201), per la STESSA ragione per
+// cui recipe_id/theme_id non sono confrontati coi loro cataloghi: qui si vincola la FORMA, non
+// l'appartenenza; che i cinque simboli coincidano con `EffectLevel` di effects.ts e' un'assunzione
+// documentata (vedi `DESIGN_SELECTION_DEFAULTS`), non un import — altitudine: document.ts fa solo
+// format-check.
+const EffectLevelSchema = z.enum(['L0', 'L1', 'L2', 'L3', 'L4']);
+
+/**
+ * I DEFAULT DELLA SELEZIONE DESIGN (DE-205, DS-D4). Un documento in formato P4 non porta i campi di
+ * selezione: il gate (`parseDocument`) li NORMALIZZA a questi valori, cosi' che a valle il render
+ * (DE-207) trovi SEMPRE un hero-layout, un trattamento e un livello di effetto, e un sito gia'
+ * pubblicato non resti senza pelle.
+ *
+ * Sono STRINGHE pinnate a mano, allineate PER ASSUNZIONE ai cataloghi DE-201/DE-202: 'centrato@1'
+ * (hero-layouts.ts, layout senza-foto universale), 'piano@1' (section-treatments.ts, il trattamento
+ * neutro che resta sui token del tema), 'L1' (effects.ts, il livello "vivo", default consigliato).
+ * document.ts NON importa quei cataloghi — fa solo format-check, come per theme_id — quindi
+ * l'allineamento e' una DECISIONE registrata qui e non un existence-check: cambiarla deve costare un
+ * test rosso. `ornament_id` NON compare qui perche' non ha default (un sito puo' non avere ornamento,
+ * DS-D5): se assente resta assente.
+ */
+export const DESIGN_SELECTION_DEFAULTS = {
+  hero_layout_id: 'centrato@1',
+  section_treatment_id: 'piano@1',
+  effect_level: 'L1',
+} as const;
+
 /**
  * UNA PAGINA: slug, ruolo, titolo, meta description e blocchi.
  *
@@ -358,6 +389,13 @@ const PageSchema = z
  * Servono a P3: un ritocco futuro a una ricetta non deve riscrivere un sito gia'
  * generato, e per saperlo bisogna sapere con quale VERSIONE e' stato generato.
  *
+ * DA DE-205 SONO CONGELATI ANCHE GLI ID DI SELEZIONE DESIGN (DS-D4): hero_layout_id,
+ * section_treatment_id, effect_level (enum L0..L4) e ornament_id?. Sono OPZIONALI per
+ * retro-compatibilita' — un documento P4 non li porta e valida ancora — e il GATE li
+ * normalizza ai `DESIGN_SELECTION_DEFAULTS` (ornament_id escluso: puo' non esserci).
+ * Registrarli qui, invece di riderivarli al render, e' cio' che impedisce a un sito
+ * pubblicato di re-stilarsi da solo dopo un ritocco ai cataloghi.
+ *
  * LA HOME E' IMPOSTA, non solo dichiarata: almeno una pagina ha ruolo 'home'. Era
  * scritta in tre punti in prosa e non la controllava nessuno — un documento la cui
  * unica pagina aveva ruolo 'faq' passava. Che le home siano ESATTAMENTE una NON e'
@@ -378,6 +416,17 @@ export const SiteDocumentSchema = z
   .object({
     recipe_id: VersionedIdSchema,
     theme_id: VersionedIdSchema,
+    // LA SELEZIONE DESIGN CONGELATA (DE-205, DS-D4). Id VERSIONATI opzionali: un documento in
+    // formato P4 non li porta e resta valido — il gate applica `DESIGN_SELECTION_DEFAULTS` — mentre un
+    // documento nuovo li congela, cosi' che un sito pubblicato non si re-stili da solo dopo un ritocco
+    // ai cataloghi. Sono FORMA-check come recipe_id/theme_id: niente confronto coi cataloghi
+    // DE-201/DE-202 (quello e' altitudine di un altro strato).
+    hero_layout_id: VersionedIdSchema.optional(),
+    section_treatment_id: VersionedIdSchema.optional(),
+    // effect_level e' l'ENUM chiuso {L0..L4}, non un id di catalogo: un valore fuori cade tutto.
+    effect_level: EffectLevelSchema.optional(),
+    // ornament_id e' l'unico VERAMENTE opzionale (nessun default): un sito puo' non avere ornamento.
+    ornament_id: VersionedIdSchema.optional(),
     pages: z.array(PageSchema).min(1).max(DOCUMENT_LIMITS.max_pages),
   })
   .strict()
@@ -453,6 +502,25 @@ function serializza(value: unknown): string | undefined {
   }
 }
 
+// LA NORMALIZZAZIONE DELLA SELEZIONE DESIGN (DE-205). Un documento in formato P4 non porta i campi di
+// selezione: il gate li riempie coi `DESIGN_SELECTION_DEFAULTS`, cosi' che a valle (render DE-207) ci
+// sia SEMPRE un hero-layout, un trattamento e un livello di effetto. I campi PRESENTI vincono sul
+// default (`??` riempie il solo BUCO): un documento nuovo che ha gia' congelato la sua selezione non
+// viene ri-normalizzato, e per questo un sito pubblicato non cambia pelle da solo. `ornament_id` non
+// ha default — se assente resta assente (un sito puo' non avere ornamento, DS-D5).
+// RITORNA UNA COPIA NUOVA (spread): la garanzia "il risultato non e' l'oggetto d'ingresso"
+// (P2-D12/AC-202-12) resta vera anche dopo i default, e chi tiene l'input non trova i default
+// iniettati nel proprio oggetto.
+function withSelectionDefaults(document: SiteDocument): SiteDocument {
+  return {
+    ...document,
+    hero_layout_id: document.hero_layout_id ?? DESIGN_SELECTION_DEFAULTS.hero_layout_id,
+    section_treatment_id:
+      document.section_treatment_id ?? DESIGN_SELECTION_DEFAULTS.section_treatment_id,
+    effect_level: document.effect_level ?? DESIGN_SELECTION_DEFAULTS.effect_level,
+  };
+}
+
 /**
  * IL GATE sul documento — il solo da chiamare prima di scriverlo (T-204) e prima di
  * renderlo (T-231). Non LANCIA mai: restituisce il documento tipizzato oppure gli
@@ -464,8 +532,11 @@ function serializza(value: unknown): string | undefined {
  *    forma perche' e' il solo tetto che limita il PRODOTTO (pagine x blocchi x campi),
  *    che nessun tetto per campo limita, ed e' anche cio' che evita di far lavorare la
  *    validazione di forma su un input di taglia arbitraria. La misura e' sull'INPUT:
- *    lo schema e' strict e non aggiunge default, quindi cio' che esce non e' mai piu'
- *    grande di cio' che entra;
+ *    lo schema e' strict, quindi non aggiunge CHIAVI ignote; da DE-205 il gate applica i
+ *    `DESIGN_SELECTION_DEFAULTS`, cioe' cio' che esce puo' superare cio' che entra di un
+ *    ammontare LIMITATO (al piu' i tre id di selezione, dell'ordine del centinaio di byte),
+ *    incomparabile col margine del tetto (31,1% su 8 MiB): il tetto continua a governare il
+ *    PRODOTTO non fidato (pagine x blocchi x campi), che i default non toccano;
  * 3. FORMA — SiteDocumentSchema, strict a ogni livello, con l'unicita' degli slug.
  *
  * COSA IL GATE NON GARANTISCE, e chi consuma non deve dedurre:
@@ -516,10 +587,12 @@ export function parseDocument(input: unknown): ParseDocumentResult {
     ]);
   }
 
-  // Il risultato e' `parsed.data`, cioe' la COPIA che zod costruisce, mai `input`: cio'
-  // che esce e' passato dalla validazione campo per campo e non condivide alcun oggetto
-  // con l'ingresso, quindi nessuno a valle puo' ritrovarsi in mano una chiave che lo
-  // schema non ha ammesso.
+  // Il risultato e' una COPIA — `parsed.data` NORMALIZZATO dai default di selezione (DE-205), mai
+  // `input`: cio' che esce e' passato dalla validazione campo per campo e non condivide alcun oggetto
+  // con l'ingresso, quindi nessuno a valle puo' ritrovarsi in mano una chiave che lo schema non ha
+  // ammesso. `withSelectionDefaults` ritorna a sua volta un oggetto nuovo, quindi la garanzia "il
+  // risultato non e' l'oggetto d'ingresso" (P2-D12/AC-202-12) resta vera dopo i default.
   const parsed = SiteDocumentSchema.safeParse(input);
-  return parsed.success ? { ok: true, document: parsed.data } : limitedFailure(parsed.error.issues);
+  if (!parsed.success) return limitedFailure(parsed.error.issues);
+  return { ok: true, document: withSelectionDefaults(parsed.data) };
 }

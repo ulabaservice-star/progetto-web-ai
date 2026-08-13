@@ -331,10 +331,20 @@ describe('T-212 RECIPES — cinque ricette con id distinti e versionati e temi d
     // Il CINQUE e' letterale e non RECIPES.length: derivarlo dal catalogo che si sta
     // giudicando renderebbe la riga vera anche su un catalogo vuoto (0 === 0).
     expect(new Set(temiCitati).size, temiCitati.join(',')).toBe(5); // covers: AC-212-1
-    // Ne segue una BIIEZIONE fra le cinque direzioni e i cinque temi: cinque temi distinti
-    // scelti fra i cinque che esistono li esauriscono. Detto in una riga, cosi' che un tema
-    // che nessuna direzione usa (codice morto in vetrina) sia rosso qui.
-    expect(new Set(temiCitati)).toEqual(new Set(THEMES.map((tema) => tema.id))); // covers: AC-212-1
+    // DS-D3 / DE-202 — TEMA DISACCOPPIATO DALLA RICETTA: NON c'e' piu' una biiezione ricette<->temi.
+    // Il catalogo THEMES e' cresciuto (>=6) e un tema non citato da alcuna ricetta NON e' codice
+    // morto: il selettore design (DE-204) sceglie il tema come ASSE proprio fra tutti quelli ammessi
+    // dalla matrice, e la ThemeSwitcher dell'editor (T-308) li offre gia' tutti. Resta vera
+    // l'INCLUSIONE (ogni tema citato esiste in T-211) e i temi disponibili sono un SOVRAINSIEME
+    // PROPRIO dei citati: e' la firma del disaccoppiamento, e sostituisce la vecchia biiezione.
+    const idTemaEsistenti = new Set(THEMES.map((tema) => tema.id));
+    for (const citato of temiCitati) {
+      expect(idTemaEsistenti.has(citato), citato).toBe(true); // covers: AC-212-1
+    }
+    expect(
+      THEMES.length,
+      'DE-202: i temi disaccoppiati devono superare in numero le ricette',
+    ).toBeGreaterThan(RECIPES.length); // covers: AC-212-1
   });
 
   // covers: AC-212-1

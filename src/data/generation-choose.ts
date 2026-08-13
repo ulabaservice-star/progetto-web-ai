@@ -86,13 +86,15 @@ export type SelectVariantResult = {
 
 /**
  * Il dominio degli indici di variante e' quello del CATALOGO delle direzioni, non un 5 a mano:
- * una variante per ogni ricetta (P2-D13), e `resolveVariantHome` piu' sotto indicizza
- * `RECIPES[index]`. DERIVATO da `RECIPES.length` proprio perche' e' quell'array a essere
- * indicizzato: uno slegato dal catalogo si romperebbe da entrambi i lati — un massimo troppo
- * piccolo lascerebbe l'ULTIMA direzione non scegliibile, uno troppo grande ammetterebbe un indice
- * che punta a `RECIPES[length]` inesistente e fa lanciare `resolveVariantHome`. Oggi vale 5,
- * quindi resta lo stesso dominio del CHECK di T-200 e di `chooseVariant`; se il catalogo cambia,
- * il dominio lo segue senza che nessuno debba ricordarsi di questa riga.
+ * una variante per ogni ricetta (P2-D13). Da DE-206 `resolveVariantHome` non indicizza piu'
+ * `RECIPES[index]`: passa `variantIndex` a `selectDesign`, che enumera lui le proposte e RESPINGE con
+ * un RangeError un indice fuori 0..4 (il suo VARIANT_COUNT, che vale 5 come `RECIPES.length`).
+ * DERIVATO da `RECIPES.length` perche' e' la stessa cardinalita' (cinque direzioni = cinque
+ * varianti): uno slegato dal catalogo si romperebbe da entrambi i lati — un massimo troppo piccolo
+ * lascerebbe l'ULTIMA variante non scegliibile, uno troppo grande passerebbe la validazione qui e poi
+ * farebbe LANCIARE `selectDesign`. Oggi vale 5, quindi resta lo stesso dominio del CHECK di T-200 e
+ * di `chooseVariant`; se il catalogo cambia, il dominio lo segue senza che nessuno debba ricordarsi
+ * di questa riga.
  */
 const VARIANTI_MOCKUP = RECIPES.length;
 
@@ -292,13 +294,16 @@ export async function selectVariant(input: {
     return { ok: false, reason: pools.status === 401 ? 'non_autorizzato' : 'pool_non_leggibile' };
   }
 
-  // IL DOCUMENTO DELLA SOLA HOME, dallo STESSO compositore delle card (resolveVariantHome): resolve
-  // sul solo homeSpec + parseDocument. `null` = tema assente o documento non valido (pool troppo
+  // IL DOCUMENTO DELLA SOLA HOME, dallo STESSO compositore delle card (resolveVariantHome): la
+  // selezione visiva nasce DENTRO, da `selectDesign(brief.vertical, seed, index)` — il SEED e' l'id
+  // STABILE della generazione (`input.generationId`), deterministico e riproducibile, MAI testo del
+  // brief (DE-206, P2-D1). `null` = ricetta/tema non risolti o documento non valido (pool troppo
   // incompleto per la home): non si congela un albero non validato.
   const resolved = resolveVariantHome(
     poolForVariant({ shared: pools.shared, byVariant: pools.byVariant }, index),
-    RECIPES[index],
     briefResult.brief,
+    input.generationId,
+    index,
   );
   if (resolved === null) return { ok: false, reason: 'documento_non_valido' };
 

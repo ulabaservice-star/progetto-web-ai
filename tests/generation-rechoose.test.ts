@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { RECIPES } from '@/domain/generation/recipes';
+import { selectDesign } from '@/domain/generation/design-select';
 import type { SiteDocument } from '@/domain/generation/document';
 import { applyBriefUpdate, emptyBrief } from '@/domain/onboarding/brief';
 
@@ -196,7 +196,8 @@ describe('T-233 riscelta DOPO la fase 2 (complete): conferma esplicita', () => {
     expect(supaHolder.lastUpdate!.payload.status).toBe('chosen'); // covers: AC-233-4
     expect(supaHolder.lastUpdate!.payload.chosen_variant).toBe(4); // covers: AC-233-4
     const doc = supaHolder.lastUpdate!.payload.document as SiteDocument;
-    expect(doc.recipe_id).toBe(RECIPES[4].id); // covers: AC-233-4
+    // recipe_id = quello della SELEZIONE della variante 4 (DE-206: nasce da selectDesign, seed = GEN_ID).
+    expect(doc.recipe_id).toBe(selectDesign(RICH_BRIEF.vertical, GEN_ID, 4).recipe_id); // covers: AC-233-4
     expect(doc.pages.length).toBe(1); // covers: AC-233-4
     expect(doc.pages[0].role).toBe('home'); // covers: AC-233-4
     // la fase 2 in se' (rimettere in moto le pagine interne) e' di T-234: qui il confine resta

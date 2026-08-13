@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { join } from 'node:path';
+import { HEX, RGB, HSL, hasLiteralColor, cssFilesUnder } from './helpers/css-literal-color';
 
 // DE-101 (macrotask visual-skin) — AC-DE-101-2: nessun file .css sotto src/ui/site/** contiene
 // un valore di colore LETTERALE (esadecimale, rgb(), hsl()). E' il gemello di AC-231-4
@@ -9,28 +9,14 @@ import { join } from 'node:path';
 // nato con questo macrotask: il divieto di letterale vale ovunque il layer produca stile, non
 // solo nei componenti. I colori arrivano dai token del tema tradotti in var(--site-color-*)
 // alla radice del render, mai scritti a mano nel CSS.
+//
+// Lo SCANNER (le forme vietate + il walk ricorsivo) vive ora in ./helpers/css-literal-color e si
+// IMPORTA: DE-207 lo riusa sul solo site.css senza ricopiarlo (un secondo scanner divergerebbe in
+// silenzio, e sarebbe un clone jscpd).
 
 const SITE_DIR = fileURLToPath(new URL('../src/ui/site', import.meta.url));
-const CSS = /\.css$/;
 
-function walkCss(dir: string): string[] {
-  const found: string[] = [];
-  for (const entry of readdirSync(dir)) {
-    const full = join(dir, entry);
-    if (statSync(full).isDirectory()) found.push(...walkCss(full));
-    else if (CSS.test(full)) found.push(full);
-  }
-  return found;
-}
-
-// Le STESSE forme vietate di T-231. `HEX` pretende '#' + 3..8 cifre esadecimali con un confine
-// finale; `RGB`/`HSL` prendono la funzione col suo '(' e la variante con alfa. var(--site-...)
-// non contiene '#', 'rgb(' ne 'hsl(', quindi non e' un falso positivo.
-const HEX = /#[0-9a-fA-F]{3,8}\b/;
-const RGB = /\brgba?\(/;
-const HSL = /\bhsla?\(/;
-
-const cssFiles = walkCss(SITE_DIR);
+const cssFiles = cssFilesUnder(SITE_DIR);
 
 describe('DE-101 AC-DE-101-2 — src/ui/site/**/*.css senza colori letterali', () => {
   it('lo scan trova ALMENO un file .css (non passa per vacuita)', () => {
@@ -39,10 +25,7 @@ describe('DE-101 AC-DE-101-2 — src/ui/site/**/*.css senza colori letterali', (
   });
 
   it('nessun file .css contiene un colore letterale (hex, rgb(), hsl())', () => {
-    const offenders = cssFiles.filter((file) => {
-      const source = readFileSync(file, 'utf8');
-      return HEX.test(source) || RGB.test(source) || HSL.test(source);
-    });
+    const offenders = cssFiles.filter((file) => hasLiteralColor(readFileSync(file, 'utf8')));
     expect(offenders).toEqual([]); // covers: AC-DE-101-2
   });
 

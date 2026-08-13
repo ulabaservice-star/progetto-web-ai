@@ -87,14 +87,14 @@ function optionIds(container: HTMLElement): string[] {
 // AC-308-2 — il selettore elenca ESATTAMENTE i 5 temi del catalogo, nessun valore libero.
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('AC-308-2 — le scelte sono esattamente i 5 temi versionati del catalogo', () => {
-  it('offre una scelta per ognuno dei 5 temi, con i loro id versionati, e non una di piu', () => {
+describe('AC-308-2 — le scelte sono esattamente gli 8 temi versionati del catalogo', () => {
+  it('offre una scelta per ognuno degli 8 temi, con i loro id versionati, e non una di piu', () => {
     const { container } = render(createElement(Harness, { startId: THEMES[0].id }));
 
-    // Anti-vacuita' e ancoraggio: il catalogo ha davvero 5 temi.
-    expect(THEMES).toHaveLength(5); // covers: AC-308-2
+    // Anti-vacuita' e ancoraggio: il catalogo ha davvero 8 temi (DE-202: cresciuto da 5 a 8).
+    expect(THEMES).toHaveLength(8); // covers: AC-308-2
 
-    // Le opzioni sono, per id e in ordine, ESATTAMENTE i 5 del catalogo: non 4, non 6, e nessun
+    // Le opzioni sono, per id e in ordine, ESATTAMENTE gli 8 del catalogo: non 7, non 9, e nessun
     // id inventato. Un tema aggiunto/rimosso al catalogo cambierebbe qui, mai in un elenco a mano.
     expect(optionIds(container)).toEqual(THEMES.map((theme) => theme.id)); // covers: AC-308-2
   });
@@ -129,9 +129,9 @@ describe('AC-308-1 — scegliere un tema aggiorna il draft e le custom property 
     }
   });
 
-  it('scegliendo un altro dei 5 temi: theme_id nel draft cambia e le --site-* alla radice si scambiano', () => {
+  it('scegliendo un altro tema: theme_id nel draft cambia e le --site-* alla radice si scambiano', () => {
     const start = THEMES[0];
-    const chosen = THEMES[2]; // valori DISCORDANTI dal primo (scatto-vitale, l'unico scuro)
+    const chosen = THEMES[2]; // valori DISCORDANTI dal primo (scatto-vitale, uno dei temi scuri)
     const { container, getByTestId } = render(createElement(Harness, { startId: start.id }));
 
     const root = getByTestId('site-root');

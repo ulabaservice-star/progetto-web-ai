@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, fireEvent, cleanup, waitFor } from '@testing-library/react';
-import { RECIPES } from '@/domain/generation/recipes';
+import { selectDesign } from '@/domain/generation/design-select';
 import type { SiteDocument } from '@/domain/generation/document';
 import { applyBriefUpdate, emptyBrief } from '@/domain/onboarding/brief';
 
@@ -205,7 +205,8 @@ describe('WIRE integrazione AC-233-4 — gesto a due passi ATTRAVERSO la selectV
     expect(supaHolder.lastUpdate!.payload.chosen_variant).toBe(2); // covers: AC-233-4
     // e cio' che si congela e' la SOLA home della nuova variante (documento autentico, composizione reale).
     const doc = supaHolder.lastUpdate!.payload.document as SiteDocument;
-    expect(doc.recipe_id).toBe(RECIPES[2].id); // covers: AC-233-4
+    // recipe_id = quello della SELEZIONE della variante 2 (DE-206: nasce da selectDesign, seed = GEN_ID).
+    expect(doc.recipe_id).toBe(selectDesign(RICH_BRIEF.vertical, GEN_ID, 2).recipe_id); // covers: AC-233-4
     expect(doc.pages.length).toBe(1); // covers: AC-233-4
     expect(doc.pages[0].role).toBe('home'); // covers: AC-233-4
   });

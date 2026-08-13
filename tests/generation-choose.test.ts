@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
 import itMessages from '../messages/it.json';
 import { RECIPES } from '@/domain/generation/recipes';
+import { selectDesign } from '@/domain/generation/design-select';
 import type { SiteDocument } from '@/domain/generation/document';
 import { applyBriefUpdate, emptyBrief } from '@/domain/onboarding/brief';
 
@@ -269,9 +270,12 @@ describe('T-233 scegli & congela — la prima scelta (ready -> chosen)', () => {
     await selectVariant({ siteId: SITE_ID, generationId: GEN_ID, locale: 'it', variantIndex: 3 });
 
     const doc = (chooseVariantSpy.mock.calls[0] as unknown as [string, number, SiteDocument])[2];
-    // then: gli id sono quelli VERSIONATI della direzione 3 (resolve li registra, T-214).
-    expect(doc.recipe_id).toBe(RECIPES[3].id); // covers: AC-233-2
-    expect(doc.theme_id).toBe(RECIPES[3].theme_id); // covers: AC-233-2
+    // then: gli id sono quelli VERSIONATI della SELEZIONE della variante 3. Da DE-206 ricetta e tema
+    // NASCONO dentro selectDesign(vertical, generationId, index) — disaccoppiati (DS-D3) — quindi
+    // l'atteso e' la selezione per (vertical, GEN_ID, 3), non piu' RECIPES[3].
+    const sel3 = selectDesign(RICH_BRIEF.vertical, GEN_ID, 3);
+    expect(doc.recipe_id).toBe(sel3.recipe_id); // covers: AC-233-2
+    expect(doc.theme_id).toBe(sel3.theme_id); // covers: AC-233-2
     // …e sono nella forma 'nome-kebab@N' (la versione e' DENTRO l'id, P2-D21).
     expect(doc.recipe_id).toMatch(/@\d+$/); // covers: AC-233-2
     expect(doc.theme_id).toMatch(/@\d+$/); // covers: AC-233-2
@@ -304,7 +308,8 @@ describe('T-233 riscelta PRIMA della fase 2 (chosen -> chosen)', () => {
     expect(supaHolder.lastUpdate!.payload.status).toBe('chosen'); // covers: AC-233-3
     expect(supaHolder.lastUpdate!.payload.chosen_variant).toBe(1); // covers: AC-233-3
     const doc = supaHolder.lastUpdate!.payload.document as SiteDocument;
-    expect(doc.recipe_id).toBe(RECIPES[1].id); // covers: AC-233-3
+    // recipe_id = quello della SELEZIONE della variante 1 (DE-206: nasce da selectDesign, seed = GEN_ID).
+    expect(doc.recipe_id).toBe(selectDesign(RICH_BRIEF.vertical, GEN_ID, 1).recipe_id); // covers: AC-233-3
     expect(doc.pages.length).toBe(1); // covers: AC-233-3
     expect(doc.pages[0].role).toBe('home'); // covers: AC-233-3
     // then: il CONTENUTO congelato porta i dati del pool PROPRIO della variante 1 ('propria-1') e
@@ -365,7 +370,8 @@ describe('T-233 indice fuori dominio (AC-233-5)', () => {
     expect(chooseVariantSpy).toHaveBeenCalledTimes(1); // covers: AC-233-5
     const [, idx, doc] = chooseVariantSpy.mock.calls[0] as unknown as [string, number, SiteDocument];
     expect(idx).toBe(ultima); // covers: AC-233-5
-    expect(doc.recipe_id).toBe(RECIPES[ultima].id); // covers: AC-233-5
+    // recipe_id = quello della SELEZIONE dell'ultima variante (DE-206: nasce da selectDesign, seed = GEN_ID).
+    expect(doc.recipe_id).toBe(selectDesign(RICH_BRIEF.vertical, GEN_ID, ultima).recipe_id); // covers: AC-233-5
     expect(redirectSpy).toHaveBeenCalledWith(`/it/preview/${SITE_ID}`);
   });
 });
@@ -373,8 +379,9 @@ describe('T-233 indice fuori dominio (AC-233-5)', () => {
 describe('T-233 il documento e DATO, non si ricalcola dalla ricetta (AC-233-6)', () => {
   // covers: AC-233-6
   it("l'ANTEPRIMA rende il documento congelato ANCHE dopo un ritocco alla ricetta usata: albero IDENTICO", async () => {
-    // given: il documento CONGELATO della variante 0 (vetrina-dell-offerta), composto UNA volta.
-    const resolved = resolveVariantHome(SHARED_POOL, RECIPES[0], RICH_BRIEF);
+    // given: il documento CONGELATO della variante 0, composto UNA volta. Da DE-206 la ricetta USATA
+    // nasce da selectDesign(vertical, GEN_ID, 0) — non e' piu' per forza RECIPES[0].
+    const resolved = resolveVariantHome(SHARED_POOL, RICH_BRIEF, GEN_ID, 0);
     expect(resolved).not.toBeNull();
     const doc = resolved!.document;
     const congelato = doc.pages[0].blocks.map((b) => b.id);
@@ -389,18 +396,19 @@ describe('T-233 il documento e DATO, non si ricalcola dalla ricetta (AC-233-6)',
     expect(treeA).toEqual(congelato); // covers: AC-233-6
     expect(readDocumentSpy).toHaveBeenCalledWith(SITE_ID); // il documento e' letto, non il pool.
 
-    // given: un RITOCCO alla definizione della ricetta USATA, MUTATA IN PLACE nel catalogo GLOBALE
-    // (non una copia): la stessa direzione 0 con la sequenza della home in ordine INVERSO. Si
-    // ripristina in `finally`, cosi' il catalogo torna intatto anche se un'asserzione cade.
-    const recipe0 = RECIPES[0] as unknown as { home_blocks: readonly string[] };
-    const originalHomeBlocks = recipe0.home_blocks;
+    // given: un RITOCCO alla ricetta EFFETTIVAMENTE USATA da questa variante (quella che selectDesign
+    // ha scelto per il seed), MUTATA IN PLACE nel catalogo GLOBALE — `resolved.recipe` E' l'elemento
+    // di RECIPES per riferimento (recipeFor lo restituisce dall'array) — con la sequenza home in
+    // ordine INVERSO. Si ripristina in `finally`, cosi' il catalogo torna intatto anche se cade.
+    const ricettaUsata = resolved!.recipe as unknown as { home_blocks: readonly string[] };
+    const originalHomeBlocks = ricettaUsata.home_blocks;
     try {
-      recipe0.home_blocks = [...originalHomeBlocks].reverse();
+      ricettaUsata.home_blocks = [...originalHomeBlocks].reverse();
 
       // Che il ritocco sia REALE (non un no-op) lo prova il fatto che RICOMPORRE ora dalla ricetta
-      // mutata da' un albero DIVERSO: e' precisamente cio' che un'anteprima che ri-risolvesse da
-      // RECIPES (invece di rendere il documento) mostrerebbe.
-      const seRicalcolasse = resolveVariantHome(SHARED_POOL, RECIPES[0], RICH_BRIEF)!.document.pages[0].blocks.map(
+      // mutata da' un albero DIVERSO: e' precisamente cio' che un'anteprima che ri-risolvesse dalla
+      // ricetta (invece di rendere il documento) mostrerebbe.
+      const seRicalcolasse = resolveVariantHome(SHARED_POOL, RICH_BRIEF, GEN_ID, 0)!.document.pages[0].blocks.map(
         (b) => b.id,
       );
       expect(seRicalcolasse).not.toEqual(treeA);
@@ -411,9 +419,9 @@ describe('T-233 il documento e DATO, non si ricalcola dalla ricetta (AC-233-6)',
       const treeB = await renderPreviewSeq(SITE_ID);
       expect(treeB).toEqual(treeA); // covers: AC-233-6
     } finally {
-      recipe0.home_blocks = originalHomeBlocks;
+      ricettaUsata.home_blocks = originalHomeBlocks;
     }
     // e il ripristino ha davvero rimesso a posto il catalogo globale.
-    expect(RECIPES[0].home_blocks).toBe(originalHomeBlocks);
+    expect(ricettaUsata.home_blocks).toBe(originalHomeBlocks);
   });
 });

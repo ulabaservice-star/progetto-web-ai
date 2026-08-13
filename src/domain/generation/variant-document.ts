@@ -20,14 +20,22 @@
 // chiave — dopo una rigenerazione della sola variante 2, le altre quattro selezionano ancora
 // lo STESSO oggetto pool condiviso, quindi rendono lo stesso albero per costruzione.
 //
-// `themeFor` E' UN LOOKUP PER UGUAGLIANZA ESATTA (mai per prefisso): gli id dei temi sono
-// versionati ('nome-kebab@N', T-211) e un confronto lasco registrerebbe un tema che nessuna
-// versione ha mai prodotto. E' la ricerca sull'ARRAY THEMES e non su un oggetto indicizzato,
-// per la stessa ragione di `recipeFor` (T-212): un id come 'constructor' non deve risolvere un
-// membro di Object.prototype al posto di "nessun tema". L'accoppiamento ricetta->tema e'
-// pinnato da AC-212-1 (ogni `recipe.theme_id` esiste in THEMES), quindi per le cinque RECIPES
-// il lookup non e' mai `undefined`; il ramo `null` resta la difesa dichiarata contro una futura
-// divergenza fra i due cataloghi, non un caso vivo.
+// DA DE-206 LA SELEZIONE VISIVA NASCE DENTRO `resolveVariantHome`, non piu' fuori: il compositore non
+// riceve piu' una `recipe` gia' scelta, ma un `seed` (id STABILE della generazione, opaco) e un
+// `variantIndex`, e chiede a `selectDesign(brief.vertical, seed, variantIndex)` (DE-204) la
+// `DesignSelection` della variante — poi risolve `recipeFor`/`themeFor` dai suoi id. E' il verso
+// giusto del disaccoppiamento (DS-D3): la RICETTA e' contenuto, il TEMA e le nuove manopole (hero,
+// trattamento, effetti, ornamento) sono stile, e il selettore combinatorio li sceglie insieme fra le
+// sole combinazioni AMMESSE dalla matrice (DE-203) — mai il modello.
+//
+// ANTI-INJECTION (P2-D1, security_note del task): l'UNICO ingresso di settore e' `brief.vertical`
+// (enum chiuso di brief.ts); il `seed` non e' contenuto del brief ma un id di generazione fornito dal
+// CALL-SITE. Non esiste alcun percorso dal testo libero del brief (`brand_hints` compreso) alla
+// scelta visiva: un'iniezione riuscita nel brief non puo' alterare l'aspetto del sito.
+//
+// `themeFor`/`recipeFor` SONO LOOKUP ESATTI SU ARRAY (proto-safe): gli id vengono dal selettore, che
+// pesca da THEMES/RECIPES, quindi risolvono sempre; il ramo `null` resta la difesa DICHIARATA contro
+// una futura divergenza fra selettore e cataloghi, non un caso vivo.
 //
 // IL DOCUMENTO PASSA SEMPRE DA `parseDocument` PRIMA DI ESSERE RESO (T-202): `resolve` e' puro
 // e non e' un gate (lo dichiara il suo file), quindi la card non rende il suo risultato grezzo
@@ -44,8 +52,9 @@ import { isPlainObject } from '@/domain/generation/gate';
 import { pagesFor } from '@/domain/generation/pages';
 import type { Pool } from '@/domain/generation/pool';
 import { resolve } from '@/domain/generation/resolve';
-import type { SiteRecipe } from '@/domain/generation/recipes';
-import { THEMES, type SiteTheme } from '@/domain/generation/themes';
+import { recipeFor, type SiteRecipe } from '@/domain/generation/recipes';
+import { themeFor, type SiteTheme } from '@/domain/generation/themes';
+import { selectDesign } from '@/domain/generation/design-select';
 import type { Brief } from '@/domain/onboarding/brief';
 
 /**
@@ -66,16 +75,6 @@ export type VariantResolution = {
 };
 
 /**
- * Il tema di questo id, o `undefined` se nessuno lo porta. UGUAGLIANZA ESATTA e ricerca
- * sull'array (vedi l'intestazione). NON esportato: l'unico consumatore e' `resolveVariantHome`
- * qui sotto. L'anteprima (T-235), quando esistera', lo rialzera' a interfaccia condivisa invece
- * di scriverne una copia — finche' non ha un consumatore, un export sarebbe dead-code (P2-D26).
- */
-function themeFor(themeId: string): SiteTheme | undefined {
-  return THEMES.find((theme) => theme.id === themeId);
-}
-
-/**
  * IL POOL DELLA VARIANTE `index` (P2-D3, copia-su-scrittura): il pool proprio della variante se
  * esiste, ALTRIMENTI il pool condiviso. La lettura di `byVariant` e' su proprieta' PROPRIE
  * (`Object.hasOwn`): un indice non presente cade sul condiviso, e nessun membro di
@@ -86,21 +85,34 @@ export function poolForVariant(pools: HomePools, index: number): unknown {
 }
 
 /**
- * COMPONE il documento della sola HOME per una variante: applica la ricetta e il suo tema al
- * pool sul set della sola home (P2-D13, `pagesFor(...)[0]`), poi fa passare il documento da
- * `parseDocument`. Restituisce `null` se il tema non esiste (difesa dichiarata, vedi
- * l'intestazione) o se il documento non supera il gate — mai un albero non validato.
+ * COMPONE il documento della sola HOME per una variante e ne CONGELA la selezione visiva (DE-206).
+ * Passi: chiede a `selectDesign(brief.vertical, seed, variantIndex)` (DE-204) la `DesignSelection`
+ * della variante; risolve `recipeFor`/`themeFor` dai suoi id; applica ricetta e tema al pool sul set
+ * della sola home (P2-D13, `pagesFor(...)[0]`); CONGELA `hero_layout_id`/`section_treatment_id`/
+ * `effect_level`/`ornament_id?` nel documento (DS-D4, id versionati opzionali che il gate accetta e
+ * non ri-deriva al render); e infine fa passare il tutto da `parseDocument`.
  *
- * Il `maxPages` e' `DOCUMENT_LIMITS.max_pages`, lo STESSO che la fase 1 usa per derivare la home
+ * Restituisce `null` se ricetta o tema non risolvono (difesa dichiarata, vedi l'intestazione) o se il
+ * documento non supera il gate — mai un albero non validato.
+ *
+ * Il `seed` e' un id STABILE della generazione, opaco e fornito dal CALL-SITE (DE-206), MAI testo del
+ * brief (P2-D1): con esso e col `variantIndex` la selezione e' deterministica e riproducibile. Il
+ * `maxPages` e' `DOCUMENT_LIMITS.max_pages`, lo STESSO che la fase 1 usa per derivare la home
  * (phase1.ts): cosi' la home della card e' quella che verra' congelata (T-233), non un'altra.
  */
 export function resolveVariantHome(
   pool: unknown,
-  recipe: SiteRecipe,
   brief: Brief,
+  seed: string,
+  variantIndex: number,
 ): VariantResolution | null {
-  const theme = themeFor(recipe.theme_id);
-  if (theme === undefined) return null;
+  // LA SELEZIONE DESIGN della variante (DE-204): input = brief.vertical (enum) + seed di generazione,
+  // mai testo libero del brief. La ricetta NASCE QUI DENTRO, scelta dal selettore fra le sole
+  // combinazioni ammesse, non piu' pre-scelta fuori.
+  const selection = selectDesign(brief.vertical, seed, variantIndex);
+  const recipe = recipeFor(selection.recipe_id);
+  const theme = themeFor(selection.theme_id);
+  if (recipe === undefined || theme === undefined) return null;
 
   const homeSpec = pagesFor(brief, { maxPages: DOCUMENT_LIMITS.max_pages })[0];
   // Il pool viene da jsonb OPACO (gia' validato in scrittura, T-201): la guardia serve solo a
@@ -109,7 +121,17 @@ export function resolveVariantHome(
   const safePool = (isPlainObject(pool) ? pool : { pages: {} }) as Pool;
 
   const { document } = resolve(safePool, recipe, theme, brief, [homeSpec]);
-  const parsed = parseDocument(document);
+  // CONGELA la tupla di selezione (DS-D4): id versionati che il gate registra e non ri-deriva al
+  // render, cosi' un sito scelto non si re-stila da solo dopo un ritocco ai cataloghi. `ornament_id`
+  // solo se la selezione lo porta (un sito puo' non avere ornamento, DS-D5): niente id fabbricato.
+  const frozen = {
+    ...document,
+    hero_layout_id: selection.hero_layout_id,
+    section_treatment_id: selection.section_treatment_id,
+    effect_level: selection.effect_level,
+    ...(selection.ornament_id !== undefined ? { ornament_id: selection.ornament_id } : {}),
+  };
+  const parsed = parseDocument(frozen);
   if (!parsed.ok) return null;
 
   return { recipe, theme, document: parsed.document };

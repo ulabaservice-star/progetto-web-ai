@@ -4,6 +4,7 @@ import { BRIEF_LIMITS, BriefUpdateSchema } from '@/domain/onboarding/brief';
 import { POOL_LIMITS } from '@/domain/generation/pool';
 import { SLOTS, type PageRole } from '@/domain/generation/slots';
 import {
+  DESIGN_SELECTION_DEFAULTS,
   DOCUMENT_LIMITS,
   SiteDocumentSchema,
   parseDocument,
@@ -389,7 +390,9 @@ describe('T-202 parseDocument — one-pager e multi-pagina sono la stessa forma'
 
     expect(res.ok).toBe(true); // covers: AC-202-1
     const documento: SiteDocument = accettato(res); // covers: AC-202-1 — il risultato e' TIPIZZATO
-    expect(documento).toEqual(input); // covers: AC-202-1 — nessun valore perso o alterato
+    // DE-205: il gate applica i default di selezione, quindi il documento e' l'input PIU' quei default
+    // e nient'altro — i valori dell'input restano intatti (nessuno perso o alterato).
+    expect(documento).toEqual({ ...input, ...DESIGN_SELECTION_DEFAULTS }); // covers: AC-202-1 — nessun valore perso o alterato
 
     // ...E NON E' L'OGGETTO D'INGRESSO (AC-202-12: "il risultato e' una COPIA validata,
     // non l'oggetto d'ingresso"). `toEqual` da solo e' verde anche se il gate
@@ -432,7 +435,8 @@ describe('T-202 parseDocument — one-pager e multi-pagina sono la stessa forma'
 
     expect(res.ok).toBe(true); // covers: AC-202-1
     const documento: SiteDocument = accettato(res); // covers: AC-202-1
-    expect(documento).toEqual(input); // covers: AC-202-1
+    // DE-205: l'input piu' i default di selezione applicati dal gate (i valori dell'input intatti).
+    expect(documento).toEqual({ ...input, ...DESIGN_SELECTION_DEFAULTS }); // covers: AC-202-1
     expect(documento.pages).toHaveLength(8); // covers: AC-202-1
 
     // L'ordine e l'identita' delle pagine sopravvivono, compresa la coppia di slug in
@@ -1415,7 +1419,8 @@ describe('T-202 nessuna chiave scartata in SILENZIO (AC-202-12)', () => {
     const input = documentoMultiPagina();
     const documento = accettato(parseDocument(input));
 
-    expect(documento).toEqual(input); // covers: AC-202-12 — stessi valori...
+    // DE-205: stessi valori dell'input PIU' i default di selezione applicati dal gate...
+    expect(documento).toEqual({ ...input, ...DESIGN_SELECTION_DEFAULTS }); // covers: AC-202-12 — stessi valori...
     expect(documento).not.toBe(input); // covers: AC-202-12 — ...ma non lo stesso oggetto
     expect(documento.pages).not.toBe(input.pages); // covers: AC-202-12
     expect(documento.pages[0]).not.toBe(input.pages[0]); // covers: AC-202-12
@@ -1821,7 +1826,11 @@ describe('T-202 peso del caso peggiore (AC-202-6)', () => {
     // rifiutasse, il bound misurato non direbbe nulla su cio' che viene scritto davvero.
     const accettatoDocumento: SiteDocument = accettato(parseDocument(documento)); // covers: AC-202-6
     expect(accettatoDocumento.pages).toHaveLength(DOCUMENT_LIMITS.max_pages); // covers: AC-202-6
-    expect(pesoInByte(accettatoDocumento)).toBe(byte); // covers: AC-202-6 — nessun troncamento
+    // DE-205: il gate applica i default di selezione, quindi il documento accettato pesa quanto
+    // l'input PIU' quei default e nient'altro — nessuna VOCE del caso peggiore e' troncata.
+    expect(pesoInByte(accettatoDocumento)).toBe(
+      pesoInByte({ ...documento, ...DESIGN_SELECTION_DEFAULTS }),
+    ); // covers: AC-202-6 — nessun troncamento
 
     // La fixture e' davvero AI TETTI: se un tetto qui sotto smettesse di essere
     // saturo, il numero misurato non sarebbe piu' il caso peggiore.
@@ -1942,7 +1951,9 @@ describe('T-202 il caso peggiore MULTIBYTE (AC-202-7)', () => {
     // spagnolo, cioe' nelle sole due lingue che il prodotto serve.
     const documento: SiteDocument = accettato(parseDocument(accentato)); // covers: AC-202-7
     expect(documento.pages).toHaveLength(DOCUMENT_LIMITS.max_pages); // covers: AC-202-7
-    expect(pesoInByte(documento)).toBe(byteAccentato); // covers: AC-202-7 — nessun troncamento
+    // DE-205: il documento accettato pesa quanto l'input accentato PIU' i default di selezione
+    // applicati dal gate — nessuna voce del caso peggiore multibyte e' troncata.
+    expect(pesoInByte(documento)).toBe(pesoInByte({ ...accentato, ...DESIGN_SELECTION_DEFAULTS })); // covers: AC-202-7 — nessun troncamento
 
     // La fixture accentata e' agli STESSI tetti di quella ASCII: la differenza sta nei
     // byte, non nel numero di code unit. Se non fosse cosi', il rapporto misurerebbe

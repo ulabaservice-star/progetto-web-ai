@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { RECIPES } from '@/domain/generation/recipes';
+import { selectDesign } from '@/domain/generation/design-select';
 import type { SiteDocument } from '@/domain/generation/document';
 import { applyBriefUpdate, emptyBrief } from '@/domain/onboarding/brief';
 
@@ -242,7 +242,8 @@ describe('T-310 riscelta soft non distruttiva — snapshot rechosen (hermetic)',
     expect(rev.site_generation_id).toBe(GEN_ID); // covers: AC-310-1
     expect(rev.account_id).toBe(ACCOUNT_ID); // covers: AC-310-1
     const doc = rev.document as SiteDocument;
-    expect(doc.recipe_id).toBe(RECIPES[1].id); // covers: AC-310-1
+    // recipe_id = quello della SELEZIONE della variante 1 (DE-206: nasce da selectDesign, seed = GEN_ID).
+    expect(doc.recipe_id).toBe(selectDesign(RICH_BRIEF.vertical, GEN_ID, 1).recipe_id); // covers: AC-310-1
     expect(doc.pages).toHaveLength(1); // covers: AC-310-1
     expect(doc.pages[0].role).toBe('home'); // covers: AC-310-1
     // il contenuto fresco viene dal pool PROPRIO della variante, non dal condiviso.

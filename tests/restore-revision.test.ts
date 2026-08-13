@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { adminClient, createTestUser, signInAs, deleteTestUser } from './helpers/supabase-test';
-import { parseDocument } from '@/domain/generation/document';
+import { DESIGN_SELECTION_DEFAULTS, parseDocument } from '@/domain/generation/document';
 
 // T-318 (macrotask editor-core, P3) — RIPRISTINO DA STORIA (append-only) + ELENCO REVISIONI, RUNTIME
 // contro il Supabase locale. Le asserzioni derivano dagli acceptance_criteria AC-318-1..4
@@ -238,8 +238,9 @@ describe.skipIf(!SB)(
       const res = await restoreRevision(siteRestore, 1);
       expect(res.ok).toBe(true); // covers: AC-318-1
       if (!res.ok) throw new Error('restoreRevision doveva riuscire');
-      // Il documento CORRENTE diventa quello di seq 1 (ben formato -> round-trip identico del gate).
-      expect(res.document).toEqual(documentoValido('rev-uno')); // covers: AC-318-1
+      // Il documento CORRENTE diventa quello di seq 1, piu' i default di selezione applicati dal gate
+      // (DE-205): la revisione di seq 1 e' P4 (seminata grezza) e acquista la sua pelle al ripristino.
+      expect(res.document).toEqual({ ...documentoValido('rev-uno'), ...DESIGN_SELECTION_DEFAULTS }); // covers: AC-318-1
       // Trappola-prefisso: '1' e prefisso di '10', ma il confronto e ESATTO -> non e il doc di seq 10.
       expect(res.document).not.toEqual(documentoValido('rev-dieci')); // covers: AC-318-1
 
@@ -248,7 +249,7 @@ describe.skipIf(!SB)(
       expect(dopo.map((r) => Number(r.seq))).toEqual([1, 2, 10, 11]); // covers: AC-318-1
       const nuova = dopo.find((r) => Number(r.seq) === 11);
       expect(nuova).toBeDefined();
-      expect(nuova?.document).toEqual(documentoValido('rev-uno')); // covers: AC-318-1
+      expect(nuova?.document).toEqual({ ...documentoValido('rev-uno'), ...DESIGN_SELECTION_DEFAULTS }); // covers: AC-318-1
       expect(nuova?.account_id).toBe(accountAId); // covers: AC-318-1
       // D4: la provenienza della revisione di ripristino e 'restored', NON 'edited' — distinta da un
       // edit manuale gia' alla riga scritta (oracolo service_role), non solo nel picker.

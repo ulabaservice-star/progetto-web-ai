@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
 import itMessages from '../messages/it.json';
-import { RECIPES } from '@/domain/generation/recipes';
+import { selectDesign } from '@/domain/generation/design-select';
 import { applyBriefUpdate, emptyBrief } from '@/domain/onboarding/brief';
 
 // T-232 (macrotask generation-ui, P2) — ORACOLO del SELETTORE dei cinque mockup. Le asserzioni
@@ -116,6 +116,11 @@ function homePool(firma: string): { pages: { home: Record<string, unknown> } } {
 
 const SHARED_POOL = homePool('condiviso');
 
+// Il SEED della generazione (id STABILE, opaco): da DE-206 card e resolveVariantHome derivano la
+// selezione visiva da (brief.vertical, seed, variantIndex). Con lo STESSO seed e indice, card e
+// anteprima compongono la STESSA home (identita' di AC-232-1).
+const SEED = 'gen-chooser-1';
+
 /** La sequenza degli id-blocco resi (in ordine di DOM), da `data-block-id` di SiteSection. */
 function blockSeq(root: ParentNode): string[] {
   return [...root.querySelectorAll('[data-block-id]')].map(
@@ -140,17 +145,16 @@ afterEach(() => {
 describe('T-232 selettore dei cinque mockup', () => {
   // covers: AC-232-1
   it('card e anteprima sullo stesso documento: sequenza di id-blocco IDENTICA (stesso renderer)', async () => {
-    // given: un pool e la sua variante 0 (vetrina-dell-offerta)
-    const recipe = RECIPES[0];
-    const resolved = resolveVariantHome(SHARED_POOL, recipe, RICH_BRIEF);
+    // given: un pool e la sua variante 0 (design da selectDesign(vertical, SEED, 0), DE-206)
+    const resolved = resolveVariantHome(SHARED_POOL, RICH_BRIEF, SEED, 0);
     expect(resolved).not.toBeNull();
 
-    // when: rendo la CARD della variante (VariantCard) …
+    // when: rendo la CARD della variante (VariantCard) col MEDESIMO seed e indice …
     const cardEl = await VariantCard({
       pool: SHARED_POOL,
-      recipe,
       brief: RICH_BRIEF,
       locale: 'it',
+      seed: SEED,
       variantIndex: 0,
     });
     const cardContainer = document.createElement('div');
@@ -203,49 +207,50 @@ describe('T-232 selettore dei cinque mockup', () => {
     // Ogni card ha reso almeno un blocco (il pool riempie gli slot: nessuna card vuota).
     for (const seq of seqByVariant.values()) expect(seq.length).toBeGreaterThan(0); // covers: AC-232-2
 
-    // then: la sequenza di id-blocco e' INDIPENDENTE dal tema, quindi due sequenze diverse
-    // provano una differenza STRUTTURALE (presenza/ordine di un blocco), non cromatica.
-    const firme = [...seqByVariant.entries()]
-      .sort((a, b) => a[0] - b[0])
-      .map(([, seq]) => seq.join(','));
-    expect(new Set(firme).size).toBeGreaterThan(1); // covers: AC-232-2
+    // then: la sequenza di id-blocco e' INDIPENDENTE dal tema, quindi sequenze diverse provano una
+    // differenza STRUTTURALE (presenza/ordine di un blocco), non cromatica. Da DE-206 le cinque
+    // varianti ricevono cinque RICETTE distinte (rotazione seminata di selectDesign su RECIPES),
+    // quindi le cinque sequenze sono MUTUAMENTE distinte — non piu' "variante 0 = vetrina" (dipende
+    // dal seed), ma resta vero per COSTRUZIONE che le cinque direzioni sono cinque e diverse.
+    const seqs = [...seqByVariant.values()];
+    const firme = seqs.map((seq) => seq.join(','));
+    expect(new Set(firme).size).toBe(5); // covers: AC-232-2
 
-    // Coppia concreta: 'vetrina-dell-offerta' (0) apre con le offerte, 'scatto-alla-conversione'
-    // (2) apre con l'invito a scrivere — la posizione 1 differisce, ed e' un ORDINE diverso.
-    expect(seqByVariant.get(0)).not.toEqual(seqByVariant.get(2)); // covers: AC-232-2
-    // 'scatto-alla-conversione' rinuncia alla sezione FAQ nella home (presenza diversa): la sua
-    // sequenza non porta 'faq', quella della vetrina si'.
-    expect(seqByVariant.get(0)).toContain('faq'); // covers: AC-232-2
-    expect(seqByVariant.get(2)).not.toContain('faq'); // covers: AC-232-2
+    // Ancoraggio STRUTTURALE e SEED-INDIPENDENTE: fra le cinque direzioni ne esiste ESATTAMENTE UNA
+    // ('scatto-alla-conversione') che rinuncia alla sezione FAQ nella home; le altre quattro la
+    // portano. Poiche' la rotazione assegna TUTTE e cinque le ricette, fra le cinque card UNA SOLA
+    // manca di 'faq' e QUATTRO la hanno — qualunque sia il seed. E' una differenza di PRESENZA di un
+    // blocco (strutturale), non di colore.
+    expect(seqs.filter((seq) => !seq.includes('faq')).length).toBe(1); // covers: AC-232-2
+    expect(seqs.filter((seq) => seq.includes('faq')).length).toBe(4); // covers: AC-232-2
   });
 
   // covers: AC-232-4
-  it('cambiare tema/ricetta mostrata per una variante: ZERO chiamate al confine, la card si aggiorna', async () => {
-    // given: lo stesso pool, due ricette diverse per la stessa posizione di variante.
-    const recipeA = RECIPES[0]; // vetrina-dell-offerta (tema sole-mediterraneo)
-    const recipeB = RECIPES[2]; // scatto-alla-conversione (tema scatto-vitale)
-
+  it('cambiare la VARIANTE mostrata (stesso seed, indice diverso): ZERO chiamate al confine, la card si aggiorna', async () => {
+    // given: lo stesso pool e seed, DUE varianti diverse. Da DE-206 la ricetta e il tema di una card
+    // NASCONO da selectDesign(vertical, seed, variantIndex) — non piu' passati da fuori — quindi
+    // "cambiare cio' che la card mostra" e' cambiare la VARIANTE, non iniettare una ricetta.
     const cardA = await VariantCard({
       pool: SHARED_POOL,
-      recipe: recipeA,
       brief: RICH_BRIEF,
       locale: 'it',
-      variantIndex: 1,
+      seed: SEED,
+      variantIndex: 0,
     });
     const containerA = document.createElement('div');
     render(cardA, { container: containerA });
 
     const cardB = await VariantCard({
       pool: SHARED_POOL,
-      recipe: recipeB,
       brief: RICH_BRIEF,
       locale: 'it',
+      seed: SEED,
       variantIndex: 1,
     });
     const containerB = document.createElement('div');
     render(cardB, { container: containerB });
 
-    // then: rendere e cambiare ricetta/tema NON tocca il confine — il render e' puro.
+    // then: rendere e cambiare variante NON tocca il confine — il render e' puro.
     // pin (GUARDIA DEBOLE, dichiarata): che `boundarySpy` non venga chiamato e' vero PER
     // COSTRUZIONE, non per sorveglianza. Il percorso di render (VariantCard -> SiteView ->
     // registry) non IMPORTA affatto `@/data/anthropic`, quindi lo spy non verrebbe chiamato
@@ -257,12 +262,18 @@ describe('T-232 selettore dei cinque mockup', () => {
     // della proprieta', non come sua prova.
     expect(boundarySpy).not.toHaveBeenCalled(); // covers: AC-232-4
 
-    // then: la card si e' AGGIORNATA — il tema mostrato e la sequenza di blocchi cambiano.
+    // then: la card mostra il TEMA RISOLTO della sua variante (da selectDesign, disaccoppiato dalla
+    // ricetta, DS-D3): il `data-variant-theme` di ciascuna coincide con la selezione della PROPRIA
+    // variante, non con un `recipe.theme_id` passato da fuori.
+    const selA = selectDesign(RICH_BRIEF.vertical, SEED, 0);
+    const selB = selectDesign(RICH_BRIEF.vertical, SEED, 1);
     const themeA = (containerA.querySelector('[data-variant-theme]') as HTMLElement).dataset.variantTheme;
     const themeB = (containerB.querySelector('[data-variant-theme]') as HTMLElement).dataset.variantTheme;
-    expect(themeA).toBe(recipeA.theme_id); // covers: AC-232-4
-    expect(themeB).toBe(recipeB.theme_id); // covers: AC-232-4
-    expect(themeA).not.toBe(themeB); // covers: AC-232-4
+    expect(themeA).toBe(selA.theme_id); // covers: AC-232-4
+    expect(themeB).toBe(selB.theme_id); // covers: AC-232-4
+
+    // then: la card si e' AGGIORNATA — due varianti ricevono due RICETTE distinte (rotazione
+    // seminata), quindi la sequenza di blocchi (indipendente dal tema) cambia.
     expect(blockSeq(containerA)).not.toEqual(blockSeq(containerB)); // covers: AC-232-4
   });
 });

@@ -1,5 +1,4 @@
 import { applyBriefUpdate, emptyBrief } from '@/domain/onboarding/brief';
-import { RECIPES } from '@/domain/generation/recipes';
 import { resolveVariantHome } from '@/domain/generation/variant-document';
 import type { SiteDocument } from '@/domain/generation/document';
 
@@ -79,7 +78,9 @@ export function innocuousHomePool(): Record<string, unknown> {
  * cambiasse: se il documento non passasse `parseDocument`, e' un errore che va visto, non ingoiato.
  */
 export function buildInnocuousDocument(): SiteDocument {
-  const resolved = resolveVariantHome(innocuousHomePool(), RECIPES[0], innocuousBrief());
+  // Da DE-206 la selezione visiva nasce DENTRO resolveVariantHome da (brief.vertical, seed, index): il
+  // seed e' un id di generazione STABILE e opaco (mai testo del brief), la variante 0.
+  const resolved = resolveVariantHome(innocuousHomePool(), innocuousBrief(), 'e2e-innocuous-home', 0);
   if (resolved === null) {
     throw new Error('fixture innocua: il documento home non ha superato parseDocument');
   }

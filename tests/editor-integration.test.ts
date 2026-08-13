@@ -56,7 +56,7 @@ import { SiteView } from '@/ui/site/SiteView';
 import { EditorClient } from '@/ui/editor/EditorClient';
 
 const START_THEME = THEMES[0];
-const OTHER_THEME = THEMES[2]; // valori DISCORDANTI dal primo (l'unico scuro): l'accent cambia.
+const OTHER_THEME = THEMES[2]; // valori DISCORDANTI dal primo (scatto-vitale, scuro): l'accent cambia.
 const DEBOUNCE = 1000;
 const SITE_ID = 'site-di-a';
 

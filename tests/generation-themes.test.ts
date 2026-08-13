@@ -266,6 +266,104 @@ const TEMI_ATTESI: Record<string, TemaAtteso> = {
     },
     radius: { sm: '0.5rem', md: '0.875rem', lg: '1.5rem', pill: '99rem' },
   },
+  // ── DE-202: i tre temi che fanno crescere il catalogo, con l'assegnazione pinnata voce per voce
+  //    esattamente come i cinque storici (un valore cambiato o una palette scambiata cade qui). ──
+  'linea-essenziale-notte@1': {
+    colors: {
+      background: '#0f1319',
+      surface: '#171d26',
+      text: '#eef2f6',
+      text_muted: '#97a2b0',
+      accent: '#d9a441',
+      accent_contrast: '#14171d',
+      border: '#29323e',
+    },
+    font_family: {
+      heading: 'Space Grotesk, Helvetica Neue, sans-serif',
+      body: 'Nunito Sans, Segoe UI, sans-serif',
+    },
+    scale: {
+      sm: '0.875rem',
+      base: '1.0625rem',
+      lg: '1.4375rem',
+      xl: '2rem',
+      '2xl': '2.75rem',
+      '3xl': '3.75rem',
+    },
+    spacing: {
+      xs: '0.3125rem',
+      sm: '0.6875rem',
+      md: '1.1875rem',
+      lg: '1.75rem',
+      xl: '2.875rem',
+      '2xl': '4.25rem',
+    },
+    radius: { sm: '0.125rem', md: '0.25rem', lg: '0.5rem', pill: '99rem' },
+  },
+  'festa-brillante@1': {
+    colors: {
+      background: '#fffdf7',
+      surface: '#ffffff',
+      text: '#2a2018',
+      text_muted: '#7c7160',
+      accent: '#e6541f',
+      accent_contrast: '#fff6f0',
+      border: '#f0e7d6',
+    },
+    font_family: {
+      heading: 'Poppins, Avenir Next, sans-serif',
+      body: 'Barlow, Roboto, sans-serif',
+    },
+    scale: {
+      sm: '0.9375rem',
+      base: '1.125rem',
+      lg: '1.5rem',
+      xl: '2.0625rem',
+      '2xl': '2.875rem',
+      '3xl': '4rem',
+    },
+    spacing: {
+      xs: '0.4375rem',
+      sm: '0.8125rem',
+      md: '1.3125rem',
+      lg: '2.125rem',
+      xl: '3.375rem',
+      '2xl': '5.25rem',
+    },
+    radius: { sm: '0.5rem', md: '0.875rem', lg: '1.5rem', pill: '99rem' },
+  },
+  'orto-salvia@1': {
+    colors: {
+      background: '#f6faf6',
+      surface: '#ffffff',
+      text: '#1b2a20',
+      text_muted: '#5f7166',
+      accent: '#4f8f6b',
+      accent_contrast: '#f6fbf8',
+      border: '#d9e5da',
+    },
+    font_family: {
+      heading: 'Fraunces, Georgia, serif',
+      body: 'Karla, Helvetica, sans-serif',
+    },
+    scale: {
+      sm: '0.8125rem',
+      base: '1rem',
+      lg: '1.3125rem',
+      xl: '1.75rem',
+      '2xl': '2.375rem',
+      '3xl': '3.125rem',
+    },
+    spacing: {
+      xs: '0.5rem',
+      sm: '0.9375rem',
+      md: '1.5rem',
+      lg: '2.375rem',
+      xl: '3.625rem',
+      '2xl': '6rem',
+    },
+    radius: { sm: '0.25rem', md: '0.5rem', lg: '1rem', pill: '99rem' },
+  },
 };
 
 // L'ORDINE di dichiarazione del catalogo, letterale: e' l'ordine in cui le ricette
@@ -277,6 +375,12 @@ const ORDINE_DICHIARATO = [
   'scatto-vitale@1',
   'bottega-artigiana@1',
   'brezza-costiera@1',
+  // DE-202: i tre temi che fanno crescere il catalogo (>=6), disaccoppiato dalle cinque ricette.
+  // APPESI in coda: gli indici 0..4 restano quelli storici, cosi' i test che citano THEMES[0]/[2]
+  // non slittano. 'linea-essenziale-notte@1' condivide il prefisso di nome con 'linea-essenziale@1'.
+  'linea-essenziale-notte@1',
+  'festa-brillante@1',
+  'orto-salvia@1',
 ];
 
 // ── strumenti di lettura ─────────────────────────────────────────────────────
@@ -318,16 +422,18 @@ function atteso(id: string): TemaAtteso {
   return trovato;
 }
 
-// ── AC-211-1 — cinque temi, lo stesso insieme di chiavi ──────────────────────
+// ── AC-211-1 — gli otto temi, lo stesso insieme di chiavi ────────────────────
+// DE-202: il catalogo e' cresciuto da cinque a OTTO (>=6). Le asserzioni di conteggio, prima
+// ancorate al cinque letterale, sono ancorate all'OTTO letterale con la stessa disciplina.
 
-describe('T-211 THEMES — cinque temi con lo stesso insieme di chiavi di token', () => {
+describe('T-211/DE-202 THEMES — gli otto temi con lo stesso insieme di chiavi di token', () => {
   // covers: AC-211-1
-  it('sono esattamente cinque, con id distinti, nell ordine dichiarato', () => {
-    expect(THEMES).toHaveLength(5); // covers: AC-211-1
+  it('sono esattamente otto, con id distinti, nell ordine dichiarato', () => {
+    expect(THEMES).toHaveLength(8); // covers: AC-211-1
     // L'ordine e l'IDENTITA' di ciascuno, non solo il conteggio: un tema sostituito da
-    // un duplicato di un altro conserverebbe il cinque.
+    // un duplicato di un altro conserverebbe l'otto.
     expect(THEMES.map((tema) => tema.id)).toEqual(ORDINE_DICHIARATO); // covers: AC-211-1
-    expect(new Set(THEMES.map((tema) => tema.id)).size).toBe(5); // covers: AC-211-1
+    expect(new Set(THEMES.map((tema) => tema.id)).size).toBe(8); // covers: AC-211-1
     // Un tema NUOVO senza la sua riga nella mappa attesa rende rosso questo file invece
     // di nascere coi propri valori non giudicati.
     expect(new Set(Object.keys(TEMI_ATTESI))).toEqual(new Set(THEMES.map((tema) => tema.id)));
@@ -336,9 +442,9 @@ describe('T-211 THEMES — cinque temi con lo stesso insieme di chiavi di token'
   // covers: AC-211-1
   it('ciascuno espone lo stesso insieme di chiavi, senza chiavi mancanti e senza chiavi in piu', () => {
     // Un catalogo vuoto renderebbe VACUAMENTE vere tutte le asserzioni del ciclo. Il
-    // CINQUE e' letterale, non THEMES.length: derivarlo dal dato che si sta giudicando
+    // OTTO e' letterale, non THEMES.length: derivarlo dal dato che si sta giudicando
     // renderebbe la guardia stessa vera per costruzione.
-    expect(THEMES, 'catalogo vuoto o ridotto: il ciclo sarebbe vero per vacuita').toHaveLength(5); // covers: AC-211-1
+    expect(THEMES, 'catalogo vuoto o ridotto: il ciclo sarebbe vero per vacuita').toHaveLength(8); // covers: AC-211-1
 
     for (const tema of THEMES) {
       // Uguaglianza ESATTA in entrambi i versi: dice sia che non manca nulla sia che non
@@ -370,7 +476,7 @@ describe('T-211 THEMES — cinque temi con lo stesso insieme di chiavi di token'
 
   // covers: AC-211-1
   it('ogni tema porta ESATTAMENTE i valori che gli competono (assegnazione pinnata)', () => {
-    expect(THEMES, 'catalogo vuoto o ridotto: il ciclo sarebbe vero per vacuita').toHaveLength(5); // covers: AC-211-1
+    expect(THEMES, 'catalogo vuoto o ridotto: il ciclo sarebbe vero per vacuita').toHaveLength(8); // covers: AC-211-1
 
     for (const tema of THEMES) {
       const suo = atteso(tema.id);
@@ -385,11 +491,11 @@ describe('T-211 THEMES — cinque temi con lo stesso insieme di chiavi di token'
   });
 });
 
-// ── AC-211-2 — le dieci coppie hanno palette diverse ─────────────────────────
+// ── AC-211-2 — le ventotto coppie hanno palette diverse ──────────────────────
 
 describe('T-211 THEMES — nessuna coppia di temi ha la stessa palette', () => {
   // covers: AC-211-2
-  it('le dieci coppie differiscono tutte su almeno un token di colore', () => {
+  it('le ventotto coppie differiscono tutte su almeno un token di colore', () => {
     const coppie: { a: SiteTheme; b: SiteTheme }[] = [];
     for (let i = 0; i < THEMES.length; i += 1) {
       for (let j = i + 1; j < THEMES.length; j += 1) {
@@ -399,9 +505,9 @@ describe('T-211 THEMES — nessuna coppia di temi ha la stessa palette', () => {
       }
     }
 
-    // Le coppie sono DIECI: senza questo conteggio un catalogo ridotto renderebbe il
-    // ciclo vero per vacuita' (e con un solo tema le coppie sarebbero zero).
-    expect(coppie).toHaveLength(10); // covers: AC-211-2
+    // Le coppie sono VENTOTTO (C(8,2)): senza questo conteggio un catalogo ridotto renderebbe
+    // il ciclo vero per vacuita' (e con un solo tema le coppie sarebbero zero).
+    expect(coppie).toHaveLength(28); // covers: AC-211-2
 
     for (const { a, b } of coppie) {
       const diversi = Object.keys(CHIAVI_COLORE).filter(
@@ -441,11 +547,11 @@ describe('T-211 THEMES — i valori sono propri di P2, non riferimenti ai token 
   // covers: AC-211-3
   it('nessun valore di nessun tema contiene un riferimento alle custom property dell app', () => {
     const tutti = THEMES.flatMap((tema) => valoriDelTema(tema));
-    // Il numero di valori ispezionati e' DICHIARATO col CINQUE letterale, non con
+    // Il numero di valori ispezionati e' DICHIARATO con l'OTTO letterale, non con
     // THEMES.length: derivarlo dal catalogo renderebbe l'uguaglianza vera anche su un
     // catalogo vuoto (0 === 0) e l'intero ciclo qui sotto vero per vacuita'. Serve anche
     // a dire che il walk scende: fermandosi al primo livello vedrebbe il solo `id`.
-    expect(tutti).toHaveLength(VALORI_PER_TEMA * 5); // covers: AC-211-3
+    expect(tutti).toHaveLength(VALORI_PER_TEMA * 8); // covers: AC-211-3
 
     for (const { percorso, valore } of tutti) {
       // Nessuna funzione var() in alcuna forma: e' la sola sintassi con cui un valore
@@ -461,7 +567,7 @@ describe('T-211 THEMES — i valori sono propri di P2, non riferimenti ai token 
     // L'altra meta' dell'AC ("i valori dei temi sono propri di P2"): non basta che non
     // rimandino altrove, devono essere valori che un rendering puo' usare da soli. Una
     // stringa vuota, o un 'inherit', supererebbe il controllo qui sopra.
-    expect(THEMES, 'catalogo vuoto o ridotto: il ciclo sarebbe vero per vacuita').toHaveLength(5); // covers: AC-211-3
+    expect(THEMES, 'catalogo vuoto o ridotto: il ciclo sarebbe vero per vacuita').toHaveLength(8); // covers: AC-211-3
 
     for (const tema of THEMES) {
       for (const [token, valore] of Object.entries(tema.colors)) {
@@ -540,7 +646,7 @@ describe('T-211 SiteTheme — il tipo e totale: un tema incompleto non compila',
     expect(Object.keys(TEMA_SENZA_UN_TOKEN.colors)).not.toContain('border'); // covers: AC-211-5
     // E i temi VERI, che non hanno la direttiva, quel token ce l'hanno tutti: e' il ramo
     // positivo della stessa proprieta'.
-    expect(THEMES, 'catalogo vuoto o ridotto: il ciclo sarebbe vero per vacuita').toHaveLength(5); // covers: AC-211-5
+    expect(THEMES, 'catalogo vuoto o ridotto: il ciclo sarebbe vero per vacuita').toHaveLength(8); // covers: AC-211-5
 
     for (const tema of THEMES) {
       expect(Object.keys(tema.colors), tema.id).toContain('border'); // covers: AC-211-5
@@ -579,7 +685,7 @@ describe('T-211 oracoli aggiuntivi — gli id nascono VERSIONATI (precondizione 
   }
 
   it('ogni id passa lo schema di T-202 e sta sotto il tetto di DOCUMENT_LIMITS', () => {
-    expect(THEMES, 'catalogo vuoto o ridotto: il ciclo sarebbe vero per vacuita').toHaveLength(5);
+    expect(THEMES, 'catalogo vuoto o ridotto: il ciclo sarebbe vero per vacuita').toHaveLength(8);
 
     for (const tema of THEMES) {
       expect(SCHEMA_ID_VERSIONATO.safeParse(tema.id).success, tema.id).toBe(true);
@@ -588,7 +694,7 @@ describe('T-211 oracoli aggiuntivi — gli id nascono VERSIONATI (precondizione 
   });
 
   it('senza la versione nell id cade il documento INTERO, non solo il campo', () => {
-    expect(THEMES, 'catalogo vuoto o ridotto: il ciclo sarebbe vero per vacuita').toHaveLength(5);
+    expect(THEMES, 'catalogo vuoto o ridotto: il ciclo sarebbe vero per vacuita').toHaveLength(8);
 
     for (const tema of THEMES) {
       // Il ramo POSITIVO: l'id vero fa passare un documento altrimenti valido.
@@ -606,7 +712,7 @@ describe('T-211 oracoli aggiuntivi — gli id nascono VERSIONATI (precondizione 
   });
 });
 
-describe('T-211 oracoli aggiuntivi — i cinque temi sono distinti anche fuori dai colori', () => {
+describe('T-211 oracoli aggiuntivi — gli otto temi sono distinti anche fuori dai colori', () => {
   // NON e' un AC (AC-211-2 chiede la sola palette): la DoD chiede cinque set "completi e
   // DISTINTI", e due temi che condividessero famiglia tipografica e scala sarebbero due
   // varianti di colore dello stesso tema — cioe' cinque direzioni che ne offrono meno di
@@ -619,13 +725,13 @@ describe('T-211 oracoli aggiuntivi — i cinque temi sono distinti anche fuori d
     const scale = THEMES.map((tema) => JSON.stringify(tema.typography.scale));
     const spaziature = THEMES.map((tema) => JSON.stringify(tema.spacing));
 
-    // Il CINQUE e' letterale e non THEMES.length: derivato dal catalogo, un catalogo
+    // L'OTTO e' letterale e non THEMES.length: derivato dal catalogo, un catalogo
     // vuoto renderebbe queste quattro righe vere per vacuita' (0 === 0) e un catalogo
     // dimezzato le renderebbe vere su meta' delle direzioni promesse.
-    expect(new Set(accenti).size, accenti.join(',')).toBe(5);
-    expect(new Set(famiglie).size, famiglie.join(',')).toBe(5);
-    expect(new Set(scale).size).toBe(5);
-    expect(new Set(spaziature).size).toBe(5);
+    expect(new Set(accenti).size, accenti.join(',')).toBe(8);
+    expect(new Set(famiglie).size, famiglie.join(',')).toBe(8);
+    expect(new Set(scale).size).toBe(8);
+    expect(new Set(spaziature).size).toBe(8);
   });
 
   it('ogni scala CRESCE: la gerarchia e una proprieta, non una sequenza di numeri qualsiasi', () => {
@@ -633,7 +739,7 @@ describe('T-211 oracoli aggiuntivi — i cinque temi sono distinti anche fuori d
     // piccolo di 'sm' non e' brutto, e' rotto — il rendering (T-231) legge questi passi
     // come una gerarchia. Una scala rimescolata conserva conteggio, chiavi e distinzione
     // a coppie, quindi nessun altro controllo di questo file la vedrebbe.
-    expect(THEMES, 'catalogo vuoto o ridotto: il ciclo sarebbe vero per vacuita').toHaveLength(5);
+    expect(THEMES, 'catalogo vuoto o ridotto: il ciclo sarebbe vero per vacuita').toHaveLength(8);
 
     for (const tema of THEMES) {
       // I passi sono elencati NELL'ORDINE atteso, a mano e per esteso: e' l'ordine la

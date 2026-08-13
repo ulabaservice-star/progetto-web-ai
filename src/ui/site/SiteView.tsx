@@ -28,16 +28,34 @@ import { siteThemeStyle } from '@/ui/site/theme-style';
 import { SITE_FONT_VARIABLE_CLASSNAME } from '@/ui/site/site-fonts';
 import { renderBlock } from '@/ui/site/registry';
 
+// DE-207 (macrotask design-select) — LA SELEZIONE DESIGN CONGELATA nel documento (DS-D4): i quattro
+// id versionati che il render proietta ALLA RADICE come data-attribute. E' un sottoinsieme del
+// SiteDocument, non un tipo nuovo: cambia con esso, e restare un Pick impedisce che qui si nomini un
+// campo che il documento non ha. Il render NON risolve gli id contro i cataloghi (altitudine: quello
+// e' dominio) — congela i valori e lascia al CSS (site.css) e all'isola effetti (DE-302) di
+// consumarli via i selettori d'attributo.
+export type SiteDesignSelection = Pick<
+  SiteDocument,
+  'hero_layout_id' | 'section_treatment_id' | 'effect_level' | 'ornament_id'
+>;
+
 export async function SitePageView({
   page,
   theme,
   locale,
   editable,
+  design,
 }: {
   page: SitePage;
   theme: SiteTheme;
   locale: string;
   editable?: boolean;
+  /**
+   * DE-207 — la selezione design congelata, quando questa pagina e' la RADICE del render (una pagina
+   * resa standalone). Opzionale: assente, la pagina non porta i data-attribute di selezione (React
+   * omette un attributo il cui valore e' `undefined`). SiteView la passa sempre giu' dal documento.
+   */
+  design?: SiteDesignSelection;
 }) {
   const rendered = await Promise.all(
     page.blocks.map((block) => renderBlock(block, locale, editable)),
@@ -48,6 +66,12 @@ export async function SitePageView({
       className={`site-page ${SITE_FONT_VARIABLE_CLASSNAME}`}
       data-site-page={page.slug}
       style={siteThemeStyle(theme)}
+      // DE-207 — i ganci d'attributo della selezione congelata. Valore `undefined` -> React omette
+      // l'attributo, quindi l'ornamento assente (opzionale, DS-D5) non compare.
+      data-hero-layout={design?.hero_layout_id}
+      data-section-treatment={design?.section_treatment_id}
+      data-ornament={design?.ornament_id}
+      data-effects={design?.effect_level}
     >
       {rendered.map((element, index) =>
         element ? (
@@ -77,12 +101,33 @@ export async function SiteView({
    */
   editable?: boolean;
 }) {
+  // DE-207 — la selezione design vive a livello di DOCUMENTO: la si estrae qui una volta e la si passa
+  // a ogni pagina, cosi' la radice del render (la `.site-view`) e le radici di pagina portano gli
+  // stessi ganci d'attributo. Un Pick del documento, non un oggetto nuovo di valori: se il gate ha
+  // normalizzato i default (DE-205) sono gia' qui; ornament_id puo' restare `undefined`.
+  const design: SiteDesignSelection = {
+    hero_layout_id: siteDocument.hero_layout_id,
+    section_treatment_id: siteDocument.section_treatment_id,
+    effect_level: siteDocument.effect_level,
+    ornament_id: siteDocument.ornament_id,
+  };
+
   const pages: ReactElement[] = await Promise.all(
-    siteDocument.pages.map((page) => SitePageView({ page, theme, locale, editable })),
+    siteDocument.pages.map((page) => SitePageView({ page, theme, locale, editable, design })),
   );
 
   return (
-    <div className={`site-view ${SITE_FONT_VARIABLE_CLASSNAME}`} style={siteThemeStyle(theme)}>
+    <div
+      className={`site-view ${SITE_FONT_VARIABLE_CLASSNAME}`}
+      style={siteThemeStyle(theme)}
+      // DE-207 — gli stessi ganci d'attributo alla RADICE del render dell'intero documento: il CSS
+      // delle varianti (site.css) e l'isola effetti (DE-302) li leggono da qui. `undefined` -> attributo
+      // omesso (ornamento opzionale, DS-D5).
+      data-hero-layout={design.hero_layout_id}
+      data-section-treatment={design.section_treatment_id}
+      data-ornament={design.ornament_id}
+      data-effects={design.effect_level}
+    >
       {pages.map((element, index) => (
         <div key={index}>{element}</div>
       ))}

@@ -44,7 +44,7 @@ vi.mock('@/data/supabase-ssr', () => ({
 
 import { writePool, chooseVariant, appendPages } from '@/data/generations';
 import { POOL_LIMITS } from '@/domain/generation/pool';
-import { DOCUMENT_LIMITS } from '@/domain/generation/document';
+import { DESIGN_SELECTION_DEFAULTS, DOCUMENT_LIMITS } from '@/domain/generation/document';
 import { SLOTS, type PageRole } from '@/domain/generation/slots';
 import { BRIEF_LIMITS } from '@/domain/onboarding/brief';
 
@@ -411,6 +411,12 @@ function pesoInByte(valore: unknown): number {
   return new TextEncoder().encode(JSON.stringify(valore)).length;
 }
 
+// DE-205: i byte che il gate AGGIUNGE applicando i default di selezione a un documento P4 (i tre id
+// congelati). E' costante — sempre le stesse tre coppie chiave/valore appese — quindi calcolarlo su un
+// oggetto qualunque da' lo stesso delta che si osserva su un documento intero. Serve a dimensionare il
+// caso peggiore: cio' che viene STORATO e' il contenuto PIU' questi byte, e deve stare al tetto.
+const BYTE_SELEZIONE_DEFAULT = pesoInByte({ q: 1, ...DESIGN_SELECTION_DEFAULTS }) - pesoInByte({ q: 1 });
+
 /** I campi del brief resi direttamente, TUTTI al tetto di P1-D17. */
 function datiBriefAiTetti(firma: string, str: Riempimento): Record<string, unknown> {
   return {
@@ -514,11 +520,13 @@ function documentoAiTetti(str: Riempimento): DocumentoFixture {
   };
 }
 
-/** Il documento VALIDO di taglia ESATTAMENTE pari a DOCUMENT_LIMITS.max_bytes. */
+/** Il documento P4 VALIDO il cui contenuto e' dimensionato cosi' che, una volta SKINNATO dal gate coi
+ *  default di selezione (DE-205), pesi ESATTAMENTE DOCUMENT_LIMITS.max_bytes. Cioe' il contenuto e' al
+ *  tetto MENO i byte dei default: e' il documento che, dopo la scrittura, occupa il tetto pieno. */
 function documentoAlTetto(): DocumentoFixture {
   const tuttoAccentato = documentoAiTetti(riempitore(0));
   const base = pesoInByte(tuttoAccentato);
-  const mancanti = DOCUMENT_LIMITS.max_bytes - base;
+  const mancanti = DOCUMENT_LIMITS.max_bytes - BYTE_SELEZIONE_DEFAULT - base;
   if (mancanti < 0) {
     throw new Error(
       `il caso peggiore accentato (${base} byte) sfonda gia il tetto ${DOCUMENT_LIMITS.max_bytes}`,
@@ -1550,9 +1558,12 @@ describe.skipIf(!SB)('T-204 writePool/chooseVariant/appendPages (runtime, Supaba
       const interne = documento.pages.slice(1);
       const bytePrimaFase = pesoInByte(home);
 
-      // Il documento e AL tetto, non "quasi": se lo fosse solo quasi, questo AC non
-      // misurerebbe cio che dice di misurare.
-      expect(byte).toBe(DOCUMENT_LIMITS.max_bytes); // covers: AC-204-7
+      // Il documento SKINNATO — il contenuto PIU' i default di selezione che il gate applica in
+      // scrittura (DE-205) — e AL tetto, non "quasi": e' cio' che occupa davvero la colonna jsonb. Se
+      // lo fosse solo quasi, questo AC non misurerebbe cio che dice di misurare.
+      expect(pesoInByte({ ...documento, ...DESIGN_SELECTION_DEFAULTS })).toBe(
+        DOCUMENT_LIMITS.max_bytes,
+      ); // covers: AC-204-7
 
       registro.length = 0;
       accettato(await chooseVariant(gTetto, 4, home), 'chooseVariant al tetto (fase 1)');
@@ -1581,8 +1592,9 @@ describe.skipIf(!SB)('T-204 writePool/chooseVariant/appendPages (runtime, Supaba
       expect(dopo.status).toBe('complete'); // covers: AC-204-7
       expect(dopo.chosen_variant).toBe(4); // covers: AC-204-7
       // RILETTO IDENTICO: l'oracolo e la service_role, e il confronto e sul documento
-      // INTERO, non sul suo peso.
-      expect(dopo.document).toEqual(documento); // covers: AC-204-7
+      // INTERO, non sul suo peso. DE-205: cio' che e' STORATO e' il contenuto PIU' i default di
+      // selezione applicati dal gate in scrittura.
+      expect(dopo.document).toEqual({ ...documento, ...DESIGN_SELECTION_DEFAULTS }); // covers: AC-204-7
       expect(pesoInByte(dopo.document)).toBe(DOCUMENT_LIMITS.max_bytes); // covers: AC-204-7
 
       clientHolder.current = clientA;

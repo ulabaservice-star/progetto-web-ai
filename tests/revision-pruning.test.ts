@@ -42,6 +42,7 @@ vi.mock('@/data/supabase-ssr', () => ({
 }));
 
 import { saveRevision } from '@/data/site-document-revisions';
+import { DESIGN_SELECTION_DEFAULTS } from '@/domain/generation/document';
 
 // ── fixture del documento (forma di parseDocument, T-202; identica a save-revision.test.ts) ────
 const RICETTA = 'aurora-lineare@3';
@@ -234,8 +235,12 @@ describe.skipIf(!SB)(
     it('scritta la 21ª revisione, resta ESATTAMENTE 20 e la piu vecchia (seq minimo) e stata eliminata', async () => {
       expect(saveRes.ok).toBe(true); // covers: AC-303-1
       if (!saveRes.ok) throw new Error('saveRevision doveva riuscire');
-      // Il documento corrente e la revisione appena scritta (seq 21).
-      expect(saveRes.document).toEqual(documentoValido('big-21')); // covers: AC-303-1
+      // Il documento corrente e la revisione appena scritta (seq 21), piu' i default di selezione
+      // applicati dal gate in scrittura (DE-205).
+      expect(saveRes.document).toEqual({
+        ...documentoValido('big-21'),
+        ...DESIGN_SELECTION_DEFAULTS,
+      }); // covers: AC-303-1
 
       // ORACOLO INDIPENDENTE (service_role): la potatura ha riportato genBig a esattamente 20.
       const dopo = await revisionsOf(genBig);

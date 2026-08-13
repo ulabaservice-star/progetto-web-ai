@@ -4,7 +4,6 @@ import { render, cleanup } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import itMessages from '../messages/it.json';
-import { RECIPES } from '@/domain/generation/recipes';
 import { applyBriefUpdate, emptyBrief } from '@/domain/onboarding/brief';
 import { parseDocument, type SiteBlock, type SiteDocument } from '@/domain/generation/document';
 
@@ -171,6 +170,11 @@ function heroBlock(title: string): SiteBlock {
 const SITE_ID = 'site-of-a';
 const OWNED_SITES = [{ id: SITE_ID, name: 'Officina di A', slug: 'officina-di-a', status: 'draft' }];
 
+// Il SEED della generazione (id STABILE, opaco): da DE-206 card e resolveVariantHome derivano la
+// selezione visiva da (brief.vertical, seed, variantIndex). USANDO LO STESSO seed e lo stesso indice,
+// card e anteprima compongono la STESSA home — che e' precisamente l'identita' che AC-232-1 pinna.
+const SEED = 'gen-identity-1';
+
 /** La sequenza degli id-blocco resi (in ordine di DOM) sotto `root`, da `data-block-id` (SiteSection). */
 function blockSeq(root: ParentNode): string[] {
   return [...root.querySelectorAll('[data-block-id]')].map(
@@ -334,9 +338,8 @@ describe('AC-232-1 (b) effetto: la home dell anteprima reale coincide con la car
   // covers: AC-232-1
   it('anteprima REALE su documento congelato multi-pagina: la sua home ha la sequenza id-blocco della card', async () => {
     // given: la variante 0 risolta sul pool/brief — cio' che la card mostra e cio' che T-233 CONGELA
-    // come home (una pagina sola, ruolo 'home').
-    const recipe = RECIPES[0];
-    const resolved = resolveVariantHome(SHARED_POOL, recipe, RICH_BRIEF);
+    // come home (una pagina sola, ruolo 'home'). La variante 0 nasce da (seed, index) — DE-206.
+    const resolved = resolveVariantHome(SHARED_POOL, RICH_BRIEF, SEED, 0);
     expect(resolved).not.toBeNull();
     const homePage = resolved!.document.pages[0];
     expect(homePage.role).toBe('home'); // covers: AC-232-1
@@ -365,8 +368,8 @@ describe('AC-232-1 (b) effetto: la home dell anteprima reale coincide con la car
     render(previewUi, { container: previewContainer });
     expect(readDocumentSpy).toHaveBeenCalledWith(SITE_ID); // covers: AC-232-1
 
-    // when: rendo la CARD della stessa variante sullo STESSO pool/brief.
-    const cardUi = await VariantCard({ pool: SHARED_POOL, recipe, brief: RICH_BRIEF, locale: 'it', variantIndex: 0 });
+    // when: rendo la CARD della stessa variante sullo STESSO pool/brief e STESSO seed.
+    const cardUi = await VariantCard({ pool: SHARED_POOL, brief: RICH_BRIEF, locale: 'it', seed: SEED, variantIndex: 0 });
     const cardContainer = document.createElement('div');
     render(cardUi, { container: cardContainer });
 

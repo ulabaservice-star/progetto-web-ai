@@ -72,14 +72,17 @@ export async function GenerationChooser({
     );
   }
 
-  // Copia-su-scrittura (P2-D3): ogni card riceve il pool della sua variante o quello condiviso.
+  // Copia-su-scrittura (P2-D3): ogni card riceve il pool della sua variante o quello condiviso. Il
+  // DESIGN di ciascuna delle cinque varianti nasce da `selectDesign`, seminato dall'id STABILE della
+  // generazione (`generationId`) e dall'indice (DE-206) — non piu' da una ricetta pre-scelta. Si
+  // itera su RECIPES per la sola CARDINALITA' (cinque direzioni = cinque varianti, P2-D3).
   const cards = await Promise.all(
-    RECIPES.map((recipe, index) =>
+    RECIPES.map((_, index) =>
       VariantCard({
         pool: poolForVariant({ shared: pools.shared, byVariant: pools.byVariant }, index),
-        recipe,
         brief,
         locale,
+        seed: generationId,
         variantIndex: index,
       }),
     ),

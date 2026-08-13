@@ -75,5 +75,20 @@ export async function renderDraftPage(
   if (page === undefined) return null;
 
   // 5) RENDER col renderer UNICO, modalita editable per parita' con la rotta editor.
-  return await SitePageView({ page, theme, locale, editable: true });
+  // DE-207 — qui `SitePageView` e' la RADICE del render (una pagina sola): propaga la selezione
+  // design congelata dal documento GATED cosi' la radice porta data-hero-layout/-section-treatment/
+  // -ornament/-effects come nella rotta editor. Senza, l'anteprima del draft perde i ganci della
+  // pelle. I default sono gia' normalizzati dal gate (parsed.document); `ornament_id` puo' mancare.
+  return await SitePageView({
+    page,
+    theme,
+    locale,
+    editable: true,
+    design: {
+      hero_layout_id: parsed.document.hero_layout_id,
+      section_treatment_id: parsed.document.section_treatment_id,
+      effect_level: parsed.document.effect_level,
+      ornament_id: parsed.document.ornament_id,
+    },
+  });
 }

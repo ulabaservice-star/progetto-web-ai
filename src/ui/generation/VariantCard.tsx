@@ -17,31 +17,33 @@
 
 import type { ReactElement } from 'react';
 import { SiteView } from '@/ui/site/SiteView';
-import type { SiteRecipe } from '@/domain/generation/recipes';
 import type { Brief } from '@/domain/onboarding/brief';
 import { resolveVariantHome } from '@/domain/generation/variant-document';
 
 type VariantCardProps = {
   /** Il pool GIA' SELEZIONATO per questa variante (P2-D3, `poolForVariant`): condiviso o proprio. */
   readonly pool: unknown;
-  /** La ricetta (direzione + tema) mostrata da questa card. */
-  readonly recipe: SiteRecipe;
-  /** Il brief del sito: i dati resi direttamente dai blocchi (offerte, orari, contatti). */
+  /** Il brief del sito: i dati resi direttamente dai blocchi (offerte, orari, contatti), e il
+   *  `vertical` (enum chiuso) da cui il selettore design deriva la selezione — mai testo libero. */
   readonly brief: Brief;
   /** Il locale del sito, per le etichette i18n dei blocchi (P2-D10). */
   readonly locale: string;
+  /** Il SEED della generazione (id STABILE, opaco): con `variantIndex` guida `selectDesign` (DE-206). */
+  readonly seed: string;
   /** L'indice 0..4 della variante, esposto per il selettore e la rigenerazione. */
   readonly variantIndex: number;
 };
 
 export async function VariantCard({
   pool,
-  recipe,
   brief,
   locale,
+  seed,
   variantIndex,
 }: VariantCardProps): Promise<ReactElement | null> {
-  const resolved = resolveVariantHome(pool, recipe, brief);
+  // La ricetta e il tema MOSTRATI nascono dalla selezione design (DE-206): `resolveVariantHome` li
+  // risolve da `selectDesign(brief.vertical, seed, variantIndex)`, non da una ricetta pre-scelta.
+  const resolved = resolveVariantHome(pool, brief, seed, variantIndex);
   if (resolved === null) return null;
 
   // SiteView e' un Server Component ASINCRONO: lo si esegue e si incorpora l'albero gia' pronto,

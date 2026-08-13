@@ -1,4 +1,4 @@
-// T-211 (macrotask generation-engine, P2) — I CINQUE TEMI DEL SITO GENERATO: colori,
+// T-211 (macrotask generation-engine, P2; cresciuti in DE-202) — I TEMI DEL SITO GENERATO: colori,
 // tipografia, spaziature e raggi che appartengono al SITO DEL CLIENTE e non al chrome
 // del builder. Dominio PURO: nessun accesso al DB, nessun I/O, nessun side effect — e
 // nessun import, perche' il modulo e' un catalogo dichiarato e nient'altro.
@@ -32,7 +32,7 @@
 // tema e che sensazione punta a dare, e servono a chi in futuro dovra' scegliere dove
 // mettere le mani. Nessun test prova che un tema sia BELLO — lo stile non e' oracolabile
 // (P1 §6-bis p.8). Cio' che i test provano e' che il layer esiste, che le chiavi sono le
-// stesse ovunque, che le cinque palette sono distinte e che nessun valore rimanda al
+// stesse ovunque, che le palette sono distinte a due a due e che nessun valore rimanda al
 // builder.
 //
 // COSA NON C'E' QUI, deliberatamente:
@@ -50,7 +50,7 @@
 /**
  * I TOKEN DI COLORE, gli stessi per tutti i temi. Sono SEMANTICI e non descrittivi
  * ('accent', non 'arancione'): e' cio' che permette al rendering (T-231) di essere
- * scritto una volta sola per cinque temi.
+ * scritto una volta sola per tutti i temi.
  *
  * `accent_contrast` e' il colore del testo che sta SOPRA l'accento (l'etichetta dentro
  * il bottone): non e' un secondo accento, e tenerlo separato e' cio' che evita che un
@@ -106,10 +106,16 @@ export type SiteTheme = {
 };
 
 /**
- * I CINQUE TEMI, nell'ordine in cui vengono offerti. Sono dichiarati a mano da noi e non
- * inventati dal modello (P2-D1): insieme alle ricette (T-212) sono la ragione per cui la
- * promessa "risultati brutti strutturalmente impossibili" e' verificabile — il modello
- * scrive prosa, non sceglie i colori.
+ * I TEMI, nell'ordine in cui vengono offerti. Sono dichiarati a mano da noi e non inventati dal
+ * modello (P2-D1): insieme alle ricette (T-212) sono la ragione per cui la promessa "risultati
+ * brutti strutturalmente impossibili" e' verificabile — il modello scrive prosa, non sceglie i
+ * colori.
+ *
+ * NATI CINQUE (T-211), CRESCIUTI A OTTO con DE-202, e DISACCOPPIATI dalla ricetta (DS-D3): il tema
+ * non e' piu' un'appendice 1:1 di una direzione, ma un ASSE che il selettore design (DE-204)
+ * sceglie fra tutti quelli ammessi dalla matrice. Per questo i temi sono PIU' delle cinque ricette:
+ * i primi cinque id restano quelli storici (i documenti P4 gia' congelati li citano per id), gli
+ * altri allargano la tavolozza di scelta senza che nessuna ricetta debba "possederli".
  *
  * I VALORI SONO PROPRI DI P2. Nessuno e' un 'var(--...)', nemmeno dove coincide per caso
  * con un numero del builder: una spaziatura di '1rem' e' un rem scelto qui, non il
@@ -196,7 +202,7 @@ export const THEMES: readonly SiteTheme[] = [
   },
   {
     // SCATTO VITALE — per palestre, box di functional training, scuole di danza.
-    // L'unico tema SCURO dei cinque: lime elettrico su antracite, titoli condensati,
+    // Il tema SCURO fra i cinque storici: lime elettrico su antracite, titoli condensati,
     // spigoli vivi (il raggio piu' piccolo e' zero). Punta alla sensazione dell'energia
     // e del movimento, ed e' anche il tema che regge meglio le foto a tutta larghezza.
     id: 'scatto-vitale@1',
@@ -274,8 +280,8 @@ export const THEMES: readonly SiteTheme[] = [
   },
   {
     // BREZZA COSTIERA — per B&B, case vacanza, stabilimenti, servizi al turismo.
-    // Acqua e sabbia chiara, geometrie morbide e il ritmo piu' ARIOSO dei cinque (e' il
-    // tema con le spaziature piu' larghe): punta alla sensazione dell'aria aperta e del
+    // Acqua e sabbia chiara, geometrie morbide e uno dei ritmi piu' ARIOSI (spaziature
+    // fra le piu' larghe del catalogo): punta alla sensazione dell'aria aperta e del
     // tempo che non stringe.
     id: 'brezza-costiera@1',
     colors: {
@@ -311,4 +317,148 @@ export const THEMES: readonly SiteTheme[] = [
     },
     radius: { sm: '0.5rem', md: '0.875rem', lg: '1.5rem', pill: '99rem' },
   },
+  {
+    // LINEA ESSENZIALE NOTTE — la sorella NOTTURNA di 'linea-essenziale', per gli stessi studi e
+    // consulenti quando l'insegna e' accesa dopo il tramonto: grafite scura con un oro caldo e
+    // sobrio, lo STESSO carattere geometrico dei titoli su fondo profondo. E' fra i temi SCURI
+    // (con 'scatto-vitale'), ma dove scatto e' energia elettrica questo e'
+    // eleganza trattenuta. DE-202: cresce il catalogo e — non per caso — porta un id il cui NOME
+    // e' PREFISSO di quello base ('linea-essenziale'), cosi' che `themeFor` provi l'uguaglianza
+    // esatta e non un match lasco sul prefisso.
+    id: 'linea-essenziale-notte@1',
+    colors: {
+      background: '#0f1319',
+      surface: '#171d26',
+      text: '#eef2f6',
+      text_muted: '#97a2b0',
+      accent: '#d9a441',
+      accent_contrast: '#14171d',
+      border: '#29323e',
+    },
+    typography: {
+      font_family: {
+        heading: 'Space Grotesk, Helvetica Neue, sans-serif',
+        body: 'Nunito Sans, Segoe UI, sans-serif',
+      },
+      scale: {
+        sm: '0.875rem',
+        base: '1.0625rem',
+        lg: '1.4375rem',
+        xl: '2rem',
+        '2xl': '2.75rem',
+        '3xl': '3.75rem',
+      },
+    },
+    spacing: {
+      xs: '0.3125rem',
+      sm: '0.6875rem',
+      md: '1.1875rem',
+      lg: '1.75rem',
+      xl: '2.875rem',
+      '2xl': '4.25rem',
+    },
+    radius: { sm: '0.125rem', md: '0.25rem', lg: '0.5rem', pill: '99rem' },
+  },
+  {
+    // FESTA BRILLANTE — per pizzerie, street food, gelaterie, chi vende allegria oltre al piatto.
+    // Bianco caldo con un arancio ACCESO e titoli tondi: punta alla sensazione della festa di
+    // quartiere, colorata e diretta. E' il tema piu' vivace dei nostri, l'unico dichiaratamente
+    // giocoso, e regge le promozioni e i banner senza spegnersi.
+    id: 'festa-brillante@1',
+    colors: {
+      background: '#fffdf7',
+      surface: '#ffffff',
+      text: '#2a2018',
+      text_muted: '#7c7160',
+      accent: '#e6541f',
+      accent_contrast: '#fff6f0',
+      border: '#f0e7d6',
+    },
+    typography: {
+      font_family: {
+        heading: 'Poppins, Avenir Next, sans-serif',
+        body: 'Barlow, Roboto, sans-serif',
+      },
+      scale: {
+        sm: '0.9375rem',
+        base: '1.125rem',
+        lg: '1.5rem',
+        xl: '2.0625rem',
+        '2xl': '2.875rem',
+        '3xl': '4rem',
+      },
+    },
+    spacing: {
+      xs: '0.4375rem',
+      sm: '0.8125rem',
+      md: '1.3125rem',
+      lg: '2.125rem',
+      xl: '3.375rem',
+      '2xl': '5.25rem',
+    },
+    radius: { sm: '0.5rem', md: '0.875rem', lg: '1.5rem', pill: '99rem' },
+  },
+  {
+    // ORTO SALVIA — per cucine vegetali, poke, gastronomie del fresco, cantine e chi racconta la
+    // materia prima. Bianco venato di verde con un accento salvia: e' il nostro tema NATURALE, il
+    // solo dove l'accento e' un verde fresco e non un caldo — pensato per pesce, vegetariano,
+    // healthy, dove il colore deve dire "di stagione" prima ancora del testo. Titoli con le grazie,
+    // ritmo ampio e arioso.
+    id: 'orto-salvia@1',
+    colors: {
+      background: '#f6faf6',
+      surface: '#ffffff',
+      text: '#1b2a20',
+      text_muted: '#5f7166',
+      accent: '#4f8f6b',
+      accent_contrast: '#f6fbf8',
+      border: '#d9e5da',
+    },
+    typography: {
+      font_family: {
+        heading: 'Fraunces, Georgia, serif',
+        body: 'Karla, Helvetica, sans-serif',
+      },
+      scale: {
+        sm: '0.8125rem',
+        base: '1rem',
+        lg: '1.3125rem',
+        xl: '1.75rem',
+        '2xl': '2.375rem',
+        '3xl': '3.125rem',
+      },
+    },
+    spacing: {
+      xs: '0.5rem',
+      sm: '0.9375rem',
+      md: '1.5rem',
+      lg: '2.375rem',
+      xl: '3.625rem',
+      '2xl': '6rem',
+    },
+    radius: { sm: '0.25rem', md: '0.5rem', lg: '1rem', pill: '99rem' },
+  },
 ];
+
+/**
+ * IL TEMA DI QUESTO ID, o `undefined` se nessuno lo porta. RIALLOCATO qui da variant-document.ts
+ * (DE-202) ed ESPORTATO: era un helper privato del compositore delle card, ma il selettore design
+ * (DE-204) sceglie il tema come ASSE proprio — disaccoppiato dalla ricetta (DS-D3) — quindi ha
+ * bisogno dello stesso lookup canonico. Averne uno solo, qui accanto al catalogo che interroga,
+ * evita un secondo confronto che divergerebbe in silenzio.
+ *
+ * IL CONFRONTO E' PER UGUAGLIANZA ESATTA E MAI PER PREFISSO: gli id dei temi sono versionati
+ * ('nome-kebab@N'), quindi 'linea-essenziale' e 'linea-essenziale@1' sono due stringhe diverse e la
+ * prima non e' un tema; e due temi possono condividere un prefisso di nome ('linea-essenziale@1' e
+ * 'linea-essenziale-notte@1') senza che l'uno risolva l'altro. Un confronto lasco registrerebbe nel
+ * documento (T-202) un id che nessuna versione ha mai prodotto.
+ *
+ * LA RICERCA E' SULL'ARRAY, non su un oggetto indicizzato per id, per la stessa ragione di
+ * `recipeFor` (T-212): l'id puo' arrivare da un artefatto salvato (il `theme_id` di un documento
+ * gia' scritto), quindi con una mappa-oggetto le chiavi speciali di JavaScript ('__proto__',
+ * 'constructor', 'toString') risolverebbero il membro EREDITATO da Object.prototype e questa
+ * funzione restituirebbe qualcosa che non e' un tema.
+ */
+export function themeFor(themeId: string): SiteTheme | undefined {
+  return THEMES.find((theme) => theme.id === themeId);
+}

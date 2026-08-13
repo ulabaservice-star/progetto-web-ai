@@ -5,6 +5,7 @@ import { RECIPES, applyRecipe, recipeFor, type SiteRecipe } from '@/domain/gener
 import { THEMES, type SiteTheme } from '@/domain/generation/themes';
 import { PAGE_CATALOG, pagesFor, type PageSpec } from '@/domain/generation/pages';
 import {
+  DESIGN_SELECTION_DEFAULTS,
   DOCUMENT_LIMITS,
   SiteDocumentSchema,
   parseDocument,
@@ -1580,7 +1581,11 @@ describe('T-214 oracolo aggiuntivo: LA MISURA del peso, non la stima', () => {
     // Il fatto portante: il caso peggiore partizionato ENTRA, ed e' un documento valido.
     expect(byte, rapporto).toBeLessThan(DOCUMENT_LIMITS.max_bytes);
     expect(documento.pages, rapporto).toHaveLength(DOCUMENT_LIMITS.max_pages);
-    expect(pesoInByte(documento), rapporto).toBe(byte); // nessun troncamento al gate
+    // DE-205: il gate applica i default di selezione, quindi il documento accettato pesa quanto
+    // l'output di resolve PIU' quei default — nessuna voce del caso peggiore e' troncata.
+    expect(pesoInByte(documento), rapporto).toBe(
+      pesoInByte({ ...res.document, ...DESIGN_SELECTION_DEFAULTS }),
+    ); // nessun troncamento al gate
     expect(res.dropped, rapporto).toEqual([]);
 
     // NON VUOTO PER VACUITA': la fixture e' davvero al tetto, altrimenti la misura non
@@ -2812,7 +2817,7 @@ describe('T-214 i CATALOGHI di monte, giudicati senza dipendere dall ORDINE dei 
     // serializzabile).
     expect(BLOCKS).toHaveLength(8);
     expect(RECIPES).toHaveLength(5);
-    expect(THEMES).toHaveLength(5);
+    expect(THEMES).toHaveLength(8); // DE-202: catalogo temi cresciuto da 5 a 8 (disaccoppiato dalle ricette)
     expect(PAGE_CATALOG).toHaveLength(6);
   });
 

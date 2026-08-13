@@ -36,6 +36,7 @@ vi.mock('@/data/supabase-ssr', () => ({
 }));
 
 import { saveRevision } from '@/data/site-document-revisions';
+import { DESIGN_SELECTION_DEFAULTS } from '@/domain/generation/document';
 
 // ── fixture del documento (forma di parseDocument, T-202) ─────────────────────────────────────
 const RICETTA = 'aurora-lineare@3';
@@ -229,15 +230,16 @@ describe.skipIf(!SB)('T-302 saveRevision — gate parseDocument, RLS, seq, brief
     const res = await saveRevision(siteWrite, draft);
     expect(res.ok).toBe(true); // covers: AC-302-1
     if (!res.ok) throw new Error('saveRevision doveva riuscire');
-    // Ritorna il documento corrente (la revisione appena scritta), uguale al draft (ben formato).
-    expect(res.document).toEqual(draft); // covers: AC-302-1
+    // Ritorna il documento corrente (la revisione appena scritta), uguale al draft PIU' i default di
+    // selezione applicati dal gate (DE-205): il draft e' P4, quindi acquista la sua pelle in scrittura.
+    expect(res.document).toEqual({ ...draft, ...DESIGN_SELECTION_DEFAULTS }); // covers: AC-302-1
 
-    // ORACOLO INDIPENDENTE: la riga scritta e' 'edited', seq 1, document == draft.
+    // ORACOLO INDIPENDENTE: la riga scritta e' 'edited', seq 1, document == draft + default di selezione.
     const dopoUno = await revisionsOf(genWrite);
     expect(dopoUno).toHaveLength(1); // covers: AC-302-1
     expect(dopoUno[0].source).toBe('edited'); // covers: AC-302-1
     expect(Number(dopoUno[0].seq)).toBe(1); // covers: AC-302-1
-    expect(dopoUno[0].document).toEqual(draft); // covers: AC-302-1
+    expect(dopoUno[0].document).toEqual({ ...draft, ...DESIGN_SELECTION_DEFAULTS }); // covers: AC-302-1
     expect(dopoUno[0].account_id).toBe(accountAId); // covers: AC-302-1
 
     // Lo slot immagine sopravvive senza introdurre un indirizzo (security_note AC-204-11): nessuna

@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto';
 import { applyBriefUpdate, emptyBrief } from '@/domain/onboarding/brief';
-import { RECIPES } from '@/domain/generation/recipes';
 import { resolveVariantHome } from '@/domain/generation/variant-document';
 import { parseDocument, type ImageSlot, type SiteDocument } from '@/domain/generation/document';
 import { extractBusinessInfo } from '@/domain/generation/site-seo';
@@ -129,13 +128,15 @@ function hostileBrief(businessName: string = HOSTILE_BUSINESS_NAME) {
 
 /**
  * COSTRUISCE il documento OSTILE attraverso il percorso REALE: la prosa narrativa e' il pool INNOCUO
- * di T-240 (l'attacco vive nei campi del brief, non nella prosa del modello), la ricetta e' la prima
- * del catalogo. `resolveVariantHome` passa da `parseDocument`: se il documento non fosse valido
- * ritornerebbe `null`, e qui e' un errore da vedere, non da ingoiare — il fixture DEVE produrre un
- * documento reso, altrimenti AC-241-6 (payload presenti nel DOM) non proverebbe nulla.
+ * di T-240 (l'attacco vive nei campi del brief, non nella prosa del modello); da DE-206 ricetta, tema
+ * e manopole visive nascono DENTRO `resolveVariantHome` da (brief.vertical, seed, index) — il seed e'
+ * un id di generazione STABILE e opaco (mai testo del brief), la variante 0. `resolveVariantHome`
+ * passa da `parseDocument`: se il documento non fosse valido ritornerebbe `null`, e qui e' un errore
+ * da vedere, non da ingoiare — il fixture DEVE produrre un documento reso, altrimenti AC-241-6
+ * (payload presenti nel DOM) non proverebbe nulla.
  */
 export function buildHostileDocument(): SiteDocument {
-  const resolved = resolveVariantHome(innocuousHomePool(), RECIPES[0], hostileBrief());
+  const resolved = resolveVariantHome(innocuousHomePool(), hostileBrief(), 'e2e-hostile-home', 0);
   if (resolved === null) {
     throw new Error('fixture ostile: il documento home non ha superato parseDocument');
   }
@@ -163,7 +164,7 @@ export function buildHostileDocument(): SiteDocument {
  */
 export function buildPublishedHostileDocument(assetId: string): SiteDocument {
   const brief = hostileBrief(`${HOSTILE_BUSINESS_NAME} ${JSONLD_BREAKOUT_PAYLOAD}`);
-  const resolved = resolveVariantHome(innocuousHomePool(), RECIPES[0], brief);
+  const resolved = resolveVariantHome(innocuousHomePool(), brief, 'e2e-hostile-published', 0);
   if (resolved === null) {
     throw new Error('fixture pubblicata ostile: il documento home non ha superato parseDocument');
   }

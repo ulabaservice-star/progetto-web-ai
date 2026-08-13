@@ -153,3 +153,108 @@
     var(--site-color-background)
   );
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   DE-207 (macrotask design-select) — LE VARIANTI DELLA SELEZIONE DESIGN. SiteView / SitePageView
+   scrivono ALLA RADICE del render i data-attribute congelati nel documento (data-hero-layout,
+   data-section-treatment, data-ornament, data-effects). Qui il foglio li CONSUMA via selettori
+   d'attributo con id VERSIONATO ESATTO: ogni variante ridispone l'hero o il ritmo delle sezioni in
+   modo DIVERSO — la varieta' e' nel LAYOUT, non solo nel colore (DS-D2). data-effects e' solo il
+   gancio letto altrove (CSS effetti DE-301, isola DE-302): qui NON si stila il movimento. Come tutto
+   il foglio, i COLORI arrivano SOLO da var(--site-color-*): nessun letterale. L'hero e' la sezione
+   data-block-kind="hero" (SiteSection): non esiste un elemento `.site-hero`, il gruppo `.site-hero__*`
+   e' il suo contenuto. */
+
+/* HERO — la variante di layout agisce sul primo schermo. */
+
+/* centrato / centrato-foto: colonna centrata, testo al centro (elegante, senza foto o con foto
+   incorniciata). Id ESATTI, non un prefisso: 'centrato@1' e 'centrato-foto@1' sono due voci. */
+[data-hero-layout='centrato@1'] .site-section[data-block-kind='hero'],
+[data-hero-layout='centrato-foto@1'] .site-section[data-block-kind='hero'] {
+  align-items: center;
+  text-align: center;
+}
+
+/* split: testo e (futura) foto affiancati — l'hero diventa una griglia a due colonne, allineata a
+   sinistra, con il passo ampio del tema fra le colonne. */
+[data-hero-layout='split@1'] .site-section[data-block-kind='hero'] {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--site-space-xl);
+  align-items: center;
+  text-align: start;
+}
+
+/* immagine-piena: una fascia piena, centrata, con piu' respiro (foto full-bleed + overlay, quando
+   ci sara' una foto): usa il fondo pagina e il passo piu' largo. */
+[data-hero-layout='immagine-piena@1'] .site-section[data-block-kind='hero'] {
+  align-items: center;
+  text-align: center;
+  padding-block: var(--site-space-2xl);
+  background-color: var(--site-color-background);
+}
+
+/* scena-scura: un piatto protagonista su fondo staccato — la "scena" usa la surface del tema come
+   fondo dell'hero, per distinguerlo dal resto (ristorazione). */
+[data-hero-layout='scena-scura@1'] .site-section[data-block-kind='hero'] {
+  align-items: center;
+  text-align: center;
+  background-color: var(--site-color-surface);
+}
+
+/* TRATTAMENTO DI SEZIONE — decide il RITMO visivo delle sezioni PARI (nth-of-type(even)), lasciando
+   le dispari sul trattamento base. 'piano@1' non altera nulla (resta sui token del tema, nessuna
+   regola). */
+
+/* a-scheda: le sezioni pari diventano schede sollevate — fondo pagina, bordo e raggio ampio. */
+[data-section-treatment='a-scheda@1'] .site-section:nth-of-type(even) {
+  background-color: var(--site-color-background);
+  border: 1px solid var(--site-color-border);
+  border-radius: var(--site-radius-lg);
+}
+
+/* fasce-alternate: le sezioni pari sono fasce sul fondo pagina, senza raggio, delimitate da una
+   regola sopra e sotto — l'alternanza scandisce la lettura. */
+[data-section-treatment='fasce-alternate@1'] .site-section:nth-of-type(even) {
+  background-color: var(--site-color-background);
+  border-block: 1px solid var(--site-color-border);
+}
+
+/* ORNAMENTI — decorazione senza foto (DS-D5). L'ornamento e' sulla radice (data-ornament) e agisce
+   fra le sezioni o sui titoli. */
+
+/* divisori-linea: una regola in accento fra una sezione e la successiva. */
+[data-ornament='divisori-linea@1'] .site-section + .site-section {
+  border-top: 2px solid var(--site-color-accent);
+}
+
+/* fregio-centrale: una barretta in accento centrata sotto ogni titolo di sezione. */
+[data-ornament='fregio-centrale@1'] .site-section h2::after {
+  content: '';
+  display: block;
+  width: var(--site-space-xl);
+  height: 2px;
+  margin-top: var(--site-space-xs);
+  background-color: var(--site-color-accent);
+}
+
+/* watermark-cibo: un lume d'angolo (line-art evocata) in accento nell'angolo alto destro delle
+   sezioni, tenue e non-fotografico (overlay di settore ristorazione). */
+[data-ornament='watermark-cibo@1'] .site-section {
+  background-image: radial-gradient(
+    circle at 100% 0%,
+    var(--site-color-accent),
+    var(--site-color-surface) 24%
+  );
+}
+
+/* badge-anzianita: un bollo a pillola in accento in cima all'hero (la cornice di "dal 19xx"; il
+   testo reale del badge e' contenuto del blocco). */
+[data-ornament='badge-anzianita@1'] .site-section[data-block-kind='hero']::before {
+  content: '';
+  display: inline-block;
+  width: var(--site-space-lg);
+  height: var(--site-space-xs);
+  border-radius: var(--site-radius-pill);
+  background-color: var(--site-color-accent);
+}
