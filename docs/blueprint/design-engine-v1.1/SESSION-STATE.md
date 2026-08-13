@@ -9,8 +9,8 @@
 |---|---|
 | **Progetto** | Belora/Ulaba |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase) |
-| **Ultimo aggiornamento** | 2026-08-13 (**BOOTSTRAP completato**: blueprint `design-engine-v1.1` generato — 5 macrotask, 17 task atomici, DAG aciclico. **0 macrotask costruiti**. Prossimo: BUILD di `editorial-skin`) |
-| **Sessione corrente** | — (**blueprint pronto, nessun BUILD ancora avviato**). Il workstream è **pianificato ma non costruito**: baseline vuota, primo checkpoint da girare al confine di `editorial-skin` |
+| **Ultimo aggiornamento** | 2026-08-14 (**BOOTSTRAP completato E COMMITTATO su `main`**: spec `0451db1` + blueprint `design-engine-v1.1` `68bd63c` — 5 macrotask, 17 task atomici, 61 AC, oracolo strutturale 6/6 + self-check semantico verdi. **0 macrotask di CODICE costruiti**. Prossimo: BUILD di `editorial-skin`) |
+| **Sessione corrente** | — (**blueprint pronto e committato, nessun BUILD ancora avviato**). Il workstream è **pianificato ma non costruito**: baseline vuota, primo checkpoint da girare al confine di `editorial-skin`. Aprire `prompts/session-start.md` in sessione fresca |
 
 ---
 
@@ -42,8 +42,8 @@
 | Campo | Valore |
 |---|---|
 | Branch di lavoro | — (da aprire da `main` pulito alla prima sessione di BUILD, es. `trueline/build/editorial-skin`). Mai lavorare su `main` |
-| Ultimo commit | — (nessun commit di v1.1 ancora; ultimo su `main` = chiusura di design-engine v1) |
-| Stato merge su `main` | **nessun merge di v1.1** ancora. Ogni macrotask sarà mergiato **human-gated anche sul verde**; deploy non supervisionato BLOCCATO |
+| Ultimo commit | **`68bd63c`** docs(design-engine): blueprint v1.1 bootstrappato (preceduto da spec `0451db1`), su `main`. **Solo DOCS: nessun codice di prodotto ancora.** |
+| Stato merge su `main` | Blueprint + spec **committati su `main`** (docs-only, deploy no-op — verificato working tree pulito). **Nessun macrotask di CODICE mergiato** ancora. Ogni macrotask sarà mergiato **human-gated anche sul verde**; deploy non supervisionato BLOCCATO |
 | Deploy-coupling | **`coupled`** — Vercel è connesso al repo (`ulabaservice-star/progetto-web-ai`): **push su `main` = deploy in produzione** su `ulaba.net`. Verificare **in locale** (vitest, e2e Chromium, computed-style, `next build`) prima di ogni merge |
 
 ## 4. Baseline & budget
