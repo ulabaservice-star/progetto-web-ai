@@ -47,3 +47,31 @@ describe('DE-101 AC-DE-101-2 — src/ui/site/**/*.css senza colori letterali', (
     expect(HEX.test('font-size: clamp(2rem, 5vw, var(--site-scale-3xl))')).toBe(false); // covers: AC-DE-101-2
   });
 });
+
+// DE11-103 (macrotask editorial-skin) — AC-DE11-103-3: le regole tipografiche editoriali aggiunte a
+// site.css (display sui titoli/prezzi/citazioni, label uppercase tracciate, cifre tabulari, leader-dots,
+// «» sulle citazioni, ritmo delle sezioni) restano DENTRO il divieto di colore LETTERALE — i colori sono
+// SOLO var(--site-color-*). E' la ri-asserzione ANCORATA all'AC v1.1 richiesta dal blueprint, sullo
+// STESSO scanner condiviso di sopra (nessun secondo scanner, nessun clone): il foglio ESTESO non
+// introduce alcun hex/rgb/hsl. La pinna su site.css garantisce che la superficie di DE11-103 sia davvero
+// scandita (non passa per vacuita' se il file rientra negli ambiti).
+describe('DE11-103 AC-DE11-103-3 — site.css editoriale senza colori letterali', () => {
+  // Il singolo foglio site.css fra i file scanditi, individuato per suffisso di percorso (robusto al
+  // separatore di OS): la superficie che DE11-103 estende. Deve essercene ESATTAMENTE uno.
+  const siteCssFiles = cssFiles.filter((file) => file.replace(/\\/g, '/').endsWith('/src/ui/site/site.css'));
+
+  it('site.css e negli ambiti scanditi (non passa per vacuita)', () => {
+    expect(siteCssFiles).toHaveLength(1); // covers: AC-DE11-103-3
+  });
+
+  it('site.css non contiene alcun colore letterale dopo le regole editoriali (solo var(--site-color-*))', () => {
+    const offenders = siteCssFiles.filter((file) => hasLiteralColor(readFileSync(file, 'utf8')));
+    expect(offenders).toEqual([]); // covers: AC-DE11-103-3
+  });
+
+  it('nessun file .css di src/ui/site ha un colore letterale, col foglio esteso da DE11-103', () => {
+    // La re-scansione dell'intera directory: le regole editoriali non hanno sporcato NESSUN foglio.
+    const offenders = cssFiles.filter((file) => hasLiteralColor(readFileSync(file, 'utf8')));
+    expect(offenders).toEqual([]); // covers: AC-DE11-103-3
+  });
+});

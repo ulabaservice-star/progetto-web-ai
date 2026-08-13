@@ -30,6 +30,9 @@ vi.mock('next/font/google', () => {
     Karla: loader,
     Poppins: loader,
     Nunito_Sans: loader,
+    // DE11-102 — la serif DISPLAY self-host aggiunta a site-fonts.ts: il modulo la carica a import-time,
+    // quindi il mock deve esporne il loader o l'import di site-fonts.ts lancia (regressione della mock).
+    Playfair_Display: loader,
   };
 });
 

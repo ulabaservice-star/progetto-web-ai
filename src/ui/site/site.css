@@ -399,3 +399,92 @@
     transform: none !important;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   DE11-103 (macrotask editorial-skin) — LE REGOLE D'USO DEL DNA TIPOGRAFICO EDITORIALE. I temi
+   (DE11-101) MEMORIZZANO i token editoriali e theme-style (DE11-101/102) li proietta ALLA RADICE del
+   render come custom property: --site-font-display (la serif didone self-host, DE11-102),
+   --site-tracking-label (il tracking esteso delle label), --site-numeric-figure ('tabular-nums'|'normal'
+   dal flag tabular_nums del tema). QUI il foglio li APPLICA — display sui titoli/prezzi/citazioni, label
+   maiuscole tracciate, cifre tabulari, leader-dots sui prezzi, «» sulle citazioni, corpo a 1.65, ritmo
+   delle sezioni. E' il DNA INVARIANTE che rende ogni mockup editoriale, non testo impilato. Come tutto il
+   foglio, i COLORI arrivano SOLO da var(--site-color-*): nessun letterale (AC-DE11-103-3, lo scanner
+   AC-DE-101-2 resta esteso al .css).
+
+   PERCHE' `!important` SUL FONT DEI DISPLAY. I blocchi di P2 (Hero, Offerte, ChiSiamo, Faq, Orari,
+   Recensioni) portano ANCORA `font-family: var(--site-font-heading)` INLINE su titoli e nomi — un default
+   di allora, prima della pelle editoriale. Uno stile inline vince su ogni selettore NON-important, quindi
+   senza `!important` la famiglia display non raggiungerebbe MAI i titoli dal solo foglio. La pelle
+   editoriale FA del display la famiglia dei display (titoli/prezzi/citazioni) e deve percio' SUPERARE quel
+   default legacy: `!important` e' l'unico modo dal foglio senza toccare i blocchi, deliberato e
+   circoscritto ai soli display (come il `!important` di reduced-motion, piu' su, e' circoscritto al
+   movimento). */
+
+/* CORPO — il ritmo di lettura editoriale: la sans-corpo respira a line-height 1.65, e il passo verticale
+   delle sezioni segue il viewport (clamp fra il passo xl e 2xl del tema). I titoli hanno la propria
+   line-height stretta (hero 1.08, h2 1.15, piu' su) e NON ereditano 1.65. Il padding PIENO dell'hero
+   (`.site-section[data-block-kind='hero']`, selettore piu' specifico) resta il suo. */
+.site-section {
+  line-height: 1.65;
+  padding-block: clamp(var(--site-space-xl), 6vw, var(--site-space-2xl));
+}
+
+/* CONTAINER — la colonna di lettura ha una MISURA massima (min): righe non troppo lunghe, centrata. */
+.site-page {
+  width: min(72rem, 100%);
+  margin-inline: auto;
+}
+
+/* DISPLAY — la serif didone sui DISPLAY editoriali: titolo dell'hero, titoli di sezione, nomi e prezzi
+   delle offerte, citazioni. `!important` supera il font-family INLINE legacy dei blocchi (vedi sopra). */
+.site-hero__title,
+.site-section h2,
+.site-offerings__name,
+.site-offerings__price,
+blockquote {
+  font-family: var(--site-font-display) !important;
+}
+
+/* LABEL / EYEBROW — il maiuscoletto SPAZIATO del DNA: text-transform uppercase e il tracking ESTESO del
+   tema (var(--site-tracking-label), es. 0.18em), che sostituisce il tracking base dell'occhiello hero
+   (0.08em, piu' su, stessa specificita' ma questa regola viene dopo) e vale per ogni eyebrow (occhiello
+   hero, etichetta di variante delle offerte). */
+.site-hero__kicker,
+.site-offerings__variant {
+  text-transform: uppercase;
+  letter-spacing: var(--site-tracking-label);
+}
+
+/* CIFRE TABULARI — orari e prezzi con cifre a larghezza FISSA, cosi' si incolonnano: il commutatore
+   --site-numeric-figure vale 'tabular-nums' o 'normal' dal flag tabular_nums del tema (DE11-101). */
+.site-offerings__price,
+.site-hours__day,
+.site-hours__value {
+  font-variant-numeric: var(--site-numeric-figure);
+}
+
+/* LEADER-DOTS — la guida di punti del menu editoriale davanti al prezzo: una regola CSS PURA (bordo
+   punteggiato decorativo), nessun dato dell'utente. Colore SOLO da var(--site-color-*). */
+.site-offerings__price::before {
+  content: '';
+  display: inline-block;
+  width: var(--site-space-lg);
+  margin-right: var(--site-space-xs);
+  border-bottom: 2px dotted var(--site-color-border);
+  vertical-align: middle;
+}
+
+/* CITAZIONI — le «» AUTOMATICHE del DNA (virgolette caporali): `quotes` fissa le coppie (caporali
+   esterne, uncinate interne, come unicode-escape per non dipendere dall'encoding del file) e i
+   pseudo-elementi le inseriscono. E' la regola PRONTA per quando il blocco recensioni rendera' le singole
+   testimonianze come <blockquote> — in v1 la precondizione e' falsa (nessuna citazione nel documento di
+   produzione), quindi oggi nessun elemento la esercita, ma il DNA la dichiara. */
+blockquote {
+  quotes: '\00AB' '\00BB' '\2039' '\203A';
+}
+blockquote::before {
+  content: open-quote;
+}
+blockquote::after {
+  content: close-quote;
+}

@@ -25,11 +25,13 @@ import {
   Karla,
   Poppins,
   Nunito_Sans,
+  Playfair_Display,
 } from 'next/font/google';
 
-// Le dieci famiglie primarie del catalogo. Le famiglie VARIABILI non chiedono un peso; quelle
-// NON variabili (Barlow Condensed, Barlow, Poppins) lo esigono per tipo — 400/700 coprono corpo e
-// titolo. Ogni `variable` e' un literal (richiesto dal compilatore next/font).
+// Le famiglie primarie di heading/body del catalogo (la display didone segue piu' sotto, DE11-102).
+// Le famiglie VARIABILI non chiedono un peso; quelle NON variabili (Barlow Condensed, Barlow,
+// Poppins) lo esigono per tipo — 400/700 coprono corpo e titolo. Ogni `variable` e' un literal
+// (richiesto dal compilatore next/font).
 const fraunces = Fraunces({ subsets: ['latin'], display: 'swap', variable: '--font-fraunces' });
 const sourceSans3 = Source_Sans_3({
   subsets: ['latin'],
@@ -71,6 +73,16 @@ const nunitoSans = Nunito_Sans({
   display: 'swap',
   variable: '--font-nunito-sans',
 });
+// DE11-102 — la serif DIDONE dei DISPLAY editoriali (titoli/prezzi/citazioni), CONDIVISA da tutti i
+// temi: e' la 1a voce dello stack `display` di ogni tema (T-211, cresciuto in DE11-101:
+// 'Playfair Display, Georgia, serif'). Self-host come le altre — nessun <link>/@import esterno, la
+// CSP font-src 'self' di /s/ resta intatta (deploy-hardening T-3). E' VARIABILE (asse wght), quindi
+// non chiede un peso; il fallback serif del tema (Georgia, serif) resta lo stack se il font non carica.
+const playfairDisplay = Playfair_Display({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-playfair-display',
+});
 
 /**
  * Le classi-variabile di TUTTE le istanze, unite da spazio. Applicata alla radice del render
@@ -88,6 +100,7 @@ export const SITE_FONT_VARIABLE_CLASSNAME = [
   karla.variable,
   poppins.variable,
   nunitoSans.variable,
+  playfairDisplay.variable,
 ].join(' ');
 
 /**
@@ -107,4 +120,7 @@ export const FONT_VAR_BY_FAMILY: Record<string, string> = {
   Karla: '--font-karla',
   Poppins: '--font-poppins',
   'Nunito Sans': '--font-nunito-sans',
+  // DE11-102 — la famiglia display: theme-style.fontStackWithVariable antepone var(--font-playfair-display)
+  // allo stack `display` del tema, cosi' --site-font-display carica il self-host PRIMA del fallback serif.
+  'Playfair Display': '--font-playfair-display',
 };

@@ -35,3 +35,7 @@ export const Libre_Baskerville = fontLoader('Libre_Baskerville');
 export const Karla = fontLoader('Karla');
 export const Poppins = fontLoader('Poppins');
 export const Nunito_Sans = fontLoader('Nunito_Sans');
+// DE11-102 — la serif DISPLAY (Playfair Display) self-host aggiunta a site-fonts.ts: il modulo la
+// carica a import-time come le altre, quindi il doppio deve esporne il loader o ogni test che rende
+// SiteView (che importa site-fonts.ts) lancerebbe "Playfair_Display is not a function".
+export const Playfair_Display = fontLoader('Playfair_Display');

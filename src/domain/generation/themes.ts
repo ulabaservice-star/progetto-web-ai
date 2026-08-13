@@ -57,16 +57,40 @@
  * tema scuro finisca con un testo scuro su fondo scuro.
  */
 type ColorToken =
+  // I token SEMANTICI storici (P2), INVARIATI per retro-compat: i documenti gia' congelati e il
+  // rendering (T-231) li leggono per nome, quindi non si toccano.
   | 'background'
   | 'surface'
   | 'text'
   | 'text_muted'
   | 'accent'
   | 'accent_contrast'
-  | 'border';
+  | 'border'
+  // DE11-101 — la palette EDITORIALE del DNA ristorazione, per-tema e coordinata col carattere di
+  // ciascuno, PIU' una superficie SCURA distinta dalla chiara (`surface_dark`: menu su fondo scuro,
+  // sezioni alternate). Token DESCRITTIVI che AFFIANCANO i semantici, non li sostituiscono; poiche'
+  // `colors` e' un Record TOTALE su questa unione, ogni tema DEVE definirli o non compila.
+  | 'crema'
+  | 'panna'
+  | 'rosso_mattone'
+  | 'oro'
+  | 'verde_basilico'
+  | 'ink'
+  | 'surface_dark';
 
-/** I due ruoli tipografici: i titoli e il corpo del testo. */
-type FontRole = 'heading' | 'body';
+/**
+ * I ruoli tipografici: i titoli, il corpo, e — DE11-101 — il `display`, la serif didone dei DISPLAY
+ * editoriali (titoli/prezzi/citazioni). La famiglia display e' CONDIVISA da tutti i temi e verra'
+ * caricata self-host da DE11-102; qui e' solo lo STACK dichiarato, col fallback serif di sistema.
+ */
+type FontRole = 'heading' | 'body' | 'display';
+
+/**
+ * DE11-101 — i token di TRACKING (letter-spacing) memorizzati dal tema. `label` e' il tracking
+ * esteso delle label/eyebrow uppercase del DNA editoriale. Qui e' solo il valore-dato: l'APPLICAZIONE
+ * nel CSS e' DE11-103.
+ */
+type TrackingToken = 'label';
 
 /** I passi della scala tipografica, dal piu' piccolo al piu' grande. */
 type TypeScaleStep = 'sm' | 'base' | 'lg' | 'xl' | '2xl' | '3xl';
@@ -100,6 +124,15 @@ export type SiteTheme = {
     /** Stack completi, col fallback di sistema: un font che non carica non lascia il sito senza testo. */
     readonly font_family: Readonly<Record<FontRole, string>>;
     readonly scale: Readonly<Record<TypeScaleStep, string>>;
+    /**
+     * DE11-101 — le regole tipografiche editoriali MEMORIZZATE dal tema (l'APPLICAZIONE nel CSS e'
+     * DE11-103, l'asse trattamento-H1 e' DE11-201): il tracking esteso delle label, il flag
+     * `tabular_nums` del DNA ristorazione (cifre a larghezza fissa su orari/prezzi), e l'hook
+     * `h1_italic_default` — qui solo un token booleano, non ancora applicato.
+     */
+    readonly tracking: Readonly<Record<TrackingToken, string>>;
+    readonly tabular_nums: boolean;
+    readonly h1_italic_default: boolean;
   };
   readonly spacing: Readonly<Record<SpacingStep, string>>;
   readonly radius: Readonly<Record<RadiusStep, string>>;
@@ -137,11 +170,21 @@ export const THEMES: readonly SiteTheme[] = [
       accent: '#c0492b',
       accent_contrast: '#fff8f2',
       border: '#e6d7c3',
+      // DE11-101 — palette editoriale calda "vecchia insegna": crema/panna morbide, mattone e oro
+      // di terracotta, basilico spento; superficie scura per menu/sezioni su fondo bruno.
+      crema: '#f3e3c9',
+      panna: '#fbf3e3',
+      rosso_mattone: '#a83a22',
+      oro: '#c69a3e',
+      verde_basilico: '#5c7a3f',
+      ink: '#241812',
+      surface_dark: '#33241a',
     },
     typography: {
       font_family: {
         heading: 'Fraunces, Georgia, serif',
         body: 'Source Sans 3, Segoe UI, sans-serif',
+        display: 'Playfair Display, Georgia, serif',
       },
       scale: {
         sm: '0.875rem',
@@ -151,6 +194,9 @@ export const THEMES: readonly SiteTheme[] = [
         '2xl': '2.5rem',
         '3xl': '3.25rem',
       },
+      tracking: { label: '0.18em' },
+      tabular_nums: true,
+      h1_italic_default: true,
     },
     spacing: {
       xs: '0.375rem',
@@ -175,11 +221,21 @@ export const THEMES: readonly SiteTheme[] = [
       accent: '#1f4fd8',
       accent_contrast: '#ffffff',
       border: '#dfe3e8',
+      // DE11-101 — palette editoriale FREDDA e sobria: crema/panna quasi bianche, mattone e oro
+      // desaturati, basilico ombroso; superficie scura grafite per le sezioni notturne.
+      crema: '#eef1f4',
+      panna: '#f8fafb',
+      rosso_mattone: '#b23a2e',
+      oro: '#b8923f',
+      verde_basilico: '#4a7358',
+      ink: '#101418',
+      surface_dark: '#1b2129',
     },
     typography: {
       font_family: {
         heading: 'Space Grotesk, Helvetica Neue, sans-serif',
         body: 'Inter, Helvetica Neue, sans-serif',
+        display: 'Playfair Display, Georgia, serif',
       },
       scale: {
         sm: '0.8125rem',
@@ -189,6 +245,9 @@ export const THEMES: readonly SiteTheme[] = [
         '2xl': '2.125rem',
         '3xl': '2.75rem',
       },
+      tracking: { label: '0.18em' },
+      tabular_nums: true,
+      h1_italic_default: false,
     },
     spacing: {
       xs: '0.25rem',
@@ -214,11 +273,21 @@ export const THEMES: readonly SiteTheme[] = [
       accent: '#b6ff3b',
       accent_contrast: '#101318',
       border: '#2b323d',
+      // DE11-101 — palette editoriale su fondo scuro: crema/panna pallide per il testo caldo,
+      // mattone e oro accesi, basilico lime; superficie scura ANCORA piu' profonda della base.
+      crema: '#e4e7d0',
+      panna: '#f0f2e6',
+      rosso_mattone: '#c8452b',
+      oro: '#cbb23f',
+      verde_basilico: '#7fae3a',
+      ink: '#0a0c0f',
+      surface_dark: '#10141a',
     },
     typography: {
       font_family: {
         heading: 'Barlow Condensed, Oswald, sans-serif',
         body: 'Barlow, Roboto, sans-serif',
+        display: 'Playfair Display, Georgia, serif',
       },
       scale: {
         sm: '0.875rem',
@@ -228,6 +297,9 @@ export const THEMES: readonly SiteTheme[] = [
         '2xl': '2.375rem',
         '3xl': '3.5rem',
       },
+      tracking: { label: '0.18em' },
+      tabular_nums: true,
+      h1_italic_default: false,
     },
     spacing: {
       xs: '0.25rem',
@@ -253,11 +325,21 @@ export const THEMES: readonly SiteTheme[] = [
       accent: '#2f6b4f',
       accent_contrast: '#f7fdf9',
       border: '#d8d2c2',
+      // DE11-101 — palette editoriale "carta e inchiostro": crema/panna calde, mattone terroso,
+      // oro spento, verde bosco a fare da basilico; superficie scura verde-inchiostro.
+      crema: '#ece3cf',
+      panna: '#f7f1e2',
+      rosso_mattone: '#9c3b26',
+      oro: '#b58a3c',
+      verde_basilico: '#3f6b4a',
+      ink: '#1a221a',
+      surface_dark: '#2b3327',
     },
     typography: {
       font_family: {
         heading: 'Libre Baskerville, Georgia, serif',
         body: 'Karla, Helvetica, sans-serif',
+        display: 'Playfair Display, Georgia, serif',
       },
       scale: {
         sm: '0.8125rem',
@@ -267,6 +349,9 @@ export const THEMES: readonly SiteTheme[] = [
         '2xl': '2rem',
         '3xl': '2.625rem',
       },
+      tracking: { label: '0.18em' },
+      tabular_nums: true,
+      h1_italic_default: true,
     },
     spacing: {
       xs: '0.375rem',
@@ -292,11 +377,21 @@ export const THEMES: readonly SiteTheme[] = [
       accent: '#0f7c93',
       accent_contrast: '#ffffff',
       border: '#cfe2ea',
+      // DE11-101 — palette editoriale marina: crema/panna sabbiose, un mattone corallo, oro caldo
+      // e un basilico verde-mare; superficie scura blu profondo per le sezioni notturne.
+      crema: '#f0ead8',
+      panna: '#f9f5ea',
+      rosso_mattone: '#b8503a',
+      oro: '#cba64a',
+      verde_basilico: '#4f8f78',
+      ink: '#0e2330',
+      surface_dark: '#123141',
     },
     typography: {
       font_family: {
         heading: 'Poppins, Avenir Next, sans-serif',
         body: 'Nunito Sans, Segoe UI, sans-serif',
+        display: 'Playfair Display, Georgia, serif',
       },
       scale: {
         sm: '0.875rem',
@@ -306,6 +401,9 @@ export const THEMES: readonly SiteTheme[] = [
         '2xl': '2.25rem',
         '3xl': '3rem',
       },
+      tracking: { label: '0.18em' },
+      tabular_nums: true,
+      h1_italic_default: false,
     },
     spacing: {
       xs: '0.5rem',
@@ -334,11 +432,21 @@ export const THEMES: readonly SiteTheme[] = [
       accent: '#d9a441',
       accent_contrast: '#14171d',
       border: '#29323e',
+      // DE11-101 — palette editoriale notturna "eleganza trattenuta": crema/panna tenui, mattone
+      // sobrio, oro caldo, basilico attutito; superficie scura ancora piu' profonda della base.
+      crema: '#e7e2d3',
+      panna: '#f2eee2',
+      rosso_mattone: '#b4472f',
+      oro: '#cf9c3d',
+      verde_basilico: '#5c7d5a',
+      ink: '#0b0e13',
+      surface_dark: '#10151c',
     },
     typography: {
       font_family: {
         heading: 'Space Grotesk, Helvetica Neue, sans-serif',
         body: 'Nunito Sans, Segoe UI, sans-serif',
+        display: 'Playfair Display, Georgia, serif',
       },
       scale: {
         sm: '0.875rem',
@@ -348,6 +456,9 @@ export const THEMES: readonly SiteTheme[] = [
         '2xl': '2.75rem',
         '3xl': '3.75rem',
       },
+      tracking: { label: '0.18em' },
+      tabular_nums: true,
+      h1_italic_default: true,
     },
     spacing: {
       xs: '0.3125rem',
@@ -373,11 +484,21 @@ export const THEMES: readonly SiteTheme[] = [
       accent: '#e6541f',
       accent_contrast: '#fff6f0',
       border: '#f0e7d6',
+      // DE11-101 — palette editoriale della festa: crema/panna dorate, un mattone-arancio acceso,
+      // oro brillante, basilico vivo; superficie scura calda per banner e promozioni su fondo bruno.
+      crema: '#ffe9cf',
+      panna: '#fff4e6',
+      rosso_mattone: '#d23f1c',
+      oro: '#e2a233',
+      verde_basilico: '#5f9a42',
+      ink: '#241a12',
+      surface_dark: '#3a2a1c',
     },
     typography: {
       font_family: {
         heading: 'Poppins, Avenir Next, sans-serif',
         body: 'Barlow, Roboto, sans-serif',
+        display: 'Playfair Display, Georgia, serif',
       },
       scale: {
         sm: '0.9375rem',
@@ -387,6 +508,9 @@ export const THEMES: readonly SiteTheme[] = [
         '2xl': '2.875rem',
         '3xl': '4rem',
       },
+      tracking: { label: '0.18em' },
+      tabular_nums: true,
+      h1_italic_default: false,
     },
     spacing: {
       xs: '0.4375rem',
@@ -413,11 +537,21 @@ export const THEMES: readonly SiteTheme[] = [
       accent: '#4f8f6b',
       accent_contrast: '#f6fbf8',
       border: '#d9e5da',
+      // DE11-101 — palette editoriale naturale "di stagione": crema/panna verdoline, mattone
+      // terroso, oro-ottone spento, basilico fresco; superficie scura verde-inchiostro.
+      crema: '#eef0dd',
+      panna: '#f7f8ec',
+      rosso_mattone: '#a84a30',
+      oro: '#bfa049',
+      verde_basilico: '#4f8f6b',
+      ink: '#14201a',
+      surface_dark: '#1e2c24',
     },
     typography: {
       font_family: {
         heading: 'Fraunces, Georgia, serif',
         body: 'Karla, Helvetica, sans-serif',
+        display: 'Playfair Display, Georgia, serif',
       },
       scale: {
         sm: '0.8125rem',
@@ -427,6 +561,9 @@ export const THEMES: readonly SiteTheme[] = [
         '2xl': '2.375rem',
         '3xl': '3.125rem',
       },
+      tracking: { label: '0.18em' },
+      tabular_nums: true,
+      h1_italic_default: true,
     },
     spacing: {
       xs: '0.5rem',

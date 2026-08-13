@@ -44,6 +44,15 @@ export function siteThemeStyle(theme: SiteTheme): CSSProperties {
   }
   style['--site-font-heading'] = fontStackWithVariable(theme.typography.font_family.heading);
   style['--site-font-body'] = fontStackWithVariable(theme.typography.font_family.body);
+  // DE11-101 — la serif didone dei DISPLAY editoriali, con lo stesso trattamento var(--font-x) +
+  // fallback delle altre due famiglie: finche' DE11-102 non la self-hosta, resta lo stack grezzo col
+  // fallback serif del tema (mai un sito senza titoli).
+  style['--site-font-display'] = fontStackWithVariable(theme.typography.font_family.display);
+  // Il tracking esteso delle label/eyebrow uppercase e il commutatore delle cifre tabulari (DNA
+  // ristorazione): valori-dato del tema, proiettati come custom property che DE11-103 consumera'. Il
+  // numeric e' 'tabular-nums'|'normal' — l'unica forma che `font-variant-numeric` accetta dal flag.
+  style['--site-tracking-label'] = theme.typography.tracking.label;
+  style['--site-numeric-figure'] = theme.typography.tabular_nums ? 'tabular-nums' : 'normal';
   for (const [step, value] of Object.entries(theme.typography.scale)) {
     style[`--site-scale-${step}`] = value;
   }

@@ -169,9 +169,13 @@ test.describe('DE-102 hero visivamente distinto dalle altre sezioni su /s/<slug>
 
 // DE-103 (macrotask visual-skin) — i font dei temi sono caricati DAVVERO e self-host. Sulla rotta
 // PUBBLICA e ANON /s/<slug> con sole-mediterraneo@1 (heading 'Fraunces'):
-//  - AC-DE-103-1: il font-family COMPUTATO dell'<h1> hero risolve alla famiglia di catalogo del
-//    tema (contiene 'Fraunces'), non al solo fallback di sistema (Georgia/serif). L'hero applica
-//    var(--site-font-heading) (Hero.tsx) e theme-style.ts vi antepone var(--font-fraunces): il
+//  - AC-DE-103-1: il font-family COMPUTATO di un elemento HEADING risolve alla famiglia di catalogo
+//    del tema (contiene 'Fraunces'), non al solo fallback di sistema (Georgia/serif). NB (DE11-103,
+//    design-engine-v1.1): la PELLE EDITORIALE porta l'<h1> hero alla famiglia DISPLAY (Playfair,
+//    --site-font-display) via site.css; il token HEADING resta applicato al NOME dell'attivita'
+//    (`p.site-hero__brand`, Hero.tsx, ancora var(--site-font-heading)) — e' li' che si prova
+//    l'applicazione self-host del token heading (l'hero-title=display e' coperto da
+//    e2e/editorial-skin.spec.ts). theme-style.ts antepone var(--font-fraunces) allo stack: il
 //    browser sostituisce la variabile e getComputedStyle restituisce la lista risolta.
 //  - AC-DE-103-2: caricando la pagina NESSUNA richiesta di rete va a un host di font esterno
 //    (fonts.gstatic.com / fonts.googleapis.com); i .woff2 sono serviti da 'self' (/_next/static/
@@ -221,7 +225,7 @@ test.describe('DE-103 font self-host mappati ai token del tema su /s/<slug> (AC-
     return publicSlug;
   }
 
-  test('il font-family computato dell hero risolve alla famiglia di catalogo (Fraunces), non al fallback di sistema', async ({
+  test('il font-family computato di un elemento heading (brand) risolve alla famiglia di catalogo (Fraunces), non al fallback di sistema', async ({
     page,
   }) => {
     // given: un sito pubblicato col tema sole-mediterraneo@1, il cui stack heading e' 'Fraunces, ...'.
@@ -231,15 +235,17 @@ test.describe('DE-103 font self-host mappati ai token del tema su /s/<slug> (AC-
     const response = await page.goto(`/s/${publicSlug}`);
     expect(response?.status()).toBe(200); // covers: AC-DE-103-1
 
-    // then: il font-family COMPUTATO dell'<h1> hero contiene la famiglia di catalogo del tema. Il
-    // valore risolto e' la lista `var(--font-fraunces) sostituita, Fraunces, Georgia, serif`: contiene
-    // 'fraunces' (dalla famiglia self-host e dal fallback del tema) e NON e' il solo fallback di
-    // sistema. Se i font non fossero caricati e la variabile non mappata, il titolo cadrebbe su
-    // 'Georgia, serif' e 'fraunces' non comparirebbe.
-    const heroTitle = page.locator('h1.site-hero__title');
-    await expect(heroTitle).toBeVisible();
+    // then: il font-family COMPUTATO del NOME dell'attivita' (`p.site-hero__brand`, che applica ancora
+    // var(--site-font-heading) — l'<h1> hero sotto la pelle editoriale usa invece la famiglia DISPLAY,
+    // DE11-103) contiene la famiglia HEADING di catalogo del tema. Il valore risolto e' la lista
+    // `var(--font-fraunces) sostituita, Fraunces, Georgia, serif`: contiene 'fraunces' (dalla famiglia
+    // self-host e dal fallback del tema) e NON e' il solo fallback di sistema. Se i font non fossero
+    // caricati e la variabile non mappata, il brand cadrebbe su 'Georgia, serif' e 'fraunces' non
+    // comparirebbe.
+    const heroBrand = page.locator('p.site-hero__brand');
+    await expect(heroBrand).toBeVisible();
     const fontFamily = (
-      await heroTitle.first().evaluate((element) => getComputedStyle(element).fontFamily)
+      await heroBrand.first().evaluate((element) => getComputedStyle(element).fontFamily)
     ).toLowerCase();
     expect(fontFamily).toContain('fraunces'); // covers: AC-DE-103-1
     expect(fontFamily).not.toBe('georgia, serif'); // covers: AC-DE-103-1
@@ -248,10 +254,10 @@ test.describe('DE-103 font self-host mappati ai token del tema su /s/<slug> (AC-
     // PIN DEL DELIVERABLE (DE-103 #2): theme-style antepone var(--font-fraunces) allo stack. next/font
     // (self-host) genera, ACCANTO alla famiglia reale 'Fraunces', una fallback a metriche corrette
     // chiamata 'Fraunces Fallback' — e la variabile vale ["Fraunces", "Fraunces Fallback"]. Quel nome
-    // di fallback compare nel font-family COMPUTATO dell'h1 SOLO se la variabile next/font e' applicata
+    // di fallback compare nel font-family COMPUTATO del brand SOLO se la variabile next/font e' applicata
     // all'elemento. Se il prepend fosse rimosso, --site-font-heading resterebbe lo stack grezzo del tema
     // ('Fraunces, Georgia, serif'), PRIVO di 'Fraunces Fallback', e questa asserzione cadrebbe: e' cio'
-    // che distingue "font self-host APPLICATO al titolo" da "famiglia del tema soltanto nominata" (il
+    // che distingue "font self-host APPLICATO all'elemento" da "famiglia del tema soltanto nominata" (il
     // buco che 'contiene fraunces' non chiudeva, perche' 'Fraunces' e' gia' nello stack del tema).
     expect(fontFamily).toContain('fraunces fallback'); // covers: AC-DE-103-1
 

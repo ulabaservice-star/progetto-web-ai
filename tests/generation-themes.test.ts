@@ -43,16 +43,36 @@ const CHIAVI_COLORE: Record<keyof SiteTheme['colors'], true> = {
   accent: true,
   accent_contrast: true,
   border: true,
+  // DE11-101: la palette editoriale estesa (+ superficie scura). Il record e' TOTALE per tipo — un
+  // token nuovo in ColorToken senza la sua riga qui non compila (l'unica derivazione ammessa).
+  crema: true,
+  panna: true,
+  rosso_mattone: true,
+  oro: true,
+  verde_basilico: true,
+  ink: true,
+  surface_dark: true,
 };
 
 const CHIAVI_TIPOGRAFIA: Record<keyof SiteTheme['typography'], true> = {
   font_family: true,
   scale: true,
+  // DE11-101: le regole tipografiche editoriali memorizzate dal tema.
+  tracking: true,
+  tabular_nums: true,
+  h1_italic_default: true,
 };
 
 const CHIAVI_FAMIGLIA: Record<keyof SiteTheme['typography']['font_family'], true> = {
   heading: true,
   body: true,
+  // DE11-101: la serif didone dei display editoriali.
+  display: true,
+};
+
+// DE11-101: i token di tracking del tema (per il conteggio dei valori-stringa piu' sotto).
+const CHIAVI_TRACKING: Record<keyof SiteTheme['typography']['tracking'], true> = {
+  label: true,
 };
 
 const CHIAVI_SCALA: Record<keyof SiteTheme['typography']['scale'], true> = {
@@ -115,10 +135,18 @@ const TEMI_ATTESI: Record<string, TemaAtteso> = {
       accent: '#c0492b',
       accent_contrast: '#fff8f2',
       border: '#e6d7c3',
+      crema: '#f3e3c9',
+      panna: '#fbf3e3',
+      rosso_mattone: '#a83a22',
+      oro: '#c69a3e',
+      verde_basilico: '#5c7a3f',
+      ink: '#241812',
+      surface_dark: '#33241a',
     },
     font_family: {
       heading: 'Fraunces, Georgia, serif',
       body: 'Source Sans 3, Segoe UI, sans-serif',
+      display: 'Playfair Display, Georgia, serif',
     },
     scale: {
       sm: '0.875rem',
@@ -147,10 +175,18 @@ const TEMI_ATTESI: Record<string, TemaAtteso> = {
       accent: '#1f4fd8',
       accent_contrast: '#ffffff',
       border: '#dfe3e8',
+      crema: '#eef1f4',
+      panna: '#f8fafb',
+      rosso_mattone: '#b23a2e',
+      oro: '#b8923f',
+      verde_basilico: '#4a7358',
+      ink: '#101418',
+      surface_dark: '#1b2129',
     },
     font_family: {
       heading: 'Space Grotesk, Helvetica Neue, sans-serif',
       body: 'Inter, Helvetica Neue, sans-serif',
+      display: 'Playfair Display, Georgia, serif',
     },
     scale: {
       sm: '0.8125rem',
@@ -179,10 +215,18 @@ const TEMI_ATTESI: Record<string, TemaAtteso> = {
       accent: '#b6ff3b',
       accent_contrast: '#101318',
       border: '#2b323d',
+      crema: '#e4e7d0',
+      panna: '#f0f2e6',
+      rosso_mattone: '#c8452b',
+      oro: '#cbb23f',
+      verde_basilico: '#7fae3a',
+      ink: '#0a0c0f',
+      surface_dark: '#10141a',
     },
     font_family: {
       heading: 'Barlow Condensed, Oswald, sans-serif',
       body: 'Barlow, Roboto, sans-serif',
+      display: 'Playfair Display, Georgia, serif',
     },
     scale: {
       sm: '0.875rem',
@@ -211,10 +255,18 @@ const TEMI_ATTESI: Record<string, TemaAtteso> = {
       accent: '#2f6b4f',
       accent_contrast: '#f7fdf9',
       border: '#d8d2c2',
+      crema: '#ece3cf',
+      panna: '#f7f1e2',
+      rosso_mattone: '#9c3b26',
+      oro: '#b58a3c',
+      verde_basilico: '#3f6b4a',
+      ink: '#1a221a',
+      surface_dark: '#2b3327',
     },
     font_family: {
       heading: 'Libre Baskerville, Georgia, serif',
       body: 'Karla, Helvetica, sans-serif',
+      display: 'Playfair Display, Georgia, serif',
     },
     scale: {
       sm: '0.8125rem',
@@ -243,10 +295,18 @@ const TEMI_ATTESI: Record<string, TemaAtteso> = {
       accent: '#0f7c93',
       accent_contrast: '#ffffff',
       border: '#cfe2ea',
+      crema: '#f0ead8',
+      panna: '#f9f5ea',
+      rosso_mattone: '#b8503a',
+      oro: '#cba64a',
+      verde_basilico: '#4f8f78',
+      ink: '#0e2330',
+      surface_dark: '#123141',
     },
     font_family: {
       heading: 'Poppins, Avenir Next, sans-serif',
       body: 'Nunito Sans, Segoe UI, sans-serif',
+      display: 'Playfair Display, Georgia, serif',
     },
     scale: {
       sm: '0.875rem',
@@ -277,10 +337,18 @@ const TEMI_ATTESI: Record<string, TemaAtteso> = {
       accent: '#d9a441',
       accent_contrast: '#14171d',
       border: '#29323e',
+      crema: '#e7e2d3',
+      panna: '#f2eee2',
+      rosso_mattone: '#b4472f',
+      oro: '#cf9c3d',
+      verde_basilico: '#5c7d5a',
+      ink: '#0b0e13',
+      surface_dark: '#10151c',
     },
     font_family: {
       heading: 'Space Grotesk, Helvetica Neue, sans-serif',
       body: 'Nunito Sans, Segoe UI, sans-serif',
+      display: 'Playfair Display, Georgia, serif',
     },
     scale: {
       sm: '0.875rem',
@@ -309,10 +377,18 @@ const TEMI_ATTESI: Record<string, TemaAtteso> = {
       accent: '#e6541f',
       accent_contrast: '#fff6f0',
       border: '#f0e7d6',
+      crema: '#ffe9cf',
+      panna: '#fff4e6',
+      rosso_mattone: '#d23f1c',
+      oro: '#e2a233',
+      verde_basilico: '#5f9a42',
+      ink: '#241a12',
+      surface_dark: '#3a2a1c',
     },
     font_family: {
       heading: 'Poppins, Avenir Next, sans-serif',
       body: 'Barlow, Roboto, sans-serif',
+      display: 'Playfair Display, Georgia, serif',
     },
     scale: {
       sm: '0.9375rem',
@@ -341,10 +417,18 @@ const TEMI_ATTESI: Record<string, TemaAtteso> = {
       accent: '#4f8f6b',
       accent_contrast: '#f6fbf8',
       border: '#d9e5da',
+      crema: '#eef0dd',
+      panna: '#f7f8ec',
+      rosso_mattone: '#a84a30',
+      oro: '#bfa049',
+      verde_basilico: '#4f8f6b',
+      ink: '#14201a',
+      surface_dark: '#1e2c24',
     },
     font_family: {
       heading: 'Fraunces, Georgia, serif',
       body: 'Karla, Helvetica, sans-serif',
+      display: 'Playfair Display, Georgia, serif',
     },
     scale: {
       sm: '0.8125rem',
@@ -401,12 +485,17 @@ function valoriDelTema(tema: SiteTheme): readonly { percorso: string; valore: st
   return raccolti;
 }
 
-/** Il numero di valori che un tema completo espone: 1 (id) + le chiavi di ogni gruppo. */
+/**
+ * Il numero di valori STRINGA che un tema completo espone: 1 (id) + le chiavi di ogni gruppo. NB
+ * (DE11-101): `valoriDelTema` raccoglie SOLO le stringhe, quindi il tracking (`label`) conta, mentre
+ * i flag booleani `tabular_nums`/`h1_italic_default` NON contano — non sono foglie-stringa del walk.
+ */
 const VALORI_PER_TEMA =
   1 +
   Object.keys(CHIAVI_COLORE).length +
   Object.keys(CHIAVI_FAMIGLIA).length +
   Object.keys(CHIAVI_SCALA).length +
+  Object.keys(CHIAVI_TRACKING).length +
   Object.keys(CHIAVI_SPAZIATURA).length +
   Object.keys(CHIAVI_RAGGIO).length;
 
@@ -615,9 +704,24 @@ describe('T-211 SiteTheme — il tipo e totale: un tema incompleto non compila',
       text_muted: '#606060',
       accent: '#3355ff',
       accent_contrast: '#ffffff',
+      // DE11-101: la palette editoriale estesa e' presente per intero — resta mancante SOLO 'border',
+      // cosi' il '@ts-expect-error' qui sopra ha per preda l'omissione di UN token soltanto.
+      crema: '#f0e8d8',
+      panna: '#f8f2e6',
+      rosso_mattone: '#a83a22',
+      oro: '#c69a3e',
+      verde_basilico: '#4f8f6b',
+      ink: '#121212',
+      surface_dark: '#1a1a1a',
     },
     typography: {
-      font_family: { heading: 'Inter, sans-serif', body: 'Inter, sans-serif' },
+      // DE11-101: i nuovi token tipografici sono OBBLIGATORI (nessun '@ts-expect-error' qui): la
+      // typography del fixture e' completa, l'unica omissione voluta e' il token di colore 'border'.
+      font_family: {
+        heading: 'Inter, sans-serif',
+        body: 'Inter, sans-serif',
+        display: 'Playfair Display, serif',
+      },
       scale: {
         sm: '0.875rem',
         base: '1rem',
@@ -626,6 +730,9 @@ describe('T-211 SiteTheme — il tipo e totale: un tema incompleto non compila',
         '2xl': '2rem',
         '3xl': '2.5rem',
       },
+      tracking: { label: '0.18em' },
+      tabular_nums: true,
+      h1_italic_default: false,
     },
     spacing: {
       xs: '0.25rem',

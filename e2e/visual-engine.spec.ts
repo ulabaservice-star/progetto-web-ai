@@ -138,13 +138,15 @@ async function assertHeroTitleFontSize(page: Page, minPx: number): Promise<void>
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AC-DE-401-1 (PELLE) — sito pubblicato reso su /s/ -> font-size hero >= 40 su .site-hero__title E
-// font di catalogo caricato (fontFamily contiene 'fraunces', non un fallback di sistema; confermato
-// via document.fonts). E' l'EFFETTO in un browser vero del foglio site.css + del font self-host
-// (next/font) mappato sul token del tema, non solo l'attributo dichiarato.
+// font di catalogo caricato (fontFamily contiene 'playfair display', non un fallback di sistema;
+// confermato via document.fonts). E' l'EFFETTO in un browser vero del foglio site.css + del font
+// self-host (next/font) mappato sul token del tema, non solo l'attributo dichiarato. NB (DE11-103,
+// design-engine-v1.1): la pelle editoriale porta l'<h1> hero alla famiglia DISPLAY (Playfair,
+// --site-font-display); questo AC prova ora l'applicazione self-host della display sul titolo grande.
 // ─────────────────────────────────────────────────────────────────────────────
 
 test.describe('DE-401 AC-DE-401-1 (PELLE) — hero grande e font di catalogo caricato su /s/<slug>', () => {
-  test('il titolo hero rende >= 40px con la famiglia Fraunces self-host (non un fallback di sistema)', async ({
+  test('il titolo hero rende >= 40px con la famiglia display Playfair self-host (non un fallback di sistema)', async ({
     page,
   }) => {
     // given: un sito pubblicato col tema di catalogo (hero-layout di default centrato@1).
@@ -160,27 +162,28 @@ test.describe('DE-401 AC-DE-401-1 (PELLE) — hero grande e font di catalogo car
     // STESSO predicato che il canary (a) fa fallire.
     await expect(assertHeroTitleFontSize(page, 40)).resolves.toBeUndefined(); // covers: AC-DE-401-1
 
-    // then (font di catalogo): il font-family COMPUTATO del titolo contiene la famiglia del tema
-    // (Fraunces) e NON e' il solo fallback di sistema — prova che theme-style mappa il token e che il
-    // font self-host e' applicato all'elemento, non solo nominato nello stack.
+    // then (font di catalogo): il font-family COMPUTATO del titolo contiene la famiglia DISPLAY del tema
+    // (Playfair Display, DE11-103) e NON e' il solo fallback di sistema — prova che theme-style mappa il
+    // token --site-font-display e che il font self-host e' applicato all'elemento, non solo nominato.
     const heroTitle = page.locator('h1.site-hero__title');
     await expect(heroTitle).toBeVisible(); // covers: AC-DE-401-1
     const fontFamily = (
       await heroTitle.first().evaluate((element) => getComputedStyle(element).fontFamily)
     ).toLowerCase();
-    expect(fontFamily).toContain('fraunces'); // covers: AC-DE-401-1
+    expect(fontFamily).toContain('playfair display'); // covers: AC-DE-401-1
     expect(fontFamily).not.toBe('georgia, serif'); // covers: AC-DE-401-1
     expect(fontFamily).not.toBe('serif'); // covers: AC-DE-401-1
 
     // then (caricamento reale): la PROVA PORTANTE della mappatura tema->font e' la riga sopra (il
-    // font-family COMPUTATO dell'hero CONTIENE Fraunces e non e' un fallback di sistema). Qui si conferma
-    // in PIU' che il webfont Fraunces e' stato davvero CARICATO (stato loaded), non solo dichiarato:
-    // document.fonts.check(...) e' vero SOLO se la face e' pronta all'uso — un fallback di sistema non
-    // scaricherebbe nulla. (Nota di rigore: questo check da solo non discrimina il TEMA attivo, perche'
-    // next/font registra le variabili di tutte le famiglie del catalogo; a inchiodare l'AC e' :171.)
+    // font-family COMPUTATO dell'hero CONTIENE 'playfair display' e non e' un fallback di sistema). Qui
+    // si conferma in PIU' che il webfont Playfair Display e' stato davvero CARICATO (stato loaded), non
+    // solo dichiarato: document.fonts.check(...) e' vero SOLO se la face e' pronta all'uso — un fallback
+    // di sistema non scaricherebbe nulla. (Nota di rigore: questo check da solo non discrimina il TEMA
+    // attivo, perche' next/font registra le variabili di tutte le famiglie del catalogo; a inchiodare
+    // l'AC e' :171.)
     const heroWebfontLoaded = await page.evaluate(async () => {
       await document.fonts.ready;
-      return document.fonts.check('40px "Fraunces"');
+      return document.fonts.check('40px "Playfair Display"');
     });
     expect(heroWebfontLoaded).toBe(true); // covers: AC-DE-401-1
   });
