@@ -181,12 +181,15 @@ describe('DE-205 AC-DE-205-2 — un documento P4 senza i campi valida ancora, co
     expect(documento.effect_level).toBe(DESIGN_SELECTION_DEFAULTS.effect_level); // covers: AC-DE-205-2
 
     // I default sono PINNATI e allineati per assunzione ai cataloghi DE-201/DE-202 (centrato@1, piano@1,
-    // L1): cambiarli e' una decisione, non un dettaglio, e deve costare un test rosso. Ogni id e' nella
-    // forma versionata, effect_level e' un livello valido.
+    // L1) e — da DE11-205 (variety-engine) — ai cataloghi DE11-201/DE11-202 (occhiello@1,
+    // chi-siamo-ritratto@1): cambiarli e' una decisione, non un dettaglio, e deve costare un test rosso.
+    // Ogni id e' nella forma versionata, effect_level e' un livello valido.
     expect(DESIGN_SELECTION_DEFAULTS).toEqual({
       hero_layout_id: 'centrato@1',
       section_treatment_id: 'piano@1',
       effect_level: 'L1',
+      h1_treatment_id: 'occhiello@1',
+      section_layout_id: 'chi-siamo-ritratto@1',
     }); // covers: AC-DE-205-2
 
     // ornament_id NON ha default: un sito puo' non avere ornamento (DS-D5). Assente nell'input, resta

@@ -27,6 +27,20 @@
 //        illeggibile. Il segno del tema si legge dalla LUMINANZA del suo `background` reale (dato di
 //        catalogo), il segno del trattamento dal suo `surface`. 'ereditato' non fissa nulla: sempre
 //        compatibile.
+//   R3 · (DE11-203, macrotask variety-engine) COERENZA HERO↔ILLUSTRAZIONE: un'illustrazione di
+//        catalogo (`illustration_id`, DE11-104) puo' vestire SOLO un hero che OSPITA lo slot
+//        'illustrazione' — oggi il solo 'editoriale-illustrato@1'. Appenderne una a un hero che non
+//        le lascia posto (una foto piena, un centrato di sola tipografia) e' incoerente: la scena non
+//        avrebbe dove vivere. Ancora al tratto `slots` dell'hero (dato di catalogo), non a un id.
+//
+// I NUOVI ASSI (DE11-203): la Combo cresce di quattro manopole OPZIONALI — `h1_treatment_id`
+// (DE11-201, il tratto del titolo), `section_layout_id` (DE11-202, l'impaginazione del CORPO),
+// `ribbon_id` (DE11-202, il nastro divisorio) e `illustration_id` (DE11-104). Sono ADDITIVE e
+// retro-compatibili: una Combo v1 senza questi campi resta valida e `isAllowed` non la penalizza. Se
+// presenti, `isAllowed` ne verifica l'ESISTENZA nei cataloghi (lookup esatto, proto-safe) e applica
+// R3. `allowedCombinations` li POPOLA per rompere il difetto v1 "3/5 stesso hero, corpo mai variato":
+// e' su `section_layout_id` (legato all'INDICE dell'hero) che poggia la garanzia di 5 varianti a hero
+// E corpo tutti diversi.
 
 import { EFFECTS, type EffectLevel } from '@/domain/generation/effects';
 import {
@@ -42,6 +56,19 @@ import {
 import { ORNAMENTS, ornamentFor, type SiteOrnament } from '@/domain/generation/ornaments';
 import { THEMES, themeFor, type SiteTheme } from '@/domain/generation/themes';
 import { recipeFor } from '@/domain/generation/recipes';
+// DE11-203 (variety-engine) — i cataloghi dei nuovi assi: il tratto dell'H1 (DE11-201), i layout di
+// sezione e i nastri (DE11-202), le illustrazioni (DE11-104). Si importano sia gli ARRAY (per
+// popolare in `allowedCombinations`) sia i LOOKUP esatti (per validare in `isAllowed`, proto-safe).
+import { H1_TREATMENTS, h1TreatmentFor } from '@/domain/generation/h1-treatments';
+import {
+  SECTION_LAYOUTS,
+  sectionLayoutFor,
+  RIBBONS,
+  ribbonFor,
+  type SiteSectionLayout,
+  type SiteRibbon,
+} from '@/domain/generation/section-layouts';
+import { ILLUSTRATIONS, illustrationFor } from '@/domain/generation/illustrations';
 import type { CatalogScope } from '@/domain/generation/design-catalog';
 import type { Brief } from '@/domain/onboarding/brief';
 
@@ -65,6 +92,13 @@ export type Combo = {
   readonly section_treatment_id: string;
   readonly effect_level: EffectLevel;
   readonly ornament_id?: string;
+  // DE11-203 (variety-engine) — I NUOVI ASSI del titolo e del CORPO, tutti OPZIONALI e ADDITIVI: una
+  // Combo v1 costruita senza di essi resta valida (i test v1 non regrediscono) e `isAllowed` non la
+  // penalizza. Se presenti, devono risolvere nei rispettivi cataloghi (DE11-201/202/104), proto-safe.
+  readonly h1_treatment_id?: string;
+  readonly section_layout_id?: string;
+  readonly ribbon_id?: string;
+  readonly illustration_id?: string;
 };
 
 /** I livelli di effetto in ordine crescente di movimento, DERIVATI dal catalogo (L0..L4). */
@@ -103,6 +137,17 @@ function surfaceConflictsWithTheme(theme: SiteTheme, treatment: SiteSectionTreat
 }
 
 /**
+ * R3 (DE11-203) — l'hero OSPITA uno slot 'illustrazione'? Solo allora una scena del catalogo
+ * illustrazioni (DE11-104) ha un posto dove vivere. Il segnale e' il tratto `slots` dell'hero (dato
+ * di catalogo): oggi il solo 'editoriale-illustrato@1' lo dichiara; gli hero v1 non hanno `slots`
+ * (campo opzionale) → nessuno spazio, quindi nessuna illustrazione ammessa. Guardia esplicita su
+ * `undefined` invece dell'optional-chaining per leggere alla lettera "l'hero non ha slot".
+ */
+function heroHostsIllustration(hero: SiteHeroLayout): boolean {
+  return hero.slots !== undefined && hero.slots.includes('illustrazione');
+}
+
+/**
  * `true` se la combinazione e' AMMESSA: tutti gli id risolvono a voci di catalogo esistenti (lookup
  * esatto, proto-safe) e nessuna regola dichiarata la vieta. Un id fantasma o ereditato da
  * Object.prototype, o un `effect_level` fuori da L0..L4, la fanno cadere: la matrice non pronuncia
@@ -119,6 +164,22 @@ export function isAllowed(combo: Combo): boolean {
   // Gli id opzionali, se presenti, devono risolvere: nessun riferimento pendente sopravvive.
   if (combo.ornament_id !== undefined && ornamentFor(combo.ornament_id) === undefined) return false;
   if (combo.recipe_id !== undefined && recipeFor(combo.recipe_id) === undefined) return false;
+  // I NUOVI ASSI (DE11-203), se presenti, devono risolvere nei loro cataloghi (lookup esatto,
+  // proto-safe): un id fantasma, un prefisso-senza-@N o una chiave ereditata da Object.prototype
+  // fanno cadere la combinazione, come per gli assi storici.
+  if (combo.h1_treatment_id !== undefined && h1TreatmentFor(combo.h1_treatment_id) === undefined) {
+    return false;
+  }
+  if (
+    combo.section_layout_id !== undefined &&
+    sectionLayoutFor(combo.section_layout_id) === undefined
+  ) {
+    return false;
+  }
+  if (combo.ribbon_id !== undefined && ribbonFor(combo.ribbon_id) === undefined) return false;
+  if (combo.illustration_id !== undefined && illustrationFor(combo.illustration_id) === undefined) {
+    return false;
+  }
 
   // R1 — un hero a foto piena regge al piu' L2.
   if (hero.media === 'foto-piena' && EFFECT_RANK[combo.effect_level] > FULL_BLEED_EFFECT_CEILING) {
@@ -126,6 +187,8 @@ export function isAllowed(combo: Combo): boolean {
   }
   // R2 — leggibilita: niente superficie fissata di segno opposto al tema.
   if (surfaceConflictsWithTheme(theme, treatment)) return false;
+  // R3 — coerenza hero↔illustrazione: una scena solo su un hero che ne ospita lo slot.
+  if (combo.illustration_id !== undefined && !heroHostsIllustration(hero)) return false;
 
   return true;
 }
@@ -164,11 +227,58 @@ function pickOrnament(ornaments: readonly SiteOrnament[], index: number): string
 }
 
 /**
+ * DE11-203 — il trattamento dell'H1 (DE11-201) per una combinazione, ruotato lungo l'elenco per
+ * SPARGERE la varieta' tipografica del titolo lungo il pool. Sempre valorizzato: tutti i tratti d'H1
+ * sono 'universale', quindi non c'e' un caso "nessuno" da lasciar passare (a differenza di ornamento
+ * e nastro, decorativi e opzionali).
+ */
+function pickH1Treatment(index: number): string {
+  return H1_TREATMENTS[index % H1_TREATMENTS.length].id;
+}
+
+/**
+ * DE11-203 — il nastro divisorio (DE11-202) per una combinazione, ruotato fra "nessuno" e i nastri
+ * DISPONIBILI per il settore: da' varieta' e rende osservabile l'overlay (il gingham della tovaglia
+ * compare solo in ristorazione, mai altrove — lo garantisce `availableByScope` a monte). `undefined`
+ * = nessun nastro.
+ */
+function pickRibbon(ribbons: readonly SiteRibbon[], index: number): string | undefined {
+  const opzioni: readonly (string | undefined)[] = [undefined, ...ribbons.map((r) => r.id)];
+  return opzioni[index % opzioni.length];
+}
+
+/**
+ * DE11-203 — il layout di sezione del CORPO (DE11-202), ANCORATO all'INDICE dell'hero nell'elenco
+ * disponibile: hero DIVERSI ricevono cosi' layout di corpo DIVERSI (mappa INIETTIVA finche' gli hero
+ * non superano i layout — oggi 5-6 hero contro >=6 layout). E' QUESTA scelta che regge la garanzia
+ * "5 varianti con hero E corpo tutti diversi" con cui v1.1 rompe il difetto v1 "corpo mai variato":
+ * poiche' OGNI combo di un dato hero porta lo STESSO section_layout, selezionandone una per hero
+ * distinto i layout di corpo risultano a due a due distinti — senza dipendere da un contatore globale
+ * (che potrebbe far collidere due hero sullo stesso layout). Sceglie con `heroIndex % layouts.length`:
+ * se un domani gli hero superassero i layout, due hero condividerebbero un corpo, e allora la garanzia
+ * andra' rinforzata (o il catalogo layout allargato).
+ */
+function pickSectionLayout(layouts: readonly SiteSectionLayout[], heroIndex: number): string {
+  return layouts[heroIndex % layouts.length].id;
+}
+
+/**
  * Enumera SOLO le combinazioni AMMESSE per un vertical. Prodotto deterministico dei tre assi
  * PRIMARI di varieta' (tema × hero × trattamento — struttura + tipografia/colore, cfr.
- * ristorazione.md §Parte 3), con `effect_level` e `ornament_id` ruotati per spargere movimento e
- * decoro lungo l'elenco. Ogni combinazione passa da `isAllowed`, quindi le coppie illeggibili (R2)
- * sono scartate qui e l'elenco non contiene mai una combinazione vietata.
+ * ristorazione.md §Parte 3), con gli assi DECORATIVI/DEL CORPO POPOLATI sopra: `effect_level`,
+ * `ornament_id`, `h1_treatment_id` e `ribbon_id` ruotati sul contatore `flavor` per spargere
+ * movimento, decoro, titolo e nastro lungo l'elenco; `section_layout_id` invece ANCORATO all'indice
+ * dell'hero (vedi `pickSectionLayout`) e `illustration_id` acceso SOLO sull'hero che ospita lo slot
+ * (R3). Ogni combinazione passa da `isAllowed`, quindi le coppie illeggibili (R2), gli hero a foto
+ * piena sopra il tetto (R1) e le illustrazioni senza casa (R3) sono scartate qui e l'elenco non
+ * contiene mai una combinazione vietata.
+ *
+ * LA GARANZIA DE11-203 (rompere "3/5 stesso hero, corpo mai variato"): l'iterazione visita TUTTI gli
+ * hero DISPONIBILI (>=5 universali, +overlay), e ciascuno compare almeno con `piano@1` (superficie
+ * 'ereditato', mai in conflitto R2) → >=5 hero_layout_id DISTINTI nel pool. Poiche' `section_layout_id`
+ * e' funzione INIETTIVA dell'indice dell'hero, prendendo UNA combo per hero distinto si ottengono 5
+ * combo con hero E corpo (section_layout) a due a due diversi — la premessa strutturale che DE11-204
+ * trasforma in 5 varianti.
  *
  * PURA E DETERMINISTICA: cicli su cataloghi in ordine di dichiarazione + un contatore, nessun
  * Date/Math.random. `recipe_id` resta assente: la ricetta e' contenuto ortogonale (DS-D3), scelto a
@@ -178,21 +288,40 @@ export function allowedCombinations(vertical: Vertical): readonly Combo[] {
   const heroes = availableByScope(HERO_LAYOUTS, vertical);
   const treatments = availableByScope(SECTION_TREATMENTS, vertical);
   const ornaments = availableByScope(ORNAMENTS, vertical);
+  // DE11-203 — i cataloghi dei nuovi assi filtrati per settore: i layout di sezione e i nastri
+  // rispettano lo scope (il menu card-carta e il gingham sono overlay di ristorazione, non escono
+  // altrove). Le illustrazioni non hanno scope (sono trasversali, DE11-104) → si attingono direttamente.
+  const sectionLayouts = availableByScope(SECTION_LAYOUTS, vertical);
+  const ribbons = availableByScope(RIBBONS, vertical);
 
   const combos: Combo[] = [];
   let flavor = 0;
   for (const theme of THEMES) {
-    for (const hero of heroes) {
+    for (let heroIndex = 0; heroIndex < heroes.length; heroIndex += 1) {
+      const hero = heroes[heroIndex];
       for (const treatment of treatments) {
         const effect_level = pickEffectLevel(hero, flavor);
         const ornament_id = pickOrnament(ornaments, flavor);
+        // DE11-203 — assi del titolo/CORPO/nastro. `h1_treatment_id` e `section_layout_id` sono
+        // SEMPRE valorizzati (nessun caso "nessuno"); `ribbon_id` e' opzionale; `illustration_id` si
+        // accende SOLO sull'hero che ne ospita lo slot, cosi' R3 non scarta mai una combo popolata qui.
+        const h1_treatment_id = pickH1Treatment(flavor);
+        const section_layout_id = pickSectionLayout(sectionLayouts, heroIndex);
+        const ribbon_id = pickRibbon(ribbons, flavor);
+        const illustration_id = heroHostsIllustration(hero)
+          ? ILLUSTRATIONS[flavor % ILLUSTRATIONS.length].id
+          : undefined;
         flavor += 1;
         const candidate: Combo = {
           theme_id: theme.id,
           hero_layout_id: hero.id,
           section_treatment_id: treatment.id,
           effect_level,
+          h1_treatment_id,
+          section_layout_id,
           ...(ornament_id !== undefined ? { ornament_id } : {}),
+          ...(ribbon_id !== undefined ? { ribbon_id } : {}),
+          ...(illustration_id !== undefined ? { illustration_id } : {}),
         };
         if (isAllowed(candidate)) combos.push(candidate);
       }

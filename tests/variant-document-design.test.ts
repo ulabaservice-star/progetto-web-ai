@@ -130,9 +130,26 @@ describe('AC-DE-206-1 — le 5 varianti congelano una DesignSelection e sono dis
   it('ornament ASSENTE: se la selezione non porta ornamento, il documento non ne FABBRICA uno (DS-D5)', () => {
     // Un (seed, variante) per cui la selezione di ristorazione NON ha ornamento (precondizione
     // ESPLICITA: senza di essa il ramo "assente" del freeze non sarebbe esercitato, e una mutazione
-    // tipo `selection.ornament_id ?? 'fabbricato@1'` sopravviverebbe al test).
-    const SEED_SENZA_ORNAMENTO = 'gen-senza-ornamento';
-    const INDEX = 4;
+    // tipo `selection.ornament_id ?? 'fabbricato@1'` sopravviverebbe al test). La coppia si CERCA a
+    // runtime invece di fissarla: quale variante porti ornamento dipende dall'ordine di shuffle
+    // seminato, che la crescita del catalogo (v1.1) perturba — fissarla a mano la renderebbe fragile.
+    // La ricerca resta deterministica (nessun Date/Math.random) e fallisce FORTE se nessuna selezione
+    // di ristorazione fosse senza ornamento (segnale, non pass silenzioso).
+    let seedSenzaOrnamento: string | undefined;
+    let indexSenzaOrnamento = 0;
+    for (let s = 0; s < 50 && seedSenzaOrnamento === undefined; s += 1) {
+      const seed = `gen-senza-ornamento-${s}`;
+      for (let i = 0; i < 5; i += 1) {
+        if (selectDesign(RICH_BRIEF.vertical, seed, i).ornament_id === undefined) {
+          seedSenzaOrnamento = seed;
+          indexSenzaOrnamento = i;
+          break;
+        }
+      }
+    }
+    expect(seedSenzaOrnamento, 'esiste una selezione di ristorazione senza ornamento').toBeDefined();
+    const SEED_SENZA_ORNAMENTO = seedSenzaOrnamento!;
+    const INDEX = indexSenzaOrnamento;
     const sel = selectDesign(RICH_BRIEF.vertical, SEED_SENZA_ORNAMENTO, INDEX);
     expect(sel.ornament_id, 'precondizione: la selezione non porta ornamento').toBeUndefined(); // covers: AC-DE-206-1
 

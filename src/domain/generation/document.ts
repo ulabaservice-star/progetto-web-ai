@@ -342,23 +342,40 @@ const VersionedIdSchema = z
 const EffectLevelSchema = z.enum(['L0', 'L1', 'L2', 'L3', 'L4']);
 
 /**
- * I DEFAULT DELLA SELEZIONE DESIGN (DE-205, DS-D4). Un documento in formato P4 non porta i campi di
- * selezione: il gate (`parseDocument`) li NORMALIZZA a questi valori, cosi' che a valle il render
- * (DE-207) trovi SEMPRE un hero-layout, un trattamento e un livello di effetto, e un sito gia'
- * pubblicato non resti senza pelle.
+ * I DEFAULT DELLA SELEZIONE DESIGN (DE-205, DS-D4; estesi da DE11-205, variety-engine). Un documento in
+ * formato P4 non porta i campi di selezione: il gate (`parseDocument`) li NORMALIZZA a questi valori,
+ * cosi' che a valle il render (DE-207/DE11-30x) trovi SEMPRE un hero-layout, un trattamento, un livello
+ * di effetto, un trattamento d'H1 e un layout di sezione, e un sito gia' pubblicato non resti senza
+ * pelle.
  *
- * Sono STRINGHE pinnate a mano, allineate PER ASSUNZIONE ai cataloghi DE-201/DE-202: 'centrato@1'
- * (hero-layouts.ts, layout senza-foto universale), 'piano@1' (section-treatments.ts, il trattamento
- * neutro che resta sui token del tema), 'L1' (effects.ts, il livello "vivo", default consigliato).
+ * Sono STRINGHE pinnate a mano, allineate PER ASSUNZIONE ai cataloghi DE-201/DE-202 e — da DE11-205 —
+ * DE11-201/DE11-202:
+ *   - 'centrato@1' (hero-layouts.ts, layout senza-foto universale);
+ *   - 'piano@1' (section-treatments.ts, il trattamento neutro che resta sui token del tema);
+ *   - 'L1' (effects.ts, il livello "vivo", default consigliato);
+ *   - 'occhiello@1' (h1-treatments.ts DE11-201, l'occhiello DIRITTO — il tratto d'H1 piu' neutro:
+ *     nessuna sottolineatura ondulata ne' corsivo gigante — di scope 'universale', quindi valido per
+ *     OGNI vertical (un default non puo' essere di settore));
+ *   - 'chi-siamo-ritratto@1' (section-layouts.ts DE11-202, il layout di corpo 'universale' piu'
+ *     basilare, il ritratto affiancato al testo).
  * document.ts NON importa quei cataloghi — fa solo format-check, come per theme_id — quindi
  * l'allineamento e' una DECISIONE registrata qui e non un existence-check: cambiarla deve costare un
- * test rosso. `ornament_id` NON compare qui perche' non ha default (un sito puo' non avere ornamento,
- * DS-D5): se assente resta assente.
+ * test rosso.
+ *
+ * QUALI CAMPI NON COMPAIONO QUI, perche' NON hanno default e restano assenti se assenti (nessuna
+ * manopola inventata su un sito che non la usa): `ornament_id` (un sito puo' non avere ornamento,
+ * DS-D5) e — da DE11-205 — `ribbon_id` (il nastro divisorio) e `illustration_id` (l'illustrazione
+ * dell'hero editoriale). Sono opzionali-senza-default: il gate non li fabbrica.
  */
 export const DESIGN_SELECTION_DEFAULTS = {
   hero_layout_id: 'centrato@1',
   section_treatment_id: 'piano@1',
   effect_level: 'L1',
+  // DA DE11-205 (variety-engine): i due nuovi assi CON default. 'occhiello@1' e' l'H1 piu' neutro,
+  // 'chi-siamo-ritratto@1' il layout di corpo piu' basilare — entrambi 'universale' nei cataloghi
+  // DE11-201/DE11-202, quindi validi per QUALUNQUE vertical (un default non puo' essere di settore).
+  h1_treatment_id: 'occhiello@1',
+  section_layout_id: 'chi-siamo-ritratto@1',
 } as const;
 
 /**
@@ -390,11 +407,13 @@ const PageSchema = z
  * generato, e per saperlo bisogna sapere con quale VERSIONE e' stato generato.
  *
  * DA DE-205 SONO CONGELATI ANCHE GLI ID DI SELEZIONE DESIGN (DS-D4): hero_layout_id,
- * section_treatment_id, effect_level (enum L0..L4) e ornament_id?. Sono OPZIONALI per
- * retro-compatibilita' — un documento P4 non li porta e valida ancora — e il GATE li
- * normalizza ai `DESIGN_SELECTION_DEFAULTS` (ornament_id escluso: puo' non esserci).
- * Registrarli qui, invece di riderivarli al render, e' cio' che impedisce a un sito
- * pubblicato di re-stilarsi da solo dopo un ritocco ai cataloghi.
+ * section_treatment_id, effect_level (enum L0..L4) e ornament_id?; DA DE11-205 (variety-engine)
+ * anche h1_treatment_id?, section_layout_id?, ribbon_id? e illustration_id?. Sono OPZIONALI per
+ * retro-compatibilita' — un documento P4 non li porta e valida ancora — e il GATE normalizza ai
+ * `DESIGN_SELECTION_DEFAULTS` i CINQUE assi con default (hero_layout_id, section_treatment_id,
+ * effect_level, h1_treatment_id, section_layout_id), lasciando ornament_id/ribbon_id/illustration_id
+ * assenti se assenti. Registrarli qui, invece di riderivarli al render, e' cio' che impedisce a un
+ * sito pubblicato di re-stilarsi da solo dopo un ritocco ai cataloghi.
  *
  * LA HOME E' IMPOSTA, non solo dichiarata: almeno una pagina ha ruolo 'home'. Era
  * scritta in tre punti in prosa e non la controllava nessuno — un documento la cui
@@ -425,8 +444,17 @@ export const SiteDocumentSchema = z
     section_treatment_id: VersionedIdSchema.optional(),
     // effect_level e' l'ENUM chiuso {L0..L4}, non un id di catalogo: un valore fuori cade tutto.
     effect_level: EffectLevelSchema.optional(),
-    // ornament_id e' l'unico VERAMENTE opzionale (nessun default): un sito puo' non avere ornamento.
+    // DA DE11-205 (variety-engine) I NUOVI ASSI VISIVI: tutti id VERSIONATI opzionali e FORMA-check come
+    // hero_layout_id (niente confronto coi cataloghi DE11-201/DE11-202 — quello e' altitudine di un altro
+    // strato). h1_treatment_id (il tratto dell'H1) e section_layout_id (il layout del corpo) hanno un
+    // DEFAULT nel gate; ribbon_id e illustration_id qui sotto NO.
+    h1_treatment_id: VersionedIdSchema.optional(),
+    section_layout_id: VersionedIdSchema.optional(),
+    // ornament_id, ribbon_id e illustration_id sono gli assi SENZA default: se assenti restano assenti
+    // (un sito puo' non avere ornamento / nastro / illustrazione). Il gate non li fabbrica.
     ornament_id: VersionedIdSchema.optional(),
+    ribbon_id: VersionedIdSchema.optional(),
+    illustration_id: VersionedIdSchema.optional(),
     pages: z.array(PageSchema).min(1).max(DOCUMENT_LIMITS.max_pages),
   })
   .strict()
@@ -502,12 +530,14 @@ function serializza(value: unknown): string | undefined {
   }
 }
 
-// LA NORMALIZZAZIONE DELLA SELEZIONE DESIGN (DE-205). Un documento in formato P4 non porta i campi di
-// selezione: il gate li riempie coi `DESIGN_SELECTION_DEFAULTS`, cosi' che a valle (render DE-207) ci
-// sia SEMPRE un hero-layout, un trattamento e un livello di effetto. I campi PRESENTI vincono sul
-// default (`??` riempie il solo BUCO): un documento nuovo che ha gia' congelato la sua selezione non
-// viene ri-normalizzato, e per questo un sito pubblicato non cambia pelle da solo. `ornament_id` non
-// ha default — se assente resta assente (un sito puo' non avere ornamento, DS-D5).
+// LA NORMALIZZAZIONE DELLA SELEZIONE DESIGN (DE-205, estesa da DE11-205). Un documento in formato P4 non
+// porta i campi di selezione: il gate li riempie coi `DESIGN_SELECTION_DEFAULTS`, cosi' che a valle
+// (render DE-207/DE11-30x) ci sia SEMPRE un hero-layout, un trattamento, un livello di effetto, un
+// trattamento d'H1 e un layout di sezione. I campi PRESENTI vincono sul default (`??` riempie il solo
+// BUCO): un documento nuovo che ha gia' congelato la sua selezione non viene ri-normalizzato, e per
+// questo un sito pubblicato non cambia pelle da solo. `ornament_id`, `ribbon_id` e `illustration_id`
+// NON hanno default — se assenti restano assenti (un sito puo' non avere ornamento / nastro /
+// illustrazione, DS-D5): lo spread di `...document` li porta com'erano, il gate non li inventa.
 // RITORNA UNA COPIA NUOVA (spread): la garanzia "il risultato non e' l'oggetto d'ingresso"
 // (P2-D12/AC-202-12) resta vera anche dopo i default, e chi tiene l'input non trova i default
 // iniettati nel proprio oggetto.
@@ -518,6 +548,11 @@ function withSelectionDefaults(document: SiteDocument): SiteDocument {
     section_treatment_id:
       document.section_treatment_id ?? DESIGN_SELECTION_DEFAULTS.section_treatment_id,
     effect_level: document.effect_level ?? DESIGN_SELECTION_DEFAULTS.effect_level,
+    // DA DE11-205: i due assi nuovi CON default, stessa regola `??` degli altri (riempi il solo BUCO).
+    // ribbon_id / illustration_id NON compaiono qui: senza default, li porta gia' lo spread `...document`
+    // com'erano (presenti o assenti) e il gate non li fabbrica.
+    h1_treatment_id: document.h1_treatment_id ?? DESIGN_SELECTION_DEFAULTS.h1_treatment_id,
+    section_layout_id: document.section_layout_id ?? DESIGN_SELECTION_DEFAULTS.section_layout_id,
   };
 }
 
@@ -532,10 +567,10 @@ function withSelectionDefaults(document: SiteDocument): SiteDocument {
  *    forma perche' e' il solo tetto che limita il PRODOTTO (pagine x blocchi x campi),
  *    che nessun tetto per campo limita, ed e' anche cio' che evita di far lavorare la
  *    validazione di forma su un input di taglia arbitraria. La misura e' sull'INPUT:
- *    lo schema e' strict, quindi non aggiunge CHIAVI ignote; da DE-205 il gate applica i
- *    `DESIGN_SELECTION_DEFAULTS`, cioe' cio' che esce puo' superare cio' che entra di un
- *    ammontare LIMITATO (al piu' i tre id di selezione, dell'ordine del centinaio di byte),
- *    incomparabile col margine del tetto (31,1% su 8 MiB): il tetto continua a governare il
+ *    lo schema e' strict, quindi non aggiunge CHIAVI ignote; da DE-205 (esteso da DE11-205) il gate
+ *    applica i `DESIGN_SELECTION_DEFAULTS`, cioe' cio' che esce puo' superare cio' che entra di un
+ *    ammontare LIMITATO (al piu' i cinque campi di selezione con default, dell'ordine del centinaio
+ *    di byte), incomparabile col margine del tetto (31,1% su 8 MiB): il tetto continua a governare il
  *    PRODOTTO non fidato (pagine x blocchi x campi), che i default non toccano;
  * 3. FORMA — SiteDocumentSchema, strict a ogni livello, con l'unicita' degli slug.
  *
