@@ -9,8 +9,8 @@
 |---|---|
 | **Progetto** | Belora/Ulaba |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase) |
-| **Ultimo aggiornamento** | 2026-08-14 (**`editorial-skin` COSTRUITO, VERDE E MERGIATO+DEPLOYATO su `main`** `4c157cc`: checkpoint decomposto VERDE 4/4 + mutazioni 4/4 uccise. 1/5 macrotask fatti. Prossimo: BUILD di `variety-engine`) |
-| **Sessione corrente** | 2026-08-14 — BUILD di `editorial-skin` (DE11-101..104) via 1 dynamic workflow (4 builder + 4 verifier BLIND). Riconciliato 1 BLOCKER cross-macrotask (hero `<h1>`→font display Playfair: aggiornati e2e visual-skin/visual-engine) + rafforzati 3 test su rilievi verifier. Checkpoint decomposto (C1 igiene re-baseline R-04 138→173, C2 sicurezza FP gitignorati provati, C3 1552/1552, C4 e2e 30/30), mutazioni 4/4. **Mergiato+pushato su `main` (deploy ulaba.net) su scelta umana.** Aprire `prompts/session-start.md` per il prossimo macrotask |
+| **Ultimo aggiornamento** | 2026-08-14 (**`variety-engine` COSTRUITO, VERDE E MERGIATO+DEPLOYATO su `main`** `ffcbcbe`: checkpoint decomposto VERDE 4/4 + mutazioni 4/4 uccise + suite 1616/1616 + `next build` exit 0. **2/5 macrotask fatti.** Prossimo: BUILD di `hero-menu-wow` (NUCLEO+GATE umano)) |
+| **Sessione corrente** | 2026-08-14 — BUILD di `variety-engine` (DE11-201..205) via dynamic workflow (builder + verifier BLIND per task). **Recupero da stallo:** il workflow standard si stalla (subagenti che eseguono `tsc`/`vitest` in background → watchdog 180s → morte) → **workflow COMMAND-FREE** (subagenti solo scrittura) + verifica reale in FOREGROUND. Regressione `variant-document-design` (ornament da shuffle perturbato) fixata alla radice (precondizione dinamica). +2 rafforzamenti da rilievi verifier (ricetta distinta, altitudine solo-forma). Checkpoint decomposto (C1 dead-code:0/dup pre-esist/arch:0; C2 solo FP gitignorati+baselinati provati; C3 1616/1616; C4 5 target in-scope+covers+verdi), mutazioni 4/4 (distinzione/default/R3/ricetta), ripristini sha256. **Mergiato+pushato su `main` (deploy ulaba.net) su scelta umana.** Aprire `prompts/session-start.md` per il prossimo macrotask |
 
 ---
 
@@ -21,20 +21,23 @@
 | Macrotask | Stato | Checkpoint | Note |
 |---|---|---|---|
 | `editorial-skin` | **done** | **VERDE 4/4** (`4c157cc`) | 4 task (DE11-101…104): THEMES arricchiti (palette crema/panna/rosso-mattone/oro/verde-basilico/ink + `surface_dark` per-tema + token display/tracking/tabular-nums/hook-h1-italic, tipizzati totali), font display **Playfair Display** self-host (next/font → `--site-font-display`, CSP intatta), regole `site.css` (display su titoli/prezzi/citazioni con `!important` sull'inline legacy, corpo lh 1.65, label tracked, tabular-nums, leader-dots, «», ritmo), `illustrations.ts` (dominio puro, `<symbol>` id versionati, `illustrationFor` exact proto-safe, core set ristorazione currentColor). Riconciliato hero `<h1>`→display (e2e visual-skin/visual-engine) |
-| `variety-engine` | **todo** | — | 5 task (DE11-201…205): hero-layouts ricchi + asse trattamento-H1, section-layouts ricchi (chi-siamo/orari/contatti/menu) + nastri, `design-matrix` (≥5 scheletri VISIBILMENTE distinti/vertical), `design-select` pluggabile (`signals?` — Piano B predisposto) + distinzione rafforzata, freeze schema documento. Dip: `editorial-skin` |
+| `variety-engine` | **done** | **VERDE 4/4** (`ffcbcbe`) | 5 task (DE11-201…205): 5° hero universale `editoriale-illustrato@1` (2-col asimmetrico, media `testo-illustrazione`) → 5 hero universali a media distinte + asse trattamento-H1 (`h1-treatments.ts`); `section-layouts.ts` (chi-siamo/orari/contatti ×2 con `kind` distinti + `menu-card-carta@1`) + nastri (scacchi-conici/gingham/gingham-incrociato); `design-matrix` Combo +4 assi opzionali + **regola R3** (illustrazione solo su hero con slot `illustrazione`) + `allowedCombinations` con `pickSectionLayout` **iniettiva** → ≥5 combo **hero_layout_id tutti diversi + corpo diverso**/vertical; `selectDesign(…, signals?)` (Piano B solo predisposto, `void`) dedup **per hero** (corregge "3/5 stesso hero"); freeze documento (4 campi opzionali versionati + 2 default). Dominio puro (arch:0). Dip: `editorial-skin` |
 | `hero-menu-wow` | **todo** | — | 3 task (DE11-301…303): Hero ricco (assi + illustrazione + badge + CTA + meta/chip), Menu ricco (card-carta fondo scuro + leader-dots + doppia cornice), **e2e-nucleo GATE** (`e2e/visual-engine-v11.spec.ts`: 5 varianti reali di un seed divergono su hero VISIBILE + corpo computed + canary rosso). **NUCLEO + gate di validazione** (DS-D15). Dip: `editorial-skin`, `variety-engine` |
 | `section-inventory` | **todo** | — | 4 task (DE11-401…404): ChiSiamo (2 varianti), Orari (tabella + card sun/moon, giorno-corrente dall'isola), Contatti (mappa SVG + fondale marrone/verde), footer + restanti assi accessori + libreria SVG ristorazione completa. Dip: `variety-engine`, `hero-menu-wow` |
 | `e2e-visual-v11` | **todo** | — | 1 task (DE11-501): `e2e/visual-engine-v11.spec.ts` esteso — 5 mockup diversi end-to-end su tutte le sezioni + blocchi ricchi + anti-injection (harness P4) + canary rosso. **ULTIMO nodo del DAG.** Dip: `section-inventory` |
 
 ## 2. Macrotask corrente
 
-- **Selezionato**: prossimo è **`variety-engine`** (dip: `editorial-skin`, già verde). `editorial-skin`
-  è **done+mergiato**. Ordine restante: `variety-engine` → `hero-menu-wow` (nucleo/gate) →
-  `section-inventory` → `e2e-visual-v11`.
-- **Task atomici in corso**: — (`variety-engine` non avviato). DE11-201..205: hero-layouts ricchi +
-  asse trattamento-H1 (usa `h1_italic_default` già in THEMES), section-layouts ricchi + nastri,
-  `design-matrix` ≥5 scheletri distinti, `design-select` pluggabile (`signals?`), freeze schema documento.
-- **Criteri/test di riferimento**: vedi il modulo `02-variety-engine.md` e i `target_tests` dei task.
+- **Selezionato**: prossimo è **`hero-menu-wow`** (dip: `editorial-skin` + `variety-engine`, entrambi
+  verdi). È il **NUCLEO + GATE UMANO** (DS-D15): 3 task (DE11-301 Hero ricco, DE11-302 Menu ricco,
+  DE11-303 e2e-nucleo GATE) che **renderizzano** gli assi del motore e provano che le 5 varianti reali
+  di un seed divergono su hero VISIBILE + corpo (computed) + canary rosso. **Qui l'approccio si valida
+  visivamente**: se le 5 varianti non convincono, fermarsi (eventuale Piano B, DS-D14). Ordine restante:
+  `hero-menu-wow` → `section-inventory` → `e2e-visual-v11`.
+- **Aggancio al render (carry-over da variety-engine)**: `resolve.ts`/`variant-document.ts` NON scrivono
+  ancora i nuovi assi nel documento reale (fuori scope di variety-engine) → un mockup generato oggi
+  prende i DEFAULT, non gli assi variati. `hero-menu-wow` deve **agganciare** selectDesign→documento→render.
+- **Criteri/test di riferimento**: vedi il modulo `03-hero-menu-wow.md` e i `target_tests` dei task.
 
 ## 3. Stato git
 
@@ -42,9 +45,9 @@
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `editorial-skin` costruito su `trueline/build/editorial-skin`, poi **fast-forward su `main`**. Prossimo: aprire `trueline/build/variety-engine` da `main` pulito. Mai lavorare su `main` |
-| Ultimo commit | **`4c157cc`** feat(design-engine): editorial-skin — pelle editoriale v1.1 (DE11-101..104), su `main` (pushato → deploy). Preceduto da `f73c437` (docs) |
-| Stato merge su `main` | **`editorial-skin` MERGIATO+PUSHATO su `main`** (`4c157cc`, ff) su **scelta umana esplicita** → deploy in produzione su ulaba.net. Build verificata in locale (`next build` exit 0 + e2e 30/30) prima del push. I prossimi macrotask restano **human-gated anche sul verde** |
+| Branch di lavoro | `variety-engine` costruito su `trueline/build/variety-engine`, poi **fast-forward su `main`** (`ffcbcbe`). Prossimo: aprire `trueline/build/hero-menu-wow` da `main` pulito. Mai lavorare su `main` |
+| Ultimo commit | **`ffcbcbe`** feat(design-engine): variety-engine — motore di varietà v1.1 (DE11-201..205), su `main` (pushato → deploy). Preceduto da `e7af148` (docs) |
+| Stato merge su `main` | **`variety-engine` MERGIATO+PUSHATO su `main`** (`ffcbcbe`, ff) su **scelta umana esplicita** → deploy in produzione su ulaba.net. Build verificata in locale (`next build` exit 0 + suite 1616/1616) prima del push; **e2e NON rieseguito** (variety-engine è dominio-puro, zero modifiche a render/UI → superficie e2e invariata). I prossimi macrotask restano **human-gated anche sul verde** |
 | Deploy-coupling | **`coupled`** — Vercel è connesso al repo (`ulabaservice-star/progetto-web-ai`): **push su `main` = deploy in produzione** su `ulaba.net`. Verificare **in locale** (vitest, e2e Chromium, computed-style, `next build`) prima di ogni merge |
 
 ## 4. Baseline & budget
@@ -63,11 +66,30 @@
   logica di produzione duplicata → ri-cattura giustificata (mai gonfiare policy). Ri-attribuire prima
   di ri-catturare (R-04, impronte = hash di CONTENUTO → i 138 pre-esistenti hanno matchato tutti);
   `e2e/` escluso da jscpd; `arch:0` (gate altitudine col blueprint: dominio-puro OK).
+- **variety-engine (confine, `ffcbcbe`)**: baseline igiene **STA a 173** (nessuna dup NUOVA dai file
+  v1.1 → dead-code:0 / dup:172 pre-esist / arch:0 / cycle:0 → **NESSUNA ri-cattura**, più pulito di
+  editorial-skin); baseline sicurezza **invariata** (2 FP: osv postcss MEDIUM + rls anon-policy). I 3
+  "secret" del c2 = i FP **gitignorati** provati con `git check-ignore -v` (`.env.local` r.21, `siti
+  css/` r.45). Zero retry consumati. Suite 1616/1616, `next build` exit 0.
 - **Budget**: retry ≤2 per checkpoint; batteria di mutazione per macrotask (mutazione palesemente
   fatale + ripristino via **backup+sha256, MAI `git checkout`** — il macrotask è uncommitted).
 
 ## 5. Carry-over / note ereditate
 
+- **WORKFLOW SI STALLA — usa COMMAND-FREE** (lezione variety-engine, 2026-08-14): il metodo standard
+  (subagenti builder/verifier che eseguono `tsc`/`vitest`/`knip` in background-workflow) **si stalla**
+  (watchdog "no progress 180s" → 6 retry → morte del workflow, cugino del `0xC0000142`). **Rimedio
+  provato:** workflow **COMMAND-FREE** (subagenti SOLO Read/Write/Edit/Grep, VIETATO eseguire comandi) +
+  TUTTA la verifica reale (tsc/eslint/knip/suite/oracoli/mutazioni) in **FOREGROUND** (affidabile). Il
+  build workflow di 202-205 così è passato liscio dove il monolitico 201-205 era morto.
+- **AGGANCIO RENDER MANCANTE** (per `hero-menu-wow`): `resolve.ts`/`variant-document.ts` NON scrivono i
+  nuovi assi (h1_treatment/section_layout/ribbon/illustration) nel documento reale → la varietà è
+  provata NEL MOTORE (`design-select-v11`) ma non raggiunge i mockup (prendono i default). `hero-menu-wow`
+  deve agganciare selectDesign→documento→render.
+- **BUCO COPERTURA SELETTORE** (per `section-inventory` M4): `pickSectionLayout = layouts[heroIndex %
+  len]` arriva a indice hero max 5 → `menu-card-carta@1` (idx 6) e `contatti-scheda-mappa@1` (idx 5 non
+  raggiunto dai 5 hero universali) **non sono mai selezionati**. Da agganciare quando il render delle
+  sezioni li userà (probabile: il menu-layout va scelto separatamente dalla rotazione per-hero).
 - **Deploy-coupling coupled** (da `deploy-hardening`): verificare tutto **in locale** (specie e2e +
   computed-style) prima di ogni merge; il merge su `main` innesca il deploy su `ulaba.net`.
 - **Contratto `architecture:` repo-wide** (P3-D7 + AH-D6): cataloghi/matrice/selettore/schema puri vs
@@ -104,6 +126,15 @@
 
 ## 6. Copertura dichiarata
 
+- **`variety-engine` (DE11-201..205)**: tutti gli AC coperti e verdi (target: `design-hero-layouts-v11`,
+  `design-section-layouts-v11`, `design-matrix-v11`, `design-select-v11`, `document-design-selection-v11`;
+  tutti in-scope + `covers` tracciati + eseguiti verdi). Distinzione RAFFORZATA provata a runtime: le 5
+  varianti reali di un seed hanno **hero_layout_id a due a due diversi + section_layout_id + recipe_id
+  distinti** su OGNI vertical (batteria mutazione: dedup-per-scheletro → "4≠5"). Mutazioni 4/4 uccise
+  (distinzione 204, default 205, regola R3 203, ricetta-costante 204). **NON coperto (dichiarato):** la
+  BELLEZZA non è oracolabile (gate umano = `hero-menu-wow`); la varietà **non è ancora renderizzata**
+  (resolve/variant-document non toccati); `menu-card-carta@1`/`contatti-scheda-mappa@1` non ancora
+  raggiungibili dal selettore (vedi §5).
 - **`editorial-skin` (DE11-101..104)**: tutti gli AC coperti e verdi. Unit: `design-themes-editorial`
   (AC-101-1..4: nuovi token colore+tipografia per-tema, `surface_dark≠surface`, proiezione custom
   property, id storici risolvibili), `site-fonts-display` (AC-102-3 + guardiano AGGIUNTO sul prefisso
