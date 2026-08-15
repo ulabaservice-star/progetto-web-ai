@@ -24,9 +24,9 @@
   display: flex;
   flex-direction: column;
   gap: var(--site-space-md);
-  background-color: var(--site-color-surface);
-  color: var(--site-color-text);
-  border-color: var(--site-color-border);
+  background-color: var(--site-color-surface-card);
+  color: var(--site-color-text-heading);
+  border-color: var(--site-color-line);
   font-family: var(--site-font-body);
   padding: var(--site-space-xl);
 }
@@ -36,7 +36,7 @@
    (data-block-kind="hero", posto da SiteSection) vince per specificita' sulla regola base
    .site-section, cosi' l'hero riceve un trattamento pieno diverso dal resto. */
 .site-section[data-block-kind='hero'] {
-  background-color: var(--site-color-background);
+  background-color: var(--site-color-surface-page);
   padding: var(--site-space-2xl);
 }
 
@@ -108,7 +108,7 @@
 
 .site-offerings__item {
   padding: var(--site-space-sm);
-  border: 1px solid var(--site-color-border);
+  border: 1px solid var(--site-color-line);
   border-radius: var(--site-radius-md);
 }
 
@@ -148,9 +148,9 @@
   aspect-ratio: 16 / 9;
   background-image: radial-gradient(
     circle at 30% 20%,
-    var(--site-color-surface),
+    var(--site-color-surface-card),
     var(--site-color-accent) 55%,
-    var(--site-color-background)
+    var(--site-color-surface-page)
   );
 }
 
@@ -191,7 +191,7 @@
   align-items: center;
   text-align: center;
   padding-block: var(--site-space-2xl);
-  background-color: var(--site-color-background);
+  background-color: var(--site-color-surface-page);
 }
 
 /* scena-scura: un piatto protagonista su fondo staccato — la "scena" usa la surface del tema come
@@ -199,7 +199,7 @@
 [data-hero-layout='scena-scura@1'] .site-section[data-block-kind='hero'] {
   align-items: center;
   text-align: center;
-  background-color: var(--site-color-surface);
+  background-color: var(--site-color-surface-card);
 }
 
 /* TRATTAMENTO DI SEZIONE — decide il RITMO visivo delle sezioni PARI (nth-of-type(even)), lasciando
@@ -208,16 +208,16 @@
 
 /* a-scheda: le sezioni pari diventano schede sollevate — fondo pagina, bordo e raggio ampio. */
 [data-section-treatment='a-scheda@1'] .site-section:nth-of-type(even) {
-  background-color: var(--site-color-background);
-  border: 1px solid var(--site-color-border);
+  background-color: var(--site-color-surface-page);
+  border: 1px solid var(--site-color-line);
   border-radius: var(--site-radius-lg);
 }
 
 /* fasce-alternate: le sezioni pari sono fasce sul fondo pagina, senza raggio, delimitate da una
    regola sopra e sotto — l'alternanza scandisce la lettura. */
 [data-section-treatment='fasce-alternate@1'] .site-section:nth-of-type(even) {
-  background-color: var(--site-color-background);
-  border-block: 1px solid var(--site-color-border);
+  background-color: var(--site-color-surface-page);
+  border-block: 1px solid var(--site-color-line);
 }
 
 /* ORNAMENTI — decorazione senza foto (DS-D5). L'ornamento e' sulla radice (data-ornament) e agisce
@@ -244,7 +244,7 @@
   background-image: radial-gradient(
     circle at 100% 0%,
     var(--site-color-accent),
-    var(--site-color-surface) 24%
+    var(--site-color-surface-card) 24%
   );
 }
 
@@ -331,8 +331,8 @@
 }
 
 [data-effects='L2'] .site-cta__button:hover {
-  background-color: var(--site-color-text);
-  color: var(--site-color-background);
+  background-color: var(--site-color-text-heading);
+  color: var(--site-color-surface-page);
   transform: translateY(calc(-1 * var(--site-space-xs)));
 }
 
@@ -470,7 +470,7 @@ blockquote {
   display: inline-block;
   width: var(--site-space-lg);
   margin-right: var(--site-space-xs);
-  border-bottom: 2px dotted var(--site-color-border);
+  border-bottom: 2px dotted var(--site-color-line);
   vertical-align: middle;
 }
 
@@ -487,4 +487,60 @@ blockquote::before {
 }
 blockquote::after {
   content: close-quote;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   DV2-104 (macrotask foundation) — IL PLACEHOLDER FOTOGRAFICO di Claude Design (.rds-ph tradotto).
+   Il primitivo PhotoPlaceholder (src/ui/site/primitives.tsx) rende <div class="site-photo-ph"> col box
+   tipografico "FOTO · …": si ricolora da solo con qualsiasi palette (DS-V2-D3), nessuna risorsa esterna.
+   I colori sono SOLO var(--site-color-*) / color-mix(var(...)): nessun letterale (AC-DV2-103-1 esteso). */
+.site-photo-ph {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 16 / 9;
+  background:
+    repeating-linear-gradient(
+      45deg,
+      color-mix(in srgb, var(--site-color-text-heading) 5%, transparent) 0 12px,
+      transparent 12px 24px
+    ),
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--site-color-surface-alt) 90%, var(--site-color-text-heading)),
+      var(--site-color-surface-alt) 55%,
+      color-mix(in srgb, var(--site-color-eyebrow-color) 28%, var(--site-color-surface-alt))
+    );
+}
+.site-photo-ph--dark {
+  background:
+    repeating-linear-gradient(
+      45deg,
+      color-mix(in srgb, var(--site-color-on-dark) 5%, transparent) 0 12px,
+      transparent 12px 24px
+    ),
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--site-color-surface-dark) 88%, var(--site-color-on-dark)),
+      var(--site-color-surface-dark) 60%,
+      color-mix(in srgb, var(--site-color-eyebrow-on-dark) 18%, var(--site-color-surface-dark))
+    );
+}
+.site-photo-ph > span {
+  font: 500 12px/1.4 ui-monospace, 'SF Mono', Menlo, monospace;
+  letter-spacing: 0.06em;
+  color: var(--site-color-text-muted);
+  background: color-mix(in srgb, var(--site-color-surface-page) 85%, transparent);
+  border: 1px solid var(--site-color-line);
+  border-radius: var(--site-radius-sm);
+  padding: 6px 12px;
+  text-align: center;
+  max-width: 80%;
+}
+.site-photo-ph--dark > span {
+  color: var(--site-color-on-dark-70);
+  background: color-mix(in srgb, var(--site-color-surface-dark) 72%, transparent);
+  border-color: var(--site-color-on-dark-line);
 }
