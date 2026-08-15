@@ -13,7 +13,7 @@ import { pagesFor, type PageSpec } from '@/domain/generation/pages';
 import { runGenerationPhase2Chunk, type Phase2ChunkResult } from '@/data/generation-phase2-chunk';
 import { RECIPES } from '@/domain/generation/recipes';
 import { resolve } from '@/domain/generation/resolve';
-import { THEMES } from '@/domain/generation/themes';
+import { themeFor } from '@/domain/generation/themes';
 
 // T-234 (macrotask generation-ui, P2) — L'AZIONE DI FASE 2: dopo la scelta, genera le PAGINE
 // INTERNE della variante scelta, a CHUNK (P2-D13, EMENDAMENTO "A" = P2-D32). Gira SOLO su
@@ -143,7 +143,7 @@ export async function runPhase2(input: {
   // (RECIPES[i] + il tema della ricetta). Il ramo `undefined` e' la difesa dichiarata contro un
   // chosen_variant fuori dai cinque o un tema che nessuna ricetta porta — non un caso vivo.
   const recipe = RECIPES[chosenVariant];
-  const theme = recipe === undefined ? undefined : THEMES.find((t) => t.id === recipe.theme_id);
+  const theme = recipe === undefined ? undefined : themeFor(recipe.theme_id);
   if (recipe === undefined || theme === undefined) return { ok: false, reason: 'stato_non_valido' };
 
   // IL SET DI PAGINE col max_pages REGISTRATO (AC-234-6), MENO la home (che esiste gia'): mai un

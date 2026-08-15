@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { readGenerationDocument } from '@/data/generation-document';
 import { getGeneration } from '@/data/generations';
 import { parseDocument } from '@/domain/generation/document';
-import { THEMES } from '@/domain/generation/themes';
+import { themeFor } from '@/domain/generation/themes';
 import { SiteView } from '@/ui/site/SiteView';
 import { EditorClient } from '@/ui/editor/EditorClient';
 import { composeAddableBlocks } from './addable-blocks';
@@ -60,7 +60,7 @@ export default async function EditorPage({ params }: EditorPageProps) {
   // Il tema del documento, per UGUAGLIANZA ESATTA dell'id versionato (mai per prefisso): e' cio' che
   // SiteView proietta in var(--site-...). Il ramo `undefined` e' una difesa dichiarata (cataloghi
   // futuri disallineati); per un documento reale il tema c'e' sempre (AC-212-1).
-  const theme = document ? THEMES.find((candidate) => candidate.id === document.theme_id) : undefined;
+  const theme = document ? themeFor(document.theme_id) : undefined;
 
   // NESSUN documento valido (sito non ancora generato, tema fuori catalogo): stato ESPLICITO, mai
   // un notFound — il sito esiste ed e' tuo, la guardia l'ha gia' accertato. Copy dal namespace

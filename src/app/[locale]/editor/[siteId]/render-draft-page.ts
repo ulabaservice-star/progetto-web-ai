@@ -3,7 +3,7 @@
 import type { ReactElement } from 'react';
 import { getGeneration } from '@/data/generations';
 import { parseDocument } from '@/domain/generation/document';
-import { THEMES } from '@/domain/generation/themes';
+import { themeFor } from '@/domain/generation/themes';
 import { SitePageView } from '@/ui/site/SiteView';
 
 // T-313 (macrotask editor-blocks, P3) — ANTEPRIMA STRUTTURALE server di un DRAFT: valida il
@@ -67,7 +67,7 @@ export async function renderDraftPage(
   if (!parsed.ok) return null;
 
   // 3) TEMA per id esatto; assente -> rifiuto (difesa dichiarata, tema fuori catalogo).
-  const theme = THEMES.find((candidate) => candidate.id === parsed.document.theme_id);
+  const theme = themeFor(parsed.document.theme_id);
   if (theme === undefined) return null;
 
   // 4) PAGINA per slug esatto; assente -> rifiuto.

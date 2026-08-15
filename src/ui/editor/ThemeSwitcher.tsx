@@ -20,7 +20,7 @@
 // La persistenza a revisione dei save-point e' altrove (T-309): qui non si scrive nulla.
 
 import { useEffect, type RefObject } from 'react';
-import { THEMES, type SiteTheme } from '@/domain/generation/themes';
+import { THEMES, themeFor, type SiteTheme } from '@/domain/generation/themes';
 import { siteThemeStyle } from '@/ui/site/theme-style';
 
 // IL FALLBACK ESPLICITO: il primo tema del catalogo. E' un tema REALE e completo, quindi la sua
@@ -46,7 +46,7 @@ type ThemeResolution = {
  * completo (var tutte definite) e un flag esplicito su cui puo' avvisare, invece di var indefinite.
  */
 export function resolveSiteTheme(themeId: string): ThemeResolution {
-  const theme = THEMES.find((candidate) => candidate.id === themeId);
+  const theme = themeFor(themeId);
   return theme === undefined ? { ok: false, theme: FALLBACK_THEME } : { ok: true, theme };
 }
 

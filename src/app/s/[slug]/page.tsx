@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { parseDocument } from '@/domain/generation/document';
-import { THEMES } from '@/domain/generation/themes';
+import { themeFor } from '@/domain/generation/themes';
 import { SiteView } from '@/ui/site/SiteView';
 import { readPublishedSite } from '@/data/public-site';
 import { BeloraBadge } from '@/app/s/[slug]/Badge';
@@ -107,7 +107,7 @@ export default async function PublicSitePage({ params }: PublicSitePageProps) {
 
   // Il tema del documento per UGUAGLIANZA ESATTA dell'id versionato (mai per prefisso). Un tema
   // fuori dal catalogo e' un'anomalia di uno snapshot pubblicato: notFound(), mai un render parziale.
-  const theme = THEMES.find((candidate) => candidate.id === document.theme_id);
+  const theme = themeFor(document.theme_id);
   if (theme === undefined) notFound();
 
   // T-410 (macrotask seo-base, P4) — JSON-LD LocalBusiness dallo STESSO documento validato che rende

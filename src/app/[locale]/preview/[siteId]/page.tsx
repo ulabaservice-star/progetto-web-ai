@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { readGenerationDocument } from '@/data/generation-document';
 import { parseDocument } from '@/domain/generation/document';
-import { THEMES } from '@/domain/generation/themes';
+import { themeFor } from '@/domain/generation/themes';
 import { SiteView } from '@/ui/site/SiteView';
 import { enterPreview } from './guard';
 import { PreviewNavigation } from './PreviewNavigation';
@@ -53,7 +53,7 @@ export default async function PreviewPage({ params }: PreviewPageProps) {
   // e' cio' che SiteView proietta in var(--site-...). Il ramo `undefined` e' una difesa
   // dichiarata — AC-212-1 pinna che ogni recipe.theme_id esista in THEMES, quindi per un
   // documento reale il tema c'e' sempre; resta per un futuro disallineamento fra i cataloghi.
-  const theme = document ? THEMES.find((candidate) => candidate.id === document.theme_id) : undefined;
+  const theme = document ? themeFor(document.theme_id) : undefined;
 
   // NESSUN documento valido (sito non ancora generato, tema fuori catalogo): stato ESPLICITO, mai
   // un notFound — il sito esiste ed e' tuo, la guardia l'ha gia' accertato.

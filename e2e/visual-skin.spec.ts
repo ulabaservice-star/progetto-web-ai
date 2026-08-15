@@ -225,7 +225,7 @@ test.describe('DE-103 font self-host mappati ai token del tema su /s/<slug> (AC-
     return publicSlug;
   }
 
-  test('il font-family computato di un elemento heading (brand) risolve alla famiglia di catalogo (Fraunces), non al fallback di sistema', async ({
+  test('il font-family computato di un elemento heading (brand) risolve alla famiglia di catalogo (Playfair Display), non al fallback di sistema', async ({
     page,
   }) => {
     // given: un sito pubblicato col tema sole-mediterraneo@1, il cui stack heading e' 'Fraunces, ...'.
@@ -247,7 +247,9 @@ test.describe('DE-103 font self-host mappati ai token del tema su /s/<slug> (AC-
     const fontFamily = (
       await heroBrand.first().evaluate((element) => getComputedStyle(element).fontFamily)
     ).toLowerCase();
-    expect(fontFamily).toContain('fraunces'); // covers: AC-DE-103-1
+    // DS-V2-D1: le palette di Claude Design usano Playfair Display come famiglia HEADING (e display);
+    // il tema fissato sole-mediterraneo@1 risolve via alias a trattoria-rustica@1 (CD).
+    expect(fontFamily).toContain('playfair display'); // covers: AC-DE-103-1
     expect(fontFamily).not.toBe('georgia, serif'); // covers: AC-DE-103-1
     expect(fontFamily).not.toBe('serif'); // covers: AC-DE-103-1
 
@@ -259,7 +261,7 @@ test.describe('DE-103 font self-host mappati ai token del tema su /s/<slug> (AC-
     // ('Fraunces, Georgia, serif'), PRIVO di 'Fraunces Fallback', e questa asserzione cadrebbe: e' cio'
     // che distingue "font self-host APPLICATO all'elemento" da "famiglia del tema soltanto nominata" (il
     // buco che 'contiene fraunces' non chiudeva, perche' 'Fraunces' e' gia' nello stack del tema).
-    expect(fontFamily).toContain('fraunces fallback'); // covers: AC-DE-103-1
+    expect(fontFamily).toContain('playfair display fallback'); // covers: AC-DE-103-1
 
     // e a conferma che il font e' davvero CARICATO (self-host, non solo nominato): document.fonts
     // dichiara una face della famiglia (next/font inietta @font-face col nome generato '__Fraunces_*').
