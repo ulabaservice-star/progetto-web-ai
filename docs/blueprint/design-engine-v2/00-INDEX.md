@@ -21,8 +21,8 @@ deterministica**. Gate visivo passato: *"è meglio di Wix"*.
 | 01 | `foundation` | Riscrivere `themes.ts` con le 23 palette di CD (token semantici) + allineare `theme-style.ts`/`site.css` ai token CD + primitivi condivisi (Button, SectionHead, Photo-placeholder) a token, escaping React, zero HTML grezzo. | — |
 | 02 | `hero` | Tradurre le ~20 varianti hero di CD in `Hero.tsx` (renderer unico, slot editabili, `data-hero-layout` sulla radice del blocco) + ampliare `hero-layouts.ts` ai 20 id. | `foundation` |
 | 03 | `menu` | Tradurre le ~20 varianti menu (card-carta su `surface-dark`, leader-dots, prezzi tabular) in `Offerte.tsx` + `section-layouts.ts`. Chiude l'aggancio `vertical` → variante menu. | `foundation` |
-| 04 | `body-sections` | Tradurre chi-siamo, orari, contatti, recensioni, faq, header/footer (le loro varianti) → spariscono i vuoti. | `foundation` |
-| 05 | `variety-select` | Riuso dell'aggancio di varietà (da `hero-menu-wow` `fff6904`) + **selezione greedy multi-asse** in `design-select.ts`/`design-matrix.ts` (sostituisce il dedup-per-hero). | `hero`, `menu`, `body-sections` |
+| 04 | `body-sections` | Ri-stilare i blocchi **esistenti** chi-siamo/orari/contatti/recensioni/faq/header/footer alle varianti CD → spariscono i vuoti. Recensioni/faq (non alimentate dal Brief) rendono uno **scheletro placeholder** tipografico (copy UI fissa, mai contenuto inventato); la composizione del mockup le emette. | `foundation` |
+| 05 | `variety-select` | Riuso dell'aggancio di varietà (da `hero-menu-wow` `fff6904`) + **`recipe_id` come asse della matrice** (DS-V2-D8) + **selezione greedy multi-asse** in `design-select.ts`/`design-matrix.ts` (sostituisce il dedup-per-hero). | `hero`, `menu`, `body-sections` |
 | 06 | `e2e-visual-v2` | Gate finale: 5 mockup reali di un seed su `/s/` (computed-style), varietà su hero VISIBILE + ≥1 asse corpo, "wow" strutturale, canary rosso; harness P4. | `variety-select` |
 
 **Build order (DAG):** `foundation → {hero, menu, body-sections} → variety-select → e2e-visual-v2`.
@@ -64,6 +64,15 @@ variety-select `DV2-5xx`, e2e `DV2-6xx`. ID stabili, mai riusati.
   `dangerouslySetInnerHTML`, vietato in `src/ui/site/**` da AC-231-4). Gli inline `var()`/`color-mix()`
   non sono colori letterali (lo scanner AC-231-4 cerca hex/rgb/hsl): ammessi; i valori esadecimali
   vivono solo nelle palette (`themes.ts`, dominio, fuori dallo scanner).
+- **DS-V2-D8 — `recipe_id` come asse di varietà (emendamento a DS-D3).** In v1.1 la ricetta era
+  **contenuto ortogonale** fuori dalla matrice (`design-matrix.ts`: "la matrice NON lo sceglie…
+  `recipe_id` resta assente"), attaccata a valle. Su decisione utente v2 la **promuove ad asse**:
+  `allowedCombinations(vertical)` attacca un `recipe_id` a ogni combo (≥2 distinti/vertical) e la
+  **greedy** (DV2-503) la include nella metrica di distanza → la **copy** varia tra i 5 mockup. La
+  ricetta resta uno **stile di copy di catalogo** risolto da `recipeFor` (la matrice sceglie lo stile,
+  **non fabbrica testo**; il contenuto reale delle caselle lo scrive l'LLM a runtime, come sempre). Il
+  requisito di materiale (DV2-504) pinna anche `recipe_id`. Nuovo task `DV2-502`; la greedy e il
+  materiale scalano di ID (503/504).
 
 ## Contratto di altitudine (architecture)
 
