@@ -64,6 +64,12 @@
   al confine dei macrotask (R-04, impronte sensibili alla POSIZIONE: i record-dato dei temi/cataloghi
   ri-fingerprintano impronte pre-esistenti; sono FP legittimi, mai gonfiare policy). `e2e/` escluso da
   jscpd. Ri-attribuire **prima** di ri-catturare.
+- **`foundation` (confine, VERDE `70c756a`)**: baseline igiene **INVARIATA** — jscpd **0 cloni** nei file
+  nuovi (l'helper `cdColors` deriva i token legacy → nessuna dup verbatim dei 23 record; **NESSUNA
+  ri-cattura**, a differenza di editorial-skin v1.1). Baseline sicurezza **invariata** — gitleaks 0
+  (`main..HEAD`), semgrep 0 (`src/`), osv/rls senza migrazioni/dip nuove (2 FP noti). knip 0, madge 0,
+  arch verde. **0 retry consumati** (checkpoint verde; l'unico rosso è stato l'e2e — 404 su /s/ — fixato
+  con `themeFor`). Batteria mutazione 2/2 uccise (backup+sha256).
 - **Contratto altitudine**: v2 **non ridichiara** il contratto — riusa quello **globale** enforced dal
   repo (`tests/architecture-contract.test.ts`, AH-D6): `domain→ui/data/app` e `data→ui` vietati;
   `ui→domain` lecito (i blocchi importano i cataloghi del dominio). Cataloghi/matrice/selettore/schema
@@ -146,8 +152,20 @@
 
 ## 6. Copertura dichiarata
 
-- **Nessun macrotask ancora costruito** — il blueprint è il piano. Copertura da popolare a ogni
-  `session-end` col commit del checkpoint, gli AC coperti/verdi e il **non coperto dichiarato**.
+- **`foundation` (DV2-101..104) — tutti gli AC coperti e verdi.** Target_tests: `design-themes-v2`
+  (AC-DV2-101-1..4: 23 palette complete, token semantici CD, `themeFor` esatto+alias+proto-safe,
+  inclusione non biiezione; + invarianti migrate: no `var()`, palette distinte, id versionato via schema),
+  `theme-style-v2` (AC-102-1..3: proiezione totale token→`--site-color-*`, valori dal tema),
+  `site-css-no-literal-colors-v2` (AC-103-1..3: 0 letterali, token CD, regole editoriali),
+  `site-primitives-v2` (AC-104-1..3: a token, PhotoPlaceholder box, escaping). Mutazioni 2/2 uccise.
+- **NON coperto / dichiarato (L-COL-006):** (a) **Gate visivo NON eseguito formalmente** per foundation
+  (nessuno screenshot su `/s/` in questa sessione): il merge è avvenuto su checkpoint-verde + e2e 30/30
+  + via umana esplicita, giustificato dal fatto che foundation è dominio/token/primitivi — le palette CD
+  si applicano ai blocchi v1.1 esistenti, il "wow" pieno arriva con hero/menu (dove il gate visivo conta
+  davvero). **L'utente può verificare a occhio su ulaba.net.** (b) I **primitivi** (`primitives.tsx`) non
+  sono ancora **consumati** da alcun blocco (li useranno Hero/Offerte/corpo in 02-04): oggi provati solo
+  dal loro test. (c) La **bellezza estetica non è oracolabile** — gate visivo umano per sezione. (d) **Foto
+  reali** fuori scope (P4-D7/F).
 - **NON coperto per costruzione (dichiarato, L-COL-006)**: la **bellezza estetica non è oracolabile** —
   la giudica l'utente al **gate visivo** di ogni sezione (screenshot su `/s/`); gli oracoli provano
   struttura, sicurezza, varietà (assi VISIBILI + corpo), determinismo e assenza di regressioni. Le
