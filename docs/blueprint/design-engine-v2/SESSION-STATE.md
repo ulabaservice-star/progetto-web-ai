@@ -9,8 +9,8 @@
 |---|---|
 | **Progetto** | Belora/Ulaba |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase) |
-| **Ultimo aggiornamento** | 2026-08-15 (**`foundation` COSTRUITO — checkpoint VERDE 4/4 + merge su `main`**: DV2-101 themes.ts=23 palette CD+alias+themeFor, DV2-102 theme-style guard, DV2-103 site.css ai token CD, DV2-104 primitivi Button/SectionHead/PhotoPlaceholder. Checkpoint decomposto: C1 knip/madge/jscpd/arch verdi (**jscpd 0 cloni** grazie all'helper cdColors → nessuna ri-baseline), C2 gitleaks 0/semgrep 0/osv+rls invariati, C3 vitest 1603/1603, C4 target_tests+covers; mutazioni 2/2 uccise; `next build` 0; **e2e Chromium 30/30**. **Prossimo: BUILD di `hero`** (DV2-201..202), dip solo `foundation`) |
-| **Sessione corrente** | 2026-08-15 — BOOTSTRAP trueline: generato il blueprint dai template + spec a monte (`docs/superpowers/specs/2026-08-15-design-engine-v2-design.md`). Superato lo strutturale; in attesa della conferma umana sui rilievi semantici prima di aprire BUILD. Aprire `prompts/session-start.md` per il primo macrotask |
+| **Ultimo aggiornamento** | 2026-08-15 (**`hero` COSTRUITO — checkpoint VERDE 4/4 + merge su `main`** (`14b27f1`): DV2-201 hero-layouts.ts +20 layout CD (`hero-<kebab>@1`, media placement + `title_treatment`, 6 legacy invariati); DV2-202 Hero.tsx renderer unico delle 20 varianti CD + wiring `design→blocco` (types/registry/SiteView) + CTA i18n `site.hero.*` + edge-to-edge; **M5 preservato** (HeroPhoto: foto caricata `<img>` o PhotoPlaceholder, etichetta soppressa nei full-bleed). Checkpoint decomposto: C1 igiene VERDE (**R-04 re-baseline legittimo** — 20 varianti + prosa docs), C2 semgrep 0 + gitleaks 0 sul diff (`main..HEAD`; i 3 CRITICAL erano FP gitignorati), C3 1616/1616, C4 trace+covers; mutazioni 2/2 uccise; `next build` 0; **e2e Chromium 30/30** (spec v1/v1.1 migrati ai selettori `site-hero-v2` + AC-DE-401-2 su posizione-foto); **gate visivo umano APPROVATO** ("meglio di Wix"). **Prossimo: BUILD di `menu` o `body-sections`** (dip solo `foundation`)) |
+| **Sessione corrente** | 2026-08-15 — BUILD `hero` COMPLETO E MERGIATO. Workflow builder+verifier (verifier tornati garbage → verifica in foreground). 4 decisioni-scope prese con l'utente (wiring minimo, CTA i18n, edge-to-edge, M5 preservato). Migrate onestamente 5 superfici v1/v1.1 (2 unit-biiezione + AC-416-5 + 3 e2e). Prossimo: aprire `prompts/session-start.md`, scegliere `menu` **o** `body-sections` (indipendenti, entrambi toccano `site.css` → uno alla volta) |
 
 ---
 
@@ -21,7 +21,7 @@
 | Macrotask | Stato | Checkpoint | Note |
 |---|---|---|---|
 | `foundation` | **done** | **VERDE 4/4** (`70c756a`) | 4 task DV2-101..104: themes.ts=23 palette CD (valori esatti, `color-mix`) + `THEME_ID_ALIASES`+`themeFor` proto-safe (id storici risolvibili); theme-style INVARIATO (già proietta); site.css migrato ai NOMI CD (valori preservati, 0 regressioni); primitivi a token, escaping, PhotoPlaceholder box "FOTO·label". **3 test v1.1 di biiezione ritirati** (invarianti migrate a design-themes-v2). **Fix e2e-scoperto: 6 punti render/serve THEMES.find→themeFor** (l'alias serve end-to-end o /s/ dà 404 sui theme_id storici). Merge su `main` su tuo via (deploy). Dip: — |
-| `hero` | **todo** | — | 2 task (DV2-201…202): hero-layouts.ts ampliato agli N id CD (catalogo puro, ≥8); Hero.tsx renderer unico (slot editabili, PhotoPlaceholder, data-hero-layout, escaping). Dip: `foundation` |
+| `hero` | **done** | **VERDE 4/4** (`14b27f1`) | DV2-201/202: hero-layouts.ts **+20 layout CD** (`hero-<kebab>@1`, `media` placement + `title_treatment`, 6 legacy invariati, lookup esatto/proto-safe); Hero.tsx renderer unico 20 varianti CD + `data-hero-layout`/landmark + slot in `SiteText` + CTA i18n statiche + PhotoPlaceholder; **wiring minimo design→blocco** (types/registry/SiteView) + **edge-to-edge** (site.css) + i18n `site.hero.*`; **M5 preservato** (`HeroPhoto`: foto caricata `<img>` o placeholder, etichetta soppressa nei full-bleed). Emendamenti approvati dall'utente (wiring/CTA/edge/M5 anticipati qui, parte da variety-select). Dip: `foundation` |
 | `menu` | **todo** | — | 3 task (DV2-301…303): section-layouts menu (≥4 id CD); Offerte.tsx (card-carta su surface-dark + leader-dots + prezzi tabular, data-menu-layout); aggancio `vertical`→menu (menu_layout_id asse per-vertical indipendente, chiude il buco v1.1). Dip: `foundation` |
 | `body-sections` | **todo** | — | 4 task (DV2-401…404): section-layouts corpo (chi-siamo/orari/contatti/recensioni/faq/header/footer, ≥2 varianti/tipo); blocchi **ESISTENTI** chi-siamo+recensioni+faq ri-stilati (recensioni/faq con **scheletro placeholder**, copy UI fissa, no invenzione + composizione mockup li emette); orari (giorno-corrente client) + contatti (SVG catalogo, no risorsa esterna); header+footer. **Spariscono i vuoti.** Split in 2 sotto-macrotask ammesso se troppo grande. Dip: `foundation` |
 | `variety-select` | **todo** | — | 4 task (DV2-501…504): riuso aggancio varietà (variant-document congela tutti gli assi + inoltro design+vertical ai blocchi, da `hero-menu-wow` `fff6904`); **`recipe_id` asse della matrice (DS-V2-D8)**; greedy multi-asse farthest-first (esclusione dura hero+theme, **recipe inclusa**, seed mulberry32); requisito materiale ≥5 hero + ≥5 theme + ≥2 recipe/vertical o `selectDesign` fallisce forte. Dip: `hero`, `menu`, `body-sections` |
@@ -29,10 +29,12 @@
 
 ## 2. Macrotask corrente
 
-- **Selezionato**: **`foundation` è DONE** (checkpoint verde, mergiato). Prossimo = **`hero`** (DV2-201
-  hero-layouts.ts ampliato agli N id CD; DV2-202 Hero.tsx renderer unico che consuma `hero_layout_id`,
-  slot editabili, `PhotoPlaceholder`, `data-hero-layout`, escaping). Dip: solo `foundation` (verde).
-  I primitivi (`src/ui/site/primitives.tsx`) e i token CD sono pronti per essere usati da Hero.tsx.
+- **Selezionato**: **`hero` è DONE** (checkpoint verde 4/4, mergiato `14b27f1`, gate visivo approvato). Prossimo =
+  **`menu`** (DV2-301…303: section-layouts menu ≥4 id CD; Offerte.tsx card-carta su surface-dark + leader-dots +
+  prezzi tabular, data-menu-layout; aggancio `vertical`→menu) **oppure** **`body-sections`** (DV2-401…404). Sono
+  INDIPENDENTI fra loro ma **entrambi toccano `site.css`** → **uno alla volta**. Dip di entrambi: solo `foundation`.
+  Il pattern `HeroPhoto` (foto caricata `<img>` / placeholder di catalogo) e `LAYOUT_TO_VARIANT` sono riusabili
+  per Offerte/blocchi del corpo.
 - **Ordine (DAG):** `foundation → {hero, menu, body-sections} → variety-select → e2e-visual-v2`. I tre
   macrotask del corpo dipendono solo da `foundation` e sono indipendenti fra loro; `hero`, `menu`,
   `body-sections` toccano `site.css` → **un macrotask alla volta** per evitare conflitti.
@@ -44,9 +46,9 @@
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `foundation` costruito su `trueline/build/foundation` (da `trueline/bootstrap/design-engine-v2`, che porta anche blueprint+bootstrap), poi **mergiato su `main`**. Prossimo: aprire `trueline/build/hero` da `main` pulito. Mai lavorare su `main` |
-| Ultimo commit | `70c756a` fix(design-engine-v2): render/serve usano themeFor (alias retro-compat). Preceduto da `2d86cd0` (DV2-102/103/104) e `e0a1962` (DV2-101). Merge su `main` (blueprint + foundation insieme) |
-| Stato merge su `main` | **`foundation` MERGIATO su `main`** su via umana esplicita (deploy-coupling coupled → deploy su ulaba.net). Verifica locale COMPLETA prima del merge: vitest 1603/1603, e2e Chromium 30/30, `next build` 0. I prossimi macrotask restano human-gated anche sul verde |
+| Branch di lavoro | `hero` costruito su `trueline/build/hero` (da `main` pulito), poi **mergiato su `main`**. Prossimo: aprire `trueline/build/menu` (o `trueline/build/body-sections`) da `main` pulito. Mai lavorare su `main` |
+| Ultimo commit | `14b27f1` feat(design-engine-v2): hero — 20 varianti Claude Design + wiring design→blocco + M5 (DV2-201/202) [checkpoint VERDE 4/4]. Preceduto dai commit di foundation (`70c756a` &c.) |
+| Stato merge su `main` | **`hero` MERGIATO su `main`** su via umana esplicita (deploy-coupling coupled → deploy su ulaba.net). Verifica locale COMPLETA prima del merge: vitest 1616/1616, `next build` 0, **e2e Chromium 30/30**, checkpoint decomposto 4/4, mutazioni 2/2, gitleaks `main..HEAD` 0. I prossimi macrotask restano human-gated anche sul verde |
 | Deploy-coupling | **`coupled`** — Vercel connesso al repo (`ulabaservice-star/progetto-web-ai`): **push su `main` = deploy in produzione** su `ulaba.net`. Verificare **in locale** (vitest, e2e Chromium, computed-style, `next build`) prima di ogni merge |
 
 ## 4. Baseline & budget
@@ -79,6 +81,32 @@
 
 ## 5. Carry-over / note ereditate
 
+- **LEZIONE hero — SUBAGENTI INAFFIDABILI QUI, VERIFICA IN FOREGROUND**: nel workflow di build i **verifier
+  BLIND hanno restituito garbage** (oggetto stub che soddisfa lo schema, `file:"a.ts"`) e il **fixer M5 si è
+  stallato** (watchdog 600s, cugino del `0xC0000142`) lasciando lavoro parziale (finito a mano). Per cambiamenti
+  ampi/dettagliati come Hero.tsx (20 varianti), la strada che tiene è: builder scrive → **orchestratore verifica
+  e completa in FOREGROUND** (tsc/eslint/vitest/oracoli). Non fidarsi del verdetto di un verifier.
+- **PATTERN `HeroPhoto` RIUSABILE (M5 da preservare OVUNQUE)**: la foto PRINCIPALE di ogni variante rende
+  l'immagine CARICATA (`<img src=assetPublicUrl(asset_id)>` object-fit cover) o il `PhotoPlaceholder` di catalogo
+  (prop `background` sopprime l'etichetta nei full-bleed, altrimenti galleggia sul titolo). **Sostituire
+  `block.images`→PhotoPlaceholder ROMPE P4-M5**: menu/body-sections che oggi rendono `block.images` via
+  `SiteSection`→`SiteImage` devono riusare `HeroPhoto` (o SiteImage) per non perdere le foto caricate.
+- **SELEZIONE v1.1 ORA PESCA I 20 HERO CD** (universali) → la distinzione `section_layout_id` v1.1 (`heroIndex % N`)
+  degrada transitoriamente; la distinzione PIENA del corpo passa a **variety-select (DV2-503 greedy)**. Migrate 2
+  invarianti-biiezione unit v1.1 (`design-hero-layouts-v11` media→floor, `design-select-v11` section_layout→floor;
+  la garanzia per-coppia resta via `recipe`/`bodyKey`). `LAYOUT_TO_VARIANT` mappa i 6 id legacy→variante CD vicina
+  (i doc P4 già pubblicati rendono la pelle v2), fallback `'full'`.
+- **BLAST-RADIUS E2E (per i prossimi blocchi)**: gli spec v1/v1.1 (`visual-skin`/`visual-engine`/`editorial-skin`)
+  asserivano le vecchie classi `.site-hero__title/brand/kicker` → rinominate `.site-hero-v2__title/brand/eyebrow`;
+  **AC-DE-401-2 migrato** dal `display` della `.site-section` (v1.1) alla **posizione della foto** della variante
+  (v2: absolute full-bleed vs relative incorniciata — la varietà vive nella STRUTTURA, non in una regola CSS
+  `[data-hero-layout] .site-section`). Le garanzie semantiche (hero≥40px, Playfair display, tracking editoriale)
+  reggono in v2 perché il renderer usa gli stessi token INLINE.
+- **R-04 hero — RE-BASELINE LEGITTIMO** (a differenza di foundation): le 20 varianti CD (struttura condivisa dei
+  componenti-slot + text-stack) + prosa dei docs blueprint → 178 dup, ~22 "nuove" vs baseline v1.1 →
+  ri-attribuite (catalogo + docs) e **ri-catturate** (`baseline.mjs capture . --hygiene`). NB: aggiungere `background`
+  ai 4 full-bleed DOPO la re-baseline **non ha spostato** le impronte tracciate (erano i componenti/text-stack, non
+  le righe-foto) → **nessuna seconda re-baseline**. `scratchpad/` NON gitignorato: driver/galleria cancellati prima del commit.
 - **WORKFLOW SI STALLA — usa COMMAND-FREE** (lezione variety-engine v1.1): i subagenti che eseguono
   `tsc`/`vitest`/`knip` in background-workflow **si stallano** (watchdog 180s → morte, cugino del
   `0xC0000142`). **Rimedio provato:** workflow **COMMAND-FREE** (subagenti SOLO Read/Write/Edit/Grep) +
@@ -152,6 +180,19 @@
 
 ## 6. Copertura dichiarata
 
+- **`hero` (DV2-201..202) — tutti gli AC coperti e verdi + GATE VISIVO ESEGUITO.** Target_tests:
+  `design-hero-layouts-v2` (AC-201-1/2/3: ≥8 (26) id versionati distinti, media+title_treatment non vuoti su tutti i
+  20 CD, lookup esatto/proto-safe, asse VISIBILE media/title_treatment), `site-hero-v2` (AC-202-1/2/3/4:
+  data-hero-layout+landmark, slot+`<h1>` display+CTA+PhotoPlaceholder, distinzione strutturale full vs split,
+  anti-injection). Provenienza rispettata (lato atteso letterale). **Mutazioni 2/2 uccise** (src M5→AC-416-5 rosso;
+  `LAYOUT_TO_VARIANT` collasso→AC-202-1/3 rosso), ripristino sha256. e2e su `/s/` 30/30 (varietà computed, pelle,
+  anti-injection, canary rosso). **Gate visivo ESEGUITO** (galleria 20 varianti rese col vero site.css) e
+  **APPROVATO dall'utente** ("meglio di Wix") — a differenza di foundation (non eseguito formalmente).
+- **NON coperto / dichiarato (L-COL-006, hero):** (a) **Tetto del wow = PhotoPlaceholder**: senza foto reali i box
+  tratteggiati restano il limite; la fotografia reale è **P4-D7/F**, fuori scope. (b) **M5 preservato SOLO nell'hero**
+  in questo macrotask (gli altri blocchi già rendevano `block.images`; menu/body-sections dovranno riusare
+  `HeroPhoto`/SiteImage). (c) La **distinzione section_layout piena** fra le 5 varianti è DEMANDATA a variety-select
+  (qui degradata a floor); la garanzia per-coppia resta via `recipe`. (d) La **bellezza estetica non è oracolabile**.
 - **`foundation` (DV2-101..104) — tutti gli AC coperti e verdi.** Target_tests: `design-themes-v2`
   (AC-DV2-101-1..4: 23 palette complete, token semantici CD, `themeFor` esatto+alias+proto-safe,
   inclusione non biiezione; + invarianti migrate: no `var()`, palette distinte, id versionato via schema),
