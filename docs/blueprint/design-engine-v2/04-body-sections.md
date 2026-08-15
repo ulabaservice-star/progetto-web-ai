@@ -37,7 +37,7 @@ chi-siamo/recensioni/faq, `body-sections-b` orari/contatti/header/footer) manten
     puro; lookup per id esatto/proto-safe; kind di sezione esplicito per ogni layout.
 
   definition_of_done:
-    - "Per OGNI tipo-sezione (chi-siamo, orari, contatti, recensioni, faq, header, footer) esistono >=2 section_layout_id versionati con struttura non vuota"
+    - "Per OGNI tipo-sezione (chi-siamo, orari, contatti, recensioni, faq, header, footer) sono tradotte TUTTE le varianti CD disponibili (minimo 2/tipo) come section_layout_id versionati con struttura non vuota"
     - "Ogni layout dichiara il proprio kind di sezione (per il render e per la matrice) e gli slot da popolare"
     - "Catalogo dominio puro (nessun React/DB, nessun colore letterale); lookup per id esatto/proto-safe"
 

@@ -48,7 +48,7 @@ distinti **e** ≥5 `theme_id` (**e** ≥2 `recipe_id`) per ogni `vertical`, alt
     scartano i blocchi poveri e il refactor illustrazioni di v1.1.
 
   definition_of_done:
-    - "variant-document congela tutti gli assi selezionati + vertical nel documento (id versionati nome@N)"
+    - "variant-document congela gli assi di varieta' v2 (DS-V2-D9: theme_id, hero_layout_id, menu_layout_id, section_layout_id per sezione, recipe_id) + vertical (id versionati nome@N); gli assi decorativi legacy di v1.1 restano inerti (non congelati come varieta')"
     - "SiteView/SiteDesignSelection proiettano gli assi come data-* alla radice e inoltrano design+vertical ai blocchi via registry/SiteBlockProps"
     - "I blocchi ricchi (Hero/Offerte/corpo) ricevono e consumano gli assi congelati (non i default): un mockup reso riflette gli assi scelti"
 
@@ -126,14 +126,14 @@ distinti **e** ≥5 `theme_id` (**e** ≥2 `recipe_id`) per ogni `vertical`, alt
   objective: >
     Sostituire in design-select.ts il dedup-per-hero con la selezione greedy multi-asse (DS-V2-D4):
     buildVariants enumera pool = allowedCombinations(vertical) (ora con gli assi theme_id,
-    hero_layout_id, menu_layout_id, section_layout_id, recipe_id e accessori); rng =
+    hero_layout_id, menu_layout_id, section_layout_id, recipe_id — assi di varieta' v2 di DS-V2-D9); rng =
     mulberry32(hash(seed)) UNICA sorgente seminata; prima variante = prima del pool mescolato col seed;
     variante i (i>=1) = fra le combo non scelte, quella che MINIMIZZA la somiglianza massima (n. assi in
     comune, RECIPE INCLUSA) con le gia' scelte, con esclusione DURA di hero_layout_id e theme_id finche'
     c'e' materiale, tie-break deterministico via rng. Puro e deterministico (nessun Date/Math.random).
 
   definition_of_done:
-    - "buildVariants implementa il farthest-first deterministico su TUTTI gli assi delle combo (theme, hero, menu, section-layout, recipe, accessori): variante i minimizza la somiglianza massima con le gia' scelte; tie-break via rng seminato"
+    - "buildVariants implementa il farthest-first deterministico sugli assi di varieta' v2 (DS-V2-D9: theme, hero, menu, section-layout, recipe): variante i minimizza la somiglianza massima con le gia' scelte; tie-break via rng seminato; gli assi decorativi legacy di v1.1 sono ignorati"
     - "Esclusione dura di hero_layout_id e theme_id finche' esistono hero/temi liberi; recipe_id e gli altri assi sono diversificati (soft) dalla metrica di distanza; rilassamento in ordine (prima gli assi meno visibili) solo se il materiale finisce"
     - "Puro e deterministico: unica sorgente rng = mulberry32(hash(seed)); nessun Date/Math.random; stessi vertical+seed -> stesse 5 varianti byte per byte"
 

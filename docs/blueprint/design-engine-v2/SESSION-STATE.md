@@ -9,7 +9,7 @@
 |---|---|
 | **Progetto** | Belora/Ulaba |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase) |
-| **Ultimo aggiornamento** | 2026-08-15 (**BOOTSTRAP del blueprint design-engine-v2 completato**: 00-INDEX + VISION + 6 moduli (DV2-1xx…6xx, 19 task atomici) + SESSION-STATE + 3 prompt. Self-check strutturale `validate_blueprint` **VERDE** (19 task, 5/5 controlli OK); semantico con 2 decisioni utente recepite (R1 scheletro placeholder reviews/faq; R3 `recipe_id` asse matrice = DS-V2-D8). **Nessun macrotask costruito.** Prossimo: BUILD di `foundation` (DV2-101…104), primo nodo del DAG) |
+| **Ultimo aggiornamento** | 2026-08-15 (**BOOTSTRAP del blueprint design-engine-v2 completato**: 00-INDEX + VISION + 6 moduli (DV2-1xx…6xx, 19 task atomici) + SESSION-STATE + 3 prompt. Self-check strutturale `validate_blueprint` **VERDE** (19 task, 5/5 controlli OK); semantico con 3 decisioni recepite (R1 scheletro placeholder reviews/faq; R3 `recipe_id` asse matrice = DS-V2-D8; inventario assi = DS-V2-D9: ritira le manopole decorative v1.1, varietà solo da CD + tutte le varianti del catalogo). **Nessun macrotask costruito.** Prossimo: BUILD di `foundation` (DV2-101…104), primo nodo del DAG) |
 | **Sessione corrente** | 2026-08-15 — BOOTSTRAP trueline: generato il blueprint dai template + spec a monte (`docs/superpowers/specs/2026-08-15-design-engine-v2-design.md`). Superato lo strutturale; in attesa della conferma umana sui rilievi semantici prima di aprire BUILD. Aprire `prompts/session-start.md` per il primo macrotask |
 
 ---
@@ -88,6 +88,15 @@
   `design-matrix.ts` NON porta `recipe_id` (ortogonale, DS-D3). DV2-502 lo attacca alle combo (≥2/vertical);
   la greedy (DV2-503) lo include nella distanza → varia la copy. Resta uno **stile di catalogo** (`recipeFor`),
   mai testo fabbricato dalla matrice.
+- **DS-V2-D9 — Inventario assi (mia raccomandazione, delegata dall'utente per "wow massimo")**: il tipo
+  `Combo` (v1.1) porta 9 assi. Gli assi di varietà v2 sono l'insieme **esplicito** `{theme, hero_layout,
+  menu_layout, section_layout, recipe}`; gli assi **decorativi legacy** (`section_treatment_id`,
+  `effect_level`, `ornament_id`, `ribbon_id`, `illustration_id`) sono **ritirati dalla varietà** (bocciati
+  come amatoriali al gate v1.1): nessun renderer v2 li consuma, la greedy li ignora, restano **inerti**
+  nel `Combo` (rimozione = pulizia separata fuori scope). La decorazione (divisori/accenti/micro-motion,
+  CSP + reduced-motion) vive **dentro le varianti CD**. I moduli traducono **tutte** le varianti del
+  catalogo CD (non un minimo). **Tetto del wow (L-COL-006):** coi soli `PhotoPlaceholder` il wow ha un
+  limite; la leva #1 (fotografia reale) resta **P4-D7/F**, fuori v2 — anticiparla è una decisione a sé.
 - **RECENSIONI/FAQ sono blocchi ESISTENTI** (`src/ui/site/blocks/Recensioni.tsx`, `Faq.tsx`), ma
   `generatable.ts` dice che **nessun campo del Brief v1 li soddisfa** → oggi non entrano nei mockup. v2
   (DV2-402, decisione utente R1) li ri-stila e rende uno **scheletro placeholder** con copy UI FISSA

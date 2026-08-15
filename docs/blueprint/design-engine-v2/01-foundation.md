@@ -40,7 +40,7 @@ qui, fuori dallo scanner AC-231-4); `theme-style.ts`, `site.css`, i primitivi vi
     temi si aggiornano per INCLUSIONE, non per biiezione con una lista fissa.
 
   definition_of_done:
-    - "themes.ts esporta >=8 palette CD, ognuna un SiteTheme completo (Record totale: nessun token del tipo mancante)"
+    - "themes.ts esporta TUTTE le palette del catalogo CD (di fatto 23; minimo 8), ognuna un SiteTheme completo (Record totale: nessun token del tipo mancante)"
     - "Il vocabolario token colore e' esteso ai semantici CD (surface-page/alt/card/dark, ink, text-*, on-dark*, line*, accent, accent-2, eyebrow-color); i token tipografia/scala/spazio/raggi restano presenti"
     - "L'interfaccia esportata SiteTheme e la firma dei lookup (per id versionato nome@N) restano stabili; gli id storici usati altrove restano risolvibili o sono rimappati esplicitamente"
     - "I test dei temi aggiornati verificano l'INCLUSIONE (ogni THEME e' un SiteTheme ben formato) senza reintrodurre l'accoppiamento biiettivo Set(theme_id)==Set(THEMES)"

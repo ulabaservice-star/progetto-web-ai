@@ -35,7 +35,7 @@ esterna. Escaping React su tutti gli slot; **niente `dangerouslySetInnerHTML`** 
     lookup per id e' esatto e proto-safe (un id inesistente non risolve a un default silenzioso).
 
   definition_of_done:
-    - "hero-layouts.ts esporta >=8 hero_layout_id distinti, versionati (nome@N), ciascuno con i campi struttura (media placement, slot, trattamento titolo)"
+    - "hero-layouts.ts esporta TUTTE le varianti hero del catalogo CD (~20; minimo 8) come hero_layout_id distinti versionati (nome@N), ciascuno con i campi struttura (media placement, slot, trattamento titolo)"
     - "Il catalogo e' dominio puro (nessun import React/DB, nessun colore letterale) e il lookup per id e' esatto/proto-safe"
     - "Ogni layout dichiara gli slot che il renderer dovra' popolare (eyebrow, title, subtitle, cta, photo-placeholder), in modo che Hero.tsx sappia cosa rendere"
 

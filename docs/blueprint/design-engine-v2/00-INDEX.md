@@ -73,6 +73,22 @@ variety-select `DV2-5xx`, e2e `DV2-6xx`. ID stabili, mai riusati.
   **non fabbrica testo**; il contenuto reale delle caselle lo scrive l'LLM a runtime, come sempre). Il
   requisito di materiale (DV2-504) pinna anche `recipe_id`. Nuovo task `DV2-502`; la greedy e il
   materiale scalano di ID (503/504).
+- **DS-V2-D9 — Inventario assi: la decorazione è intrinseca alle varianti CD, non manopole separate.**
+  Il gate v1.1 ha bocciato come **amatoriali** le manopole decorative hand-made (`section_treatment_id`,
+  `effect_level`, `ornament_id`, i nastri fatti a mano) + le illustrazioni line-art (già scartate,
+  DS-V2-D5). In Claude Design la decorazione (divisori, accenti, micro-motion) è **progettata dentro
+  ogni variante**, non un knob ortogonale. Perciò gli **assi di varietà di v2** sono l'insieme
+  **esplicito** `{theme_id, hero_layout_id, menu_layout_id, section_layout_id, recipe_id}`: la greedy
+  (DV2-503) diversifica **solo** su questi e l'aggancio (DV2-501) congela **solo** questi (+ `vertical`).
+  Gli assi decorativi legacy di v1.1 (`section_treatment_id`, `effect_level`, `ornament_id`,
+  `ribbon_id`, `illustration_id`) **NON** sono assi di varietà v2: nessun renderer v2 li consuma, la
+  greedy li ignora. Restano **inerti** nel tipo `Combo` (rimozione = pulizia separata, fuori scope,
+  per non innescare un refactor ampio su matrice+test). Divisori/accenti/motion tasteful (CSP intatta +
+  prefers-reduced-motion) vivono **dentro** le varianti CD tradotte nei blocchi (macrotask 02–04), non
+  come assi combinatori. **Massima ricchezza:** i moduli traducono **tutte** le varianti disponibili nel
+  catalogo CD (non un minimo) — più mattoncini belli = più mockup distinti. **Tetto del wow dichiarato
+  (L-COL-006):** con i soli `PhotoPlaceholder` (DS-V2-D3) il wow ha un limite strutturale; la leva #1
+  (fotografia reale) resta **P4-D7/F**, fuori da v2.
 
 ## Contratto di altitudine (architecture)
 

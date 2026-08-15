@@ -34,7 +34,7 @@ dopo hero). Renderer unico; solo token (`var(--…)`), nessun colore letterale; 
     Lookup per id esatto e proto-safe.
 
   definition_of_done:
-    - "section-layouts.ts esporta >=4 menu_layout_id distinti versionati (nome@N), ognuno con i campi struttura non vuoti"
+    - "section-layouts.ts esporta TUTTE le varianti menu del catalogo CD (minimo 4) come menu_layout_id distinti versionati (nome@N), ognuno con i campi struttura non vuoti"
     - "Il catalogo e' dominio puro (nessun React/DB, nessun colore letterale); lookup per id esatto/proto-safe"
     - "Ogni variante menu dichiara gli slot/parti che Offerte.tsx dovra' rendere (voci nome/prezzo, leader-dots, cornice)"
 
