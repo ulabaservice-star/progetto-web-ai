@@ -9,7 +9,7 @@
 |---|---|
 | **Progetto** | Belora/Ulaba |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase) |
-| **Ultimo aggiornamento** | 2026-08-15 (**BOOTSTRAP del blueprint design-engine-v2 completato**: 00-INDEX + VISION + 6 moduli (DV2-1xx…6xx, 19 task atomici) + SESSION-STATE + 3 prompt. Self-check strutturale `validate_blueprint` **VERDE** (19 task, 5/5 controlli OK); semantico con 3 decisioni recepite (R1 scheletro placeholder reviews/faq; R3 `recipe_id` asse matrice = DS-V2-D8; inventario assi = DS-V2-D9: ritira le manopole decorative v1.1, varietà solo da CD + tutte le varianti del catalogo). **Nessun macrotask costruito.** Prossimo: BUILD di `foundation` (DV2-101…104), primo nodo del DAG) |
+| **Ultimo aggiornamento** | 2026-08-15 (**`foundation` COSTRUITO — checkpoint VERDE 4/4 + merge su `main`**: DV2-101 themes.ts=23 palette CD+alias+themeFor, DV2-102 theme-style guard, DV2-103 site.css ai token CD, DV2-104 primitivi Button/SectionHead/PhotoPlaceholder. Checkpoint decomposto: C1 knip/madge/jscpd/arch verdi (**jscpd 0 cloni** grazie all'helper cdColors → nessuna ri-baseline), C2 gitleaks 0/semgrep 0/osv+rls invariati, C3 vitest 1603/1603, C4 target_tests+covers; mutazioni 2/2 uccise; `next build` 0; **e2e Chromium 30/30**. **Prossimo: BUILD di `hero`** (DV2-201..202), dip solo `foundation`) |
 | **Sessione corrente** | 2026-08-15 — BOOTSTRAP trueline: generato il blueprint dai template + spec a monte (`docs/superpowers/specs/2026-08-15-design-engine-v2-design.md`). Superato lo strutturale; in attesa della conferma umana sui rilievi semantici prima di aprire BUILD. Aprire `prompts/session-start.md` per il primo macrotask |
 
 ---
@@ -20,7 +20,7 @@
 
 | Macrotask | Stato | Checkpoint | Note |
 |---|---|---|---|
-| `foundation` | **todo** | — | 4 task (DV2-101…104): themes.ts con le palette CD (≥8) + vocabolario token semantici (SiteTheme stabile, inclusione non biiezione); theme-style proietta ogni token come custom property; site.css a token (0 colori letterali); primitivi condivisi (Button/SectionHead/PhotoPlaceholder) a token, escaping React, no HTML grezzo. **Radice del DAG.** Dip: — |
+| `foundation` | **done** | **VERDE 4/4** (`70c756a`) | 4 task DV2-101..104: themes.ts=23 palette CD (valori esatti, `color-mix`) + `THEME_ID_ALIASES`+`themeFor` proto-safe (id storici risolvibili); theme-style INVARIATO (già proietta); site.css migrato ai NOMI CD (valori preservati, 0 regressioni); primitivi a token, escaping, PhotoPlaceholder box "FOTO·label". **3 test v1.1 di biiezione ritirati** (invarianti migrate a design-themes-v2). **Fix e2e-scoperto: 6 punti render/serve THEMES.find→themeFor** (l'alias serve end-to-end o /s/ dà 404 sui theme_id storici). Merge su `main` su tuo via (deploy). Dip: — |
 | `hero` | **todo** | — | 2 task (DV2-201…202): hero-layouts.ts ampliato agli N id CD (catalogo puro, ≥8); Hero.tsx renderer unico (slot editabili, PhotoPlaceholder, data-hero-layout, escaping). Dip: `foundation` |
 | `menu` | **todo** | — | 3 task (DV2-301…303): section-layouts menu (≥4 id CD); Offerte.tsx (card-carta su surface-dark + leader-dots + prezzi tabular, data-menu-layout); aggancio `vertical`→menu (menu_layout_id asse per-vertical indipendente, chiude il buco v1.1). Dip: `foundation` |
 | `body-sections` | **todo** | — | 4 task (DV2-401…404): section-layouts corpo (chi-siamo/orari/contatti/recensioni/faq/header/footer, ≥2 varianti/tipo); blocchi **ESISTENTI** chi-siamo+recensioni+faq ri-stilati (recensioni/faq con **scheletro placeholder**, copy UI fissa, no invenzione + composizione mockup li emette); orari (giorno-corrente client) + contatti (SVG catalogo, no risorsa esterna); header+footer. **Spariscono i vuoti.** Split in 2 sotto-macrotask ammesso se troppo grande. Dip: `foundation` |
@@ -29,9 +29,10 @@
 
 ## 2. Macrotask corrente
 
-- **Selezionato**: primo è **`foundation`** (nessuna dipendenza, radice del DAG). 4 task (DV2-101
-  themes CD, DV2-102 theme-style, DV2-103 site.css, DV2-104 primitivi). È la fondazione: palette CD +
-  token semantici + primitivi che tutti i blocchi ricchi (hero/menu/corpo) riuseranno.
+- **Selezionato**: **`foundation` è DONE** (checkpoint verde, mergiato). Prossimo = **`hero`** (DV2-201
+  hero-layouts.ts ampliato agli N id CD; DV2-202 Hero.tsx renderer unico che consuma `hero_layout_id`,
+  slot editabili, `PhotoPlaceholder`, `data-hero-layout`, escaping). Dip: solo `foundation` (verde).
+  I primitivi (`src/ui/site/primitives.tsx`) e i token CD sono pronti per essere usati da Hero.tsx.
 - **Ordine (DAG):** `foundation → {hero, menu, body-sections} → variety-select → e2e-visual-v2`. I tre
   macrotask del corpo dipendono solo da `foundation` e sono indipendenti fra loro; `hero`, `menu`,
   `body-sections` toccano `site.css` → **un macrotask alla volta** per evitare conflitti.
@@ -43,9 +44,9 @@
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | Bootstrap su `trueline/bootstrap/design-engine-v2` (00-INDEX+VISION `b3fa389`, spec `f383961`). Prossimo: aprire `trueline/build/foundation` da `main` pulito per il primo macrotask. Mai lavorare su `main` |
-| Ultimo commit | `b3fa389` docs(design-engine-v2): bootstrap trueline — 00-INDEX + VISION. I 6 moduli + SESSION-STATE + prompt sono da committare a chiusura del bootstrap |
-| Stato merge su `main` | Nessun merge. Il bootstrap non tocca `main`. I macrotask di BUILD restano **human-gated anche sul verde** (deploy-coupling coupled) |
+| Branch di lavoro | `foundation` costruito su `trueline/build/foundation` (da `trueline/bootstrap/design-engine-v2`, che porta anche blueprint+bootstrap), poi **mergiato su `main`**. Prossimo: aprire `trueline/build/hero` da `main` pulito. Mai lavorare su `main` |
+| Ultimo commit | `70c756a` fix(design-engine-v2): render/serve usano themeFor (alias retro-compat). Preceduto da `2d86cd0` (DV2-102/103/104) e `e0a1962` (DV2-101). Merge su `main` (blueprint + foundation insieme) |
+| Stato merge su `main` | **`foundation` MERGIATO su `main`** su via umana esplicita (deploy-coupling coupled → deploy su ulaba.net). Verifica locale COMPLETA prima del merge: vitest 1603/1603, e2e Chromium 30/30, `next build` 0. I prossimi macrotask restano human-gated anche sul verde |
 | Deploy-coupling | **`coupled`** — Vercel connesso al repo (`ulabaservice-star/progetto-web-ai`): **push su `main` = deploy in produzione** su `ulaba.net`. Verificare **in locale** (vitest, e2e Chromium, computed-style, `next build`) prima di ogni merge |
 
 ## 4. Baseline & budget
@@ -97,6 +98,17 @@
   CSP + reduced-motion) vive **dentro le varianti CD**. I moduli traducono **tutte** le varianti del
   catalogo CD (non un minimo). **Tetto del wow (L-COL-006):** coi soli `PhotoPlaceholder` il wow ha un
   limite; la leva #1 (fotografia reale) resta **P4-D7/F**, fuori v2 — anticiparla è una decisione a sé.
+- **LEZIONE foundation — `THEMES.find` → `themeFor` OVUNQUE si risolva un `theme_id` di documento**
+  (CRITICO per hero/menu/body): l'alias DS-V2-D1 vive SOLO in `themeFor`. Un `THEMES.find(id===theme_id)`
+  diretto bypassa l'alias → un documento con `theme_id` storico non risolve → `/s/[slug]` fa `notFound()`
+  (404). L'e2e l'ha scoperto (18 rossi su /s/); fix `70c756a` (6 punti: s/[slug], editor, render-draft,
+  preview, generation-phase2, ThemeSwitcher). **I renderer di hero/menu/body devono usare `themeFor`.**
+- **LEZIONE — l'e2e è il gate che conta prima del merge**: vitest era 1603 verde ma l'e2e ha trovato il
+  404. Sempre `db:reset` + `next build` + `npm run test:e2e` (computed-style + serving /s/) prima del merge.
+- **LEZIONE — l'helper `cdColors` ha azzerato la duplicazione jscpd** dei 23 record-palette (a differenza
+  di editorial-skin v1.1 che ri-baselinò): un helper che deriva riduce i cloni verbatim → nessuna ri-baseline.
+- **GOTCHA oracolo — `run_semgrep.mjs <dir>` monta la dir della SKILL come /src, non il progetto**:
+  esegui `docker run -v <progetto>/src:/src:ro -v <ruleset>:/rules.yml:ro semgrep/semgrep scan --config /rules.yml --json /src`.
 - **RECENSIONI/FAQ sono blocchi ESISTENTI** (`src/ui/site/blocks/Recensioni.tsx`, `Faq.tsx`), ma
   `generatable.ts` dice che **nessun campo del Brief v1 li soddisfa** → oggi non entrano nei mockup. v2
   (DV2-402, decisione utente R1) li ri-stila e rende uno **scheletro placeholder** con copy UI FISSA
