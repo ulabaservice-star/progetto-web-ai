@@ -128,7 +128,7 @@ async function seedPublishedSite(opts: {
  */
 async function assertHeroTitleFontSize(page: Page, minPx: number): Promise<void> {
   const fontSizePx = await page
-    .locator('h1.site-hero__title')
+    .locator('h1.site-hero-v2__title')
     .first()
     .evaluate((element) => parseFloat(getComputedStyle(element).fontSize));
   if (!(fontSizePx >= minPx)) {
@@ -137,7 +137,7 @@ async function assertHeroTitleFontSize(page: Page, minPx: number): Promise<void>
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AC-DE-401-1 (PELLE) — sito pubblicato reso su /s/ -> font-size hero >= 40 su .site-hero__title E
+// AC-DE-401-1 (PELLE) — sito pubblicato reso su /s/ -> font-size hero >= 40 su .site-hero-v2__title E
 // font di catalogo caricato (fontFamily contiene 'playfair display', non un fallback di sistema;
 // confermato via document.fonts). E' l'EFFETTO in un browser vero del foglio site.css + del font
 // self-host (next/font) mappato sul token del tema, non solo l'attributo dichiarato. NB (DE11-103,
@@ -165,7 +165,7 @@ test.describe('DE-401 AC-DE-401-1 (PELLE) — hero grande e font di catalogo car
     // then (font di catalogo): il font-family COMPUTATO del titolo contiene la famiglia DISPLAY del tema
     // (Playfair Display, DE11-103) e NON e' il solo fallback di sistema — prova che theme-style mappa il
     // token --site-font-display e che il font self-host e' applicato all'elemento, non solo nominato.
-    const heroTitle = page.locator('h1.site-hero__title');
+    const heroTitle = page.locator('h1.site-hero-v2__title');
     await expect(heroTitle).toBeVisible(); // covers: AC-DE-401-1
     const fontFamily = (
       await heroTitle.first().evaluate((element) => getComputedStyle(element).fontFamily)
@@ -190,37 +190,43 @@ test.describe('DE-401 AC-DE-401-1 (PELLE) — hero grande e font di catalogo car
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AC-DE-401-2 (VARIETA) — due varianti con hero_layout DIVERSI rese su /s/ hanno LAYOUT COMPUTATI
-// distinti (non solo colore/attributo). DISCIPLINA FIXTURE: TRE varianti con valori DISCORDANTI e un
-// id PREFISSO-CONFONDIBILE di un altro — centrato@1 (flex), split@1 (grid), e centrato-foto@1 (condivide
-// lo STEM 'centrato' con centrato@1). Si prova (a) che il layout computato di centrato@1 (flex)
-// DIFFERISCE da split@1 (grid), varieta' STRUTTURALE reale; (b) che centrato-foto@1 NON e' confuso con
-// centrato@1 — il data-attribute alla radice e' l'id ESATTO 'centrato-foto@1', mai lo stem, perche' il
-// CSS lo consuma via uguaglianza d'attributo, non a prefisso.
+// AC-DE-401-2 (VARIETA, MIGRATO a Hero v2 / DV2-202) — due varianti con hero_layout DIVERSI rese su /s/
+// hanno STRUTTURA computata distinta (non solo colore/attributo). In v2 la varieta' non e' piu' nel display
+// della .site-section (regole site.css [data-hero-layout] di v1.1) ma nella STRUTTURA della variante Claude
+// Design: centrato@1 -> 'fullCentrato' (foto full-bleed di SFONDO, position:absolute), split@1 -> 'split'
+// (foto INCORNICIATA affiancata, position:relative). DISCIPLINA FIXTURE: TRE varianti con valori DISCORDANTI
+// e un id PREFISSO-CONFONDIBILE — centrato@1, split@1, e centrato-foto@1 (condivide lo STEM 'centrato'). Si
+// prova (a) che la posizione-foto di centrato@1 (absolute) DIFFERISCE da split@1 (relative), varieta'
+// STRUTTURALE reale; (b) che centrato-foto@1 NON e' confuso con centrato@1 — l'id ESATTO alla radice, mai lo
+// stem, e per giunta un layout diverso (centrato-foto@1 -> 'split').
 // ─────────────────────────────────────────────────────────────────────────────
 
-test.describe('DE-401 AC-DE-401-2 (VARIETA) — hero_layout diversi -> layout computati distinti su /s/<slug>', () => {
-  /** Legge il display e la grid-template-columns COMPUTATI della section hero, piu' l'id di layout
-   *  ESATTO scritto alla radice del render (.site-view). Il confronto e' sui VALORI COMPUTATI, non sugli
-   *  attributi nel markup. */
+test.describe('DE-401 AC-DE-401-2 (VARIETA) — hero_layout diversi -> struttura computata distinta su /s/<slug>', () => {
+  /** Legge la POSITION COMPUTATA del placeholder foto dell'hero (l'asse strutturale che distingue le varianti
+   *  Claude Design in v2: foto di SFONDO full-bleed = absolute vs foto INCORNICIATA = relative), piu' l'id di
+   *  layout ESATTO scritto alla radice del render (.site-view) e alla radice del blocco hero. Il confronto e'
+   *  sui VALORI COMPUTATI, non sugli attributi nel markup. */
   async function readHeroLayout(
     page: Page,
     kind: string,
     heroLayoutId: string,
-  ): Promise<{ display: string; gridColumns: string; rootAttr: string | null }> {
+  ): Promise<{ photoPosition: string; rootAttr: string | null; sectionAttr: string | null }> {
     const publicSlug = await seedPublishedSite({ kind, heroLayoutId });
     const response = await page.goto(`/s/${publicSlug}`);
     expect(response?.status()).toBe(200); // covers: AC-DE-401-2
 
     const hero = page.locator('section[data-block-kind="hero"]').first();
     await expect(hero).toBeVisible(); // covers: AC-DE-401-2
-    const display = await hero.evaluate((element) => getComputedStyle(element).display);
-    const gridColumns = await hero.evaluate((element) => getComputedStyle(element).gridTemplateColumns);
+    const photoPosition = await hero
+      .locator('.site-photo-ph')
+      .first()
+      .evaluate((element) => getComputedStyle(element).position);
     const rootAttr = await page.locator('.site-view').getAttribute('data-hero-layout');
-    return { display, gridColumns, rootAttr };
+    const sectionAttr = await hero.getAttribute('data-hero-layout');
+    return { photoPosition, rootAttr, sectionAttr };
   }
 
-  test('centrato@1 (flex) e split@1 (grid) hanno display distinti, e centrato-foto@1 non e confuso con centrato@1', async ({
+  test('centrato@1 (foto sfondo) e split@1 (foto incorniciata) hanno struttura distinta, e centrato-foto@1 non e confuso con centrato@1', async ({
     page,
   }) => {
     // given: TRE siti pubblicati identici tranne l'hero-layout congelato — i tre resi in sequenza.
@@ -228,24 +234,24 @@ test.describe('DE-401 AC-DE-401-2 (VARIETA) — hero_layout diversi -> layout co
     const split = await readHeroLayout(page, 'var-split', 'split@1');
     const centratoFoto = await readHeroLayout(page, 'var-centrato-foto', 'centrato-foto@1');
 
-    // then (varieta' strutturale): centrato@1 e' una colonna FLEX, split@1 una GRIGLIA a due colonne —
-    // due layout computati DISTINTI, non due colori. Il display e' la differenza piu' robusta,
-    // indipendente dal tema; la grid-template-columns lo conferma (due tracce px vs 'none').
-    expect(centrato.display).toBe('flex'); // covers: AC-DE-401-2
-    expect(split.display).toBe('grid'); // covers: AC-DE-401-2
-    expect(centrato.display).not.toBe(split.display); // varieta' reale, non solo attributo // covers: AC-DE-401-2
-    expect(centrato.gridColumns).toBe('none'); // colonna flex: nessuna traccia di griglia // covers: AC-DE-401-2
-    expect(split.gridColumns).not.toBe('none'); // griglia risolta a due tracce px // covers: AC-DE-401-2
-    expect(split.gridColumns.trim().split(/\s+/).length).toBe(2); // 1fr 1fr -> due colonne // covers: AC-DE-401-2
+    // then (varieta' strutturale, Hero v2): centrato@1 -> 'fullCentrato' rende la foto come SFONDO full-bleed
+    // (position:absolute), split@1 -> 'split' come foto INCORNICIATA affiancata (position:relative) — due
+    // layout computati DISTINTI, non due colori. La position della foto e' la differenza piu' robusta,
+    // indipendente dal tema (l'unit test site-hero-v2 AC-DV2-202-3 prova lo stesso asse in isolamento).
+    expect(centrato.photoPosition).toBe('absolute'); // covers: AC-DE-401-2
+    expect(split.photoPosition).toBe('relative'); // covers: AC-DE-401-2
+    expect(centrato.photoPosition).not.toBe(split.photoPosition); // varieta' reale, non solo attributo // covers: AC-DE-401-2
 
-    // then (trappola del prefisso, a livello di RENDER): la radice porta gli id ESATTI congelati, mai lo
-    // stem. centrato-foto@1 e centrato@1 rendono lo STESSO layout computato (ramo CSS condiviso), quindi
-    // la trappola qui prova la PROIEZIONE FEDELE dell'id nel markup (l'attributo e' l'id verbatim, non
-    // collassato al prefisso 'centrato' comune a entrambi) — la discriminazione-per-prefisso della
-    // SELEZIONE (heroLayoutFor/selectDesign) vive nel dominio ed e' coperta dagli unit test DE-201.
+    // then (trappola del prefisso, a livello di RENDER): la radice del render (.site-view) E la radice del
+    // blocco hero (.site-hero-v2) portano gli id ESATTI congelati, mai lo stem 'centrato'. In v2 centrato@1
+    // (fullCentrato) e centrato-foto@1 (split) rendono per giunta layout DIVERSI (foto absolute vs relative),
+    // quindi non sono confusi ne' nell'attributo ne' nella struttura. La discriminazione-per-prefisso della
+    // SELEZIONE (heroLayoutFor/selectDesign) vive nel dominio ed e' coperta dagli unit test DV2-201/DE-201.
     expect(centrato.rootAttr).toBe('centrato@1'); // covers: AC-DE-401-2
     expect(split.rootAttr).toBe('split@1'); // covers: AC-DE-401-2
     expect(centratoFoto.rootAttr).toBe('centrato-foto@1'); // id ESATTO verbatim, mai lo stem 'centrato' // covers: AC-DE-401-2
+    expect(centratoFoto.sectionAttr).toBe('centrato-foto@1'); // id esatto anche sulla radice del blocco hero (v2) // covers: AC-DE-401-2
+    expect(centrato.photoPosition).not.toBe(centratoFoto.photoPosition); // v2: layout DIVERSI (absolute vs relative) // covers: AC-DE-401-2
   });
 });
 
@@ -471,7 +477,7 @@ test.describe('DE-401 AC-DE-401-4 (ANTI-INJECTION) — documento ostile: selezio
 // ─────────────────────────────────────────────────────────────────────────────
 // AC-DE-401-5 (CANARY) — il verde vale SOLO perche' gli oracoli sanno diventare ROSSI. DUE canary
 // confinati, montati via page.setContent (MAI una rotta app):
-//  (a) PELLE — un h1.site-hero__title con font-size minuscolo inline (8px): l'oracolo pelle
+//  (a) PELLE — un h1.site-hero-v2__title con font-size minuscolo inline (8px): l'oracolo pelle
 //      (fontSize >= 40) FALLISCE davvero;
 //  (b) ANTI-INJECTION — il canary insicuro (sink innerHTML) inietta un payload che ESEGUE:
 //      assertNoInjectionEffect, lo STESSO helper del reale con la STESSA allowlist, FALLISCE.
@@ -481,12 +487,12 @@ test.describe('DE-401 AC-DE-401-5 (CANARY) — gli oracoli pelle e anti-injectio
   test('(a) PELLE — l oracolo fontSize >= 40 FALLISCE su un titolo hero dal font minuscolo', async ({
     page,
   }) => {
-    // given: un h1.site-hero__title con font-size 8px inline, montato via setContent (mai una rotta): e'
+    // given: un h1.site-hero-v2__title con font-size 8px inline, montato via setContent (mai una rotta): e'
     // il difetto che l'oracolo pelle deve prendere. Nessuno stile del sito e' caricato, quindi la sola
     // dimensione in gioco e' la font-size deliberatamente minuscola.
     await page.setContent(
       '<!doctype html><html lang="it"><body>' +
-        '<h1 class="site-hero__title" style="font-size:8px">Titolo canary</h1>' +
+        '<h1 class="site-hero-v2__title" style="font-size:8px">Titolo canary</h1>' +
         '</body></html>',
     );
 

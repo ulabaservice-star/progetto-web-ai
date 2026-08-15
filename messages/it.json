@@ -156,6 +156,11 @@
     "actions": {
       "whatsapp": "Scrivici su WhatsApp"
     },
+    "hero": {
+      "ctaPrimary": "Prenota un tavolo",
+      "ctaSecondary": "Vedi l'offerta",
+      "photoLabel": "ambiente del locale"
+    },
     "badge": "Fatto con Belora"
   },
   "generate": {

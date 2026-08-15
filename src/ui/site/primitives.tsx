@@ -143,13 +143,15 @@ export type PhotoPlaceholderProps = {
   readonly ratio?: string;
   readonly radius?: string;
   readonly style?: CSSProperties;
+  /** Se true, il box è uno SFONDO pieno: nessuna etichetta centrata (che galleggerebbe sul contenuto). */
+  readonly background?: boolean;
 };
 
 /**
  * Il placeholder tipografico di Claude Design (DS-V2-D3): un box che si ricolora da solo con la palette
  * del tema (classe .site-photo-ph in site.css). MAI un <img>/risorsa esterna: le foto reali sono P4-D7/F.
  */
-export function PhotoPlaceholder({ label = 'FOTO', dark = false, ratio, radius, style }: PhotoPlaceholderProps) {
+export function PhotoPlaceholder({ label = 'FOTO', dark = false, ratio, radius, style, background = false }: PhotoPlaceholderProps) {
   return (
     <div
       className={dark ? 'site-photo-ph site-photo-ph--dark' : 'site-photo-ph'}
@@ -159,7 +161,9 @@ export function PhotoPlaceholder({ label = 'FOTO', dark = false, ratio, radius, 
         ...style,
       }}
     >
-      <span>{`FOTO · ${label}`}</span>
+      {/* Come SFONDO pieno il box mostra solo il trattamento del tema, senza l'etichetta centrata che
+          altrimenti galleggerebbe sul titolo dell'hero full-bleed. */}
+      {background ? null : <span>{`FOTO · ${label}`}</span>}
     </div>
   );
 }

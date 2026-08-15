@@ -544,3 +544,16 @@ blockquote::after {
   background: color-mix(in srgb, var(--site-color-surface-dark) 72%, transparent);
   border-color: var(--site-color-on-dark-line);
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   DV2-202 (macrotask hero) — L'HERO v2 EDGE-TO-EDGE. Il renderer (blocks/Hero.tsx) rende la sua
+   radice come <section class="site-hero-v2">: dentro la colonna .site-page (min(72rem, 100%)) sarebbe
+   incolonnato come ogni sezione, ma l'hero delle varianti Claude Design vuole tutta la larghezza del
+   viewport (foto full-bleed, bande a filo). Questa regola lo fa uscire dalla colonna e coprire il
+   viewport; il contenuto INTERNO di ogni variante resta incolonnato dal proprio container centrato
+   (maxWidth 72rem, margin 0 auto). Nessun colore qui: solo geometria. */
+.site-hero-v2 {
+  width: 100vw;
+  max-width: 100vw;
+  margin-inline: calc(50% - 50vw);
+}

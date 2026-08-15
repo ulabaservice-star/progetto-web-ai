@@ -8,7 +8,7 @@ import { attachObservables } from './support/effect-assertions';
 import { parseDocument } from '@/domain/generation/document';
 
 // DE-101 (macrotask visual-skin) — AC-DE-101-1: sulla rotta PUBBLICA e ANON /s/<slug> il titolo
-// dell'hero (<h1 class="site-hero__title">) rende a una dimensione GRANDE davvero, non a quella
+// dell'hero (<h1 class="site-hero-v2__title">) rende a una dimensione GRANDE davvero, non a quella
 // di default del browser. E' l'EFFETTO misurato in un browser vero del foglio site.css (T-DE-101):
 // siteThemeStyle proietta i token alla radice, il foglio da' al titolo un font-size fluido
 // clamp(2rem, 5vw, var(--site-scale-3xl)), e su viewport desktop il clamp risolve al 3xl del tema.
@@ -82,10 +82,10 @@ test.describe('DE-101 tipografia dell hero sulla rotta pubblica /s/<slug> (AC-DE
     // passato, la pagina si e' resa.
     expect(response?.status()).toBe(200); // covers: AC-DE-101-1
 
-    // then: l'<h1 class="site-hero__title"> esiste ed e' reso con una font-size RISOLTA (px) grande.
+    // then: l'<h1 class="site-hero-v2__title"> esiste ed e' reso con una font-size RISOLTA (px) grande.
     // getComputedStyle risolve il clamp del foglio site.css al 3xl del tema su viewport desktop; il
     // default non stilizzato di un <h1> (2em ~= 32px) NON supererebbe 40.
-    const heroTitle = page.locator('h1.site-hero__title');
+    const heroTitle = page.locator('h1.site-hero-v2__title');
     await expect(heroTitle).toBeVisible();
     const fontSizePx = await heroTitle
       .first()
@@ -173,7 +173,7 @@ test.describe('DE-102 hero visivamente distinto dalle altre sezioni su /s/<slug>
 //    del tema (contiene 'Fraunces'), non al solo fallback di sistema (Georgia/serif). NB (DE11-103,
 //    design-engine-v1.1): la PELLE EDITORIALE porta l'<h1> hero alla famiglia DISPLAY (Playfair,
 //    --site-font-display) via site.css; il token HEADING resta applicato al NOME dell'attivita'
-//    (`p.site-hero__brand`, Hero.tsx, ancora var(--site-font-heading)) — e' li' che si prova
+//    (`p.site-hero-v2__brand`, Hero.tsx, ancora var(--site-font-heading)) — e' li' che si prova
 //    l'applicazione self-host del token heading (l'hero-title=display e' coperto da
 //    e2e/editorial-skin.spec.ts). theme-style.ts antepone var(--font-fraunces) allo stack: il
 //    browser sostituisce la variabile e getComputedStyle restituisce la lista risolta.
@@ -235,14 +235,14 @@ test.describe('DE-103 font self-host mappati ai token del tema su /s/<slug> (AC-
     const response = await page.goto(`/s/${publicSlug}`);
     expect(response?.status()).toBe(200); // covers: AC-DE-103-1
 
-    // then: il font-family COMPUTATO del NOME dell'attivita' (`p.site-hero__brand`, che applica ancora
+    // then: il font-family COMPUTATO del NOME dell'attivita' (`p.site-hero-v2__brand`, che applica ancora
     // var(--site-font-heading) — l'<h1> hero sotto la pelle editoriale usa invece la famiglia DISPLAY,
     // DE11-103) contiene la famiglia HEADING di catalogo del tema. Il valore risolto e' la lista
     // `var(--font-fraunces) sostituita, Fraunces, Georgia, serif`: contiene 'fraunces' (dalla famiglia
     // self-host e dal fallback del tema) e NON e' il solo fallback di sistema. Se i font non fossero
     // caricati e la variabile non mappata, il brand cadrebbe su 'Georgia, serif' e 'fraunces' non
     // comparirebbe.
-    const heroBrand = page.locator('p.site-hero__brand');
+    const heroBrand = page.locator('p.site-hero-v2__brand');
     await expect(heroBrand).toBeVisible();
     const fontFamily = (
       await heroBrand.first().evaluate((element) => getComputedStyle(element).fontFamily)

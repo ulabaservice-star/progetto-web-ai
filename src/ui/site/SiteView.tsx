@@ -59,8 +59,13 @@ export async function SitePageView({
    */
   design?: SiteDesignSelection;
 }) {
+  // DV2-202 (macrotask hero) — la selezione design del documento scende fino al blocco: `renderBlock`
+  // la inoltra e oggi il solo Hero la legge (sceglie la variante da `hero_layout_id`). Cosi' l'hero
+  // variato si vede su ogni superficie del renderer UNICO (card, anteprima, /s/), senza una seconda
+  // copia. `design` puo' essere assente (una pagina resa standalone senza selezione): l'hero cade sul
+  // proprio fallback.
   const rendered = await Promise.all(
-    page.blocks.map((block) => renderBlock(block, locale, editable)),
+    page.blocks.map((block) => renderBlock(block, locale, editable, design)),
   );
 
   return (

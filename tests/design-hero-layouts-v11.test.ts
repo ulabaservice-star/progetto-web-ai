@@ -183,19 +183,28 @@ describe('DE11-201 · hero ricchi + asse trattamento-H1', () => {
     }
   });
 
-  // ── DoD — gli hero UNIVERSALI sono >=5 con MEDIA a due a due distinte (fix "3/5 stesso hero") ──
+  // ── DoD — gli hero UNIVERSALI sono >=5 con >=5 MEDIA distinte (varieta' del primo schermo) ──
+  // MIGRATO da DV2-201 (design-engine-v2): la bijezione v1.1 "tante media quanti gli hero universali"
+  // (il fix "3/5 stesso hero" quando gli hero universali erano cinque) e' SUPERATA dal catalogo Claude
+  // Design (DS-V2-D1/D9): le 20 varianti CD REIMPIEGANO deliberatamente la stessa `media` piu' volte,
+  // distinte dal `title_treatment` e dalla STRUTTURA (non da una media unica ciascuna). La distinzione
+  // del PRIMO SCHERMO fra le 5 varianti SCELTE resta garantita da `hero_layout_id` DISTINTO
+  // (design-select, provato in design-select-v11), non piu' dalla media-bijezione. Qui si pinna il FLOOR
+  // di varieta' (>=5 media distinte) e la presenza delle 5 media canoniche v1.1.
 
   // covers: DoD-201 hero-universali-media-distinte
-  it('gli hero universali sono almeno cinque e hanno media a due a due DISTINTE', () => {
+  it('gli hero universali sono almeno cinque e coprono almeno cinque MEDIA distinte', () => {
     const universali = HERO_LAYOUTS.filter((h) => h.scope === 'universale');
     // Almeno cinque hero universali: e' la premessa che permette >=5 combo con hero VISIBILE diverso.
     expect(universali.length, 'meno di cinque hero universali').toBeGreaterThanOrEqual(5); // covers: DoD-201
-    // MEDIA a due a due distinte: tante media uniche quanti gli hero universali (nessun doppione).
+    // FLOOR di varieta' del primo schermo: almeno cinque `media` DISTINTE fra gli universali (soglia
+    // LETTERALE >=5, NON la bijezione col conteggio degli hero — DS-V2-D9: piu' varianti CD per media).
     const media = universali.map((h) => h.media);
-    expect(new Set(media).size, 'due hero universali condividono la stessa media').toBe(
-      universali.length,
-    ); // covers: DoD-201
-    // Le cinque media attese sono TUTTE presenti (letterali): la copertura strutturale del primo schermo.
+    expect(
+      new Set(media).size,
+      'meno di cinque media distinte fra gli hero universali',
+    ).toBeGreaterThanOrEqual(5); // covers: DoD-201
+    // Le cinque media v1.1 attese sono TUTTE ancora presenti (letterali): la copertura strutturale storica.
     for (const atteso of [
       'senza-foto',
       'foto-riquadro',

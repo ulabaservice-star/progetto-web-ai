@@ -37,7 +37,20 @@ type HeroMedia =
   | 'foto-affiancata' // testo e foto in due colonne (split), la colonna media e' una FOTO
   | 'foto-scena' // una sola foto-piatto protagonista su fondo scuro
   | 'testo-illustrazione' // due colonne testo + ILLUSTRAZIONE (non una foto): ricco anche senza immagini
-  | 'senza-foto'; // solo tipografia e spazio, nessuna foto
+  | 'senza-foto' // solo tipografia e spazio, nessuna foto
+  // DV2-201 (macrotask hero, design-engine-v2) — i PLACEMENT del catalogo Claude Design (progetto
+  // c1dafc1f), AGGIUNTI in modo additivo per distinguere le 20 varianti CD sul tratto STRUTTURALE
+  // della fotografia. I sei valori sopra restano invariati: le voci legacy non cambiano media.
+  | 'foto-full-bleed' // la foto e' lo sfondo pieno del primo schermo, il testo le sta in overlay
+  | 'foto-split-dx' // due colonne, la FOTO occupa la colonna di DESTRA
+  | 'foto-split-sx' // due colonne, la FOTO occupa la colonna di SINISTRA, a filo
+  | 'foto-striscia' // una striscia di piu' foto affiancate SOTTO al testo centrato
+  | 'foto-ai-lati' // testo al centro fra DUE foto, una per lato
+  | 'foto-sotto' // la foto (panoramica) sta SOTTO al blocco di testo
+  | 'foto-overlay' // foto in un pannello con il TITOLO scritto sopra di essa
+  | 'foto-collage' // un COLLAGE di piu' foto accanto al testo
+  | 'foto-arco' // la foto e' sagomata ad ARCO (bordo superiore tondo)
+  | 'senza-foto-tipografico'; // nessuna foto: il TITOLO enorme e' l'immagine
 
 /**
  * UNO SLOT RICCO dell'hero: il pezzo di contenuto che il layout prevede oltre al titolo. E' il
@@ -58,6 +71,23 @@ type HeroSlot =
  */
 type HeroColumns = 'asimmetriche';
 
+/**
+ * IL TRATTAMENTO DEL TITOLO (DV2-201): l'asse VISIBILE ortogonale al placement della foto. Due
+ * layout con la STESSA `media` restano distinguibili se trattano il titolo in modo diverso (es.
+ * 'gigante' vs 'standard' a parita' di 'foto-sotto'): e' la seconda manopola che permette al select
+ * a valle di offrire primi schermi diversi anche quando la foto e' impaginata allo stesso modo.
+ * Union CHIUSA (un trattamento non previsto non compila) e campo OPZIONALE: le voci legacy non lo
+ * dichiarano, le 20 voci CD si'.
+ */
+type HeroTitleTreatment =
+  | 'standard' // corpo display ordinario, allineato al flusso del testo
+  | 'gigante' // titolo SOVRADIMENSIONATO (manifesto/copertina/tipografico)
+  | 'corsivo' // occhiello/sottotitolo in corsivo serif editoriale
+  | 'overlay' // titolo scritto SOPRA la foto, allineato a un bordo
+  | 'overlay-centrato' // titolo in overlay ma CENTRATO nel primo schermo
+  | 'carta' // titolo dentro una carta/scheda chiara posata sulla foto
+  | 'gazzetta'; // impaginazione da PRIMA PAGINA di quotidiano
+
 /** UN LAYOUT DI HERO. Il tipo e' totale sulle chiavi OBBLIGATORIE: una voce cui manchi un campo non compila. */
 export type SiteHeroLayout = {
   /** Identificatore STABILE e VERSIONATO nella forma 'nome-kebab@N' (vedi l'intestazione). */
@@ -73,6 +103,11 @@ export type SiteHeroLayout = {
   readonly slots?: readonly HeroSlot[];
   /** L'impaginazione a colonne (DE11-201), OPZIONALE: solo il 2-col asimmetrico ricco la fissa. */
   readonly columns?: HeroColumns;
+  /**
+   * Il TRATTAMENTO del titolo (DV2-201), OPZIONALE e additivo: l'asse VISIBILE che distingue due
+   * layout a parita' di `media`. Le voci legacy non lo dichiarano; le 20 voci CD si'.
+   */
+  readonly title_treatment?: HeroTitleTreatment;
 };
 
 /**
@@ -99,6 +134,57 @@ export const HERO_LAYOUTS: readonly SiteHeroLayout[] = [
     slots: ['testo', 'illustrazione', 'badge', 'cta', 'chip'],
   },
   { id: 'scena-scura@1', scope: 'ristorazione', media: 'foto-scena' },
+  // DV2-201 (macrotask hero, design-engine-v2) — le 20 varianti del catalogo Claude Design (progetto
+  // c1dafc1f), tradotte in id versionati 'hero-<kebab>@1'. Tutte 'universale' (settore-agnostiche).
+  // `media` dal placement CD reale (scratchpad/cd-hero-source.jsx §placement), `title_treatment`
+  // dall'asse titolo: insieme danno primi schermi visibilmente diversi anche a parita' di uno dei due
+  // assi. ADDITIVE: le sei voci sopra restano il default/legacy e la coppia-prefisso hero-split@1 /
+  // hero-split-inverso@1 prova (con centrato@1 / centrato-foto@1) il lookup per id ESATTO.
+  { id: 'hero-full@1', scope: 'universale', media: 'foto-full-bleed', title_treatment: 'overlay' },
+  { id: 'hero-split@1', scope: 'universale', media: 'foto-split-dx', title_treatment: 'standard' },
+  { id: 'hero-editorial@1', scope: 'universale', media: 'foto-striscia', title_treatment: 'corsivo' },
+  {
+    id: 'hero-full-centrato@1',
+    scope: 'universale',
+    media: 'foto-full-bleed',
+    title_treatment: 'overlay-centrato',
+  },
+  {
+    id: 'hero-split-inverso@1',
+    scope: 'universale',
+    media: 'foto-split-sx',
+    title_treatment: 'standard',
+  },
+  { id: 'hero-banda@1', scope: 'universale', media: 'foto-riquadro', title_treatment: 'standard' },
+  { id: 'hero-copertina@1', scope: 'universale', media: 'foto-sotto', title_treatment: 'gigante' },
+  { id: 'hero-duale@1', scope: 'universale', media: 'foto-ai-lati', title_treatment: 'standard' },
+  {
+    id: 'hero-carta-su-foto@1',
+    scope: 'universale',
+    media: 'foto-full-bleed',
+    title_treatment: 'carta',
+  },
+  { id: 'hero-poster@1', scope: 'universale', media: 'foto-arco', title_treatment: 'overlay' },
+  { id: 'hero-arco@1', scope: 'universale', media: 'foto-arco', title_treatment: 'standard' },
+  {
+    id: 'hero-biglietto@1',
+    scope: 'universale',
+    media: 'foto-affiancata',
+    title_treatment: 'standard',
+  },
+  { id: 'hero-manifesto@1', scope: 'universale', media: 'foto-sotto', title_treatment: 'gigante' },
+  { id: 'hero-laterale@1', scope: 'universale', media: 'foto-overlay', title_treatment: 'overlay' },
+  { id: 'hero-collage@1', scope: 'universale', media: 'foto-collage', title_treatment: 'standard' },
+  { id: 'hero-cornice@1', scope: 'universale', media: 'foto-sotto', title_treatment: 'standard' },
+  { id: 'hero-angolo@1', scope: 'universale', media: 'foto-riquadro', title_treatment: 'gigante' },
+  { id: 'hero-fasce@1', scope: 'universale', media: 'foto-sotto', title_treatment: 'standard' },
+  {
+    id: 'hero-tipografico@1',
+    scope: 'universale',
+    media: 'senza-foto-tipografico',
+    title_treatment: 'gigante',
+  },
+  { id: 'hero-gazzetta@1', scope: 'universale', media: 'foto-sotto', title_treatment: 'gazzetta' },
 ];
 
 /**

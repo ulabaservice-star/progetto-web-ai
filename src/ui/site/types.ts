@@ -27,6 +27,19 @@ export type SiteBlockProps = {
    * il blocco a sapere QUALI dei suoi campi sono slot di testo editabili.
    */
   readonly editable?: boolean;
+  /**
+   * DV2-202 (macrotask hero, design-engine-v2) — la SELEZIONE DESIGN CONGELATA di cui un blocco ha
+   * bisogno per scegliere la propria variante. Oggi la usa il SOLO Hero, che risolve
+   * `hero_layout_id` (id versionato `hero-<kebab>@1` o uno dei 6 legacy) nella variante di catalogo
+   * da rendere. Additiva e OPZIONALE: un blocco che non la legge resta identico, e un chiamante che
+   * non la passa (`renderBlock` senza il 4o argomento) rende l'hero col suo fallback di default.
+   *
+   * E' un oggetto ristretto (non `SiteDesignSelection` di SiteView) per NON creare un ciclo di
+   * import fra questo modulo e il renderer: qui vive il solo campo che i blocchi consumano.
+   */
+  readonly design?: {
+    readonly hero_layout_id?: string;
+  };
 };
 
 /**

@@ -97,7 +97,7 @@ test.describe('DE11-102 font display self-host su /s/<slug> (AC-DE11-102-1, AC-D
     // valore risolto e' 'var(--font-playfair-display) sostituita, Playfair Display, Georgia, serif':
     // contiene 'playfair display', e NON e' il solo fallback di sistema. Prima di DE11-103 l'hero
     // userebbe --site-font-heading ('Fraunces, ...'), privo di 'playfair': l'asserzione sarebbe rossa.
-    const heroTitle = page.locator('h1.site-hero__title');
+    const heroTitle = page.locator('h1.site-hero-v2__title');
     await expect(heroTitle).toBeVisible(); // covers: AC-DE11-102-1
     const fontFamily = (
       await heroTitle.first().evaluate((element) => getComputedStyle(element).fontFamily)
@@ -254,7 +254,7 @@ test.describe('DE11-103 regole tipografiche editoriali su /s/<slug> (AC-DE11-103
     // catalogo (Playfair Display), non il solo fallback di sistema. E' l'EFFETTO della regola site.css che
     // porta --site-font-display sui titoli superando l'inline heading legacy (!important); prima di
     // DE11-103 il titolo userebbe --site-font-heading ('Fraunces, ...'), privo di 'playfair'.
-    const heroTitle = page.locator('h1.site-hero__title');
+    const heroTitle = page.locator('h1.site-hero-v2__title');
     await expect(heroTitle).toBeVisible(); // covers: AC-DE11-103-1
     const heroFont = (
       await heroTitle.first().evaluate((element) => getComputedStyle(element).fontFamily)
@@ -284,7 +284,7 @@ test.describe('DE11-103 regole tipografiche editoriali su /s/<slug> (AC-DE11-103
     page,
   }) => {
     // given: un sito pubblicato col tema del catalogo; il documento innocuo porta un occhiello hero
-    // (hero_title_kicker), reso come <p class="site-hero__kicker">.
+    // (hero_title_kicker), reso da Hero v2 (DV2-202) come <div class="site-hero-v2__eyebrow">.
     const publicSlug = await seedPublishedSite('label');
 
     // when: si visita la pagina pubblica da ANON.
@@ -294,7 +294,7 @@ test.describe('DE11-103 regole tipografiche editoriali su /s/<slug> (AC-DE11-103
     // then: l'occhiello e' MAIUSCOLO (text-transform computato 'uppercase') e ha un tracking ESTESO. Il
     // letter-spacing computato (px risolti da var(--site-tracking-label)=0.18em) e' MAGGIORE di quello del
     // corpo, che non ha tracking ('normal' => 0 px).
-    const kicker = page.locator('.site-hero__kicker').first();
+    const kicker = page.locator('.site-hero-v2__eyebrow').first();
     await expect(kicker).toBeVisible(); // covers: AC-DE11-103-2
     const kickerStyle = await kicker.evaluate((element) => {
       const style = getComputedStyle(element);
@@ -319,13 +319,12 @@ test.describe('DE11-103 regole tipografiche editoriali su /s/<slug> (AC-DE11-103
     expect(kickerTracking).toBeGreaterThan(0); // covers: AC-DE11-103-2
     expect(kickerTracking).toBeGreaterThan(bodyTracking); // covers: AC-DE11-103-2
 
-    // PIN DEL DELIVERABLE DE11-103: il tracking dell'occhiello viene DAVVERO da var(--site-tracking-label)
-    // (0.18em, DE11-101), non dal tracking base di v1 (0.08em, site.css .site-hero__kicker). letter-spacing
-    // in em scala con la font-size dell'elemento, quindi il rapporto letter-spacing/font-size vale ~0.18 e
-    // supera 0.12; se si rimuovesse la regola DE11-103 (.site-hero__kicker { letter-spacing:
-    // var(--site-tracking-label) }), l'occhiello tornerebbe a 0.08em (rapporto 0.08 < 0.12) e questa
-    // asserzione cadrebbe. E' cio' che distingue il tracking EDITORIALE dal default di v1: senza questo
-    // pin la mutazione "togli la regola tracking" sopravviverebbe (il test resta verde a 0.08em uppercase).
+    // PIN DEL DELIVERABLE DE11-103 (MIGRATO a Hero v2 / DV2-202): il tracking dell'occhiello viene DAVVERO
+    // da var(--site-tracking-label) (0.18em, DE11-101). In Hero v2 l'occhiello (componente Eyebrow) porta il
+    // letter-spacing var(--site-tracking-label) INLINE (non piu' via la regola site.css .site-hero__kicker di
+    // v1.1): il letter-spacing in em scala con la font-size dell'elemento, quindi il rapporto
+    // letter-spacing/font-size vale ~0.18 e supera 0.12. Se l'occhiello tornasse al tracking base (~0.08em,
+    // rapporto < 0.12) questa asserzione cadrebbe: e' cio' che distingue il tracking EDITORIALE dal solo uppercase.
     const kickerEmRatio = kickerTracking / kickerStyle.fontSize;
     expect(kickerEmRatio).toBeGreaterThan(0.12); // covers: AC-DE11-103-2
   });

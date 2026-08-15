@@ -406,10 +406,11 @@ describe('AC-416-4 — un esito non-ok non muta il draft e non persiste nulla', 
 
 const OWNED = { ok: true, generation: { id: 'gen-1', site_id: 'site-1', status: 'chosen' } };
 
-describe('AC-416-5 — lo slot uploaded si rende via SiteImage nel renderer unico', () => {
+describe('AC-416-5 — lo slot uploaded si rende come <img> reale nel renderer unico (hero v2)', () => {
   it('dopo il set, renderDraftPage rende un <img data-image-asset> col src da assetPublicUrl(asset_id)', async () => {
     genHolder.current = OWNED;
-    // hero rende `block.images` via SiteSection->SiteImage: settiamo hero[0] a uploaded.
+    // MIGRATO da DV2-202 (design-engine-v2): l'hero non usa piu' SiteSection; la sua foto PRINCIPALE
+    // rende l'immagine CARICATA come <img> reale (HeroPhoto), col src del NOSTRO builder dall'asset_id.
     const next = setUploadedImage(sourceDoc(), 'hero', 0, A_NEW) as SiteDocument;
     expect(next).not.toBeNull();
 
@@ -417,15 +418,30 @@ describe('AC-416-5 — lo slot uploaded si rende via SiteImage nel renderer unic
     expect(element).not.toBeNull(); // covers: AC-416-5
     const { container } = render(element as ReactElement);
 
-    // Lo slot uploaded e' un <img> VERO (dal renderer unico), col src del NOSTRO builder dall'asset_id.
-    const img = container.querySelector(`img[data-image-asset="${A_NEW}"]`);
+    // Scoping alla sezione hero: `orari-estivi` porta un PROPRIO uploaded (A_NEAR), reso via SiteSection.
+    const heroSection = container.querySelector('section[data-block-id="hero"]');
+    const img = heroSection?.querySelector(`img[data-image-asset="${A_NEW}"]`) ?? null;
     expect(img).not.toBeNull(); // covers: AC-416-5
     expect(img?.tagName).toBe('IMG'); // covers: AC-416-5
     expect(img?.getAttribute('src')).toBe(assetPublicUrl(A_NEW)); // covers: AC-416-5
     expect(img?.getAttribute('src')?.endsWith(`/${A_NEW}`)).toBe(true); // covers: AC-416-5
     // Nessuno schema pericoloso: il src e' solo il nostro Storage URL costruito dall'id.
     expect(img?.getAttribute('src')?.toLowerCase().startsWith('javascript:')).toBe(false); // covers: AC-416-5
-    // L'altro slot di hero (non toccato) resta un placeholder decorativo, nessun img fabbricato.
-    expect(container.querySelector('[data-image-token="hero-b"]')?.tagName).toBe('DIV'); // covers: AC-416-5
+  });
+
+  it('senza upload, la foto principale dell hero e un PhotoPlaceholder di catalogo, nessun img fabbricato', async () => {
+    genHolder.current = OWNED;
+    // hero[0] resta un theme-placeholder (nessun set): la foto principale dell'hero e' il box CD
+    // (.site-photo-ph), non un <img>. Prova che un placeholder non fabbrica alcun <img> nell'hero.
+    const element = await renderDraftPage('site-1', sourceDoc(), 'home', 'it');
+    const { container } = render(element as ReactElement);
+
+    const heroSection = container.querySelector('section[data-block-id="hero"]');
+    expect(heroSection).not.toBeNull(); // covers: AC-416-5
+    // La foto principale e' il PhotoPlaceholder tipografico di catalogo (box "FOTO · ...").
+    expect(heroSection?.querySelector('.site-photo-ph')).not.toBeNull(); // covers: AC-416-5
+    // Nessun <img> fabbricato dall'hero per uno slot theme-placeholder (mai un src da placeholder).
+    expect(heroSection?.querySelector('img')).toBeNull(); // covers: AC-416-5
+    expect(heroSection?.querySelector('[data-image-asset]')).toBeNull(); // covers: AC-416-5
   });
 });

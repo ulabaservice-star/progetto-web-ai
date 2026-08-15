@@ -45,13 +45,19 @@ export const SITE_BLOCK_COMPONENTS: Readonly<Record<string, SiteBlockComponent>>
  * `editable` (T-305, P3) e' inoltrato tale e quale al componente: e' il blocco a decidere quali
  * suoi campi sono slot di testo editabili. Opzionale e falsy di default — il registry resta la
  * sola sede id-blocco -> componente e non si sdoppia per la modalita.
+ *
+ * `design` (DV2-202, hero) e' inoltrato allo stesso modo: la selezione design congelata del
+ * documento, che oggi il solo Hero legge per scegliere la propria variante (`hero_layout_id`).
+ * Additivo e OPZIONALE — un chiamante che non lo passa rende i blocchi come prima, e un blocco che
+ * non lo legge lo ignora: il registry resta l'unico dispatcher, senza sdoppiarsi per la selezione.
  */
 export function renderBlock(
   block: SiteBlock,
   locale: string,
   editable?: boolean,
+  design?: { readonly hero_layout_id?: string },
 ): Promise<ReactElement> | null {
   if (!Object.hasOwn(SITE_BLOCK_COMPONENTS, block.id)) return null;
   const Component = SITE_BLOCK_COMPONENTS[block.id];
-  return Component({ block, locale, editable });
+  return Component({ block, locale, editable, design });
 }

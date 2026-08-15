@@ -156,6 +156,11 @@
     "actions": {
       "whatsapp": "Escríbenos por WhatsApp"
     },
+    "hero": {
+      "ctaPrimary": "Reserva una mesa",
+      "ctaSecondary": "Ver la oferta",
+      "photoLabel": "el local"
+    },
     "badge": "Hecho con Belora"
   },
   "generate": {

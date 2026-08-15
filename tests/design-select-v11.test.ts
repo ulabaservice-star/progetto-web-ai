@@ -164,15 +164,24 @@ describe('AC-DE11-204-2 — 5 varianti: hero a due a due diversi E >=1 asse del 
   });
 
   // covers: AC-DE11-204-2
-  it('OGNI vertical: anche il LAYOUT DEL CORPO (section_layout_id) e distinto fra le 5 varianti', () => {
+  it('OGNI vertical: il LAYOUT DEL CORPO (section_layout_id) e sempre popolato e non collassa a uno solo', () => {
     for (const vertical of VERTICALS) {
       const variants = fiveVariants(vertical, 'gen-corpo-distinto');
       const layouts = variants.map((v) => v.section_layout_id ?? null);
-      // Il corpo non e' piu' "sempre lo stesso testo impilato" (difetto v1): ai 5 hero distinti la
-      // matrice ancora 5 layout di sezione distinti (DE11-203), che la selezione trasporta. Nessun
-      // `null` (l'asse e' sempre popolato) e 5 valori a due a due diversi.
+      // MIGRATO da DV2-201 (design-engine-v2): con le 20 varianti hero di Claude Design il catalogo hero
+      // SUPERA i layout di sezione, quindi il meccanismo v1.1 `section_layout = layouts[heroIndex % N]`
+      // NON puo' piu' garantire 5 section_layout TUTTI distinti (il commento di `pickSectionLayout` lo
+      // prevedeva: "se un domani gli hero superassero i layout, due hero condividerebbero un corpo").
+      // La distinzione PIENA del corpo passa a variety-select (DV2-503, greedy farthest-first sugli assi
+      // {theme,hero,menu,section,recipe}). La garanzia che RESTA vera e che conta per "5 mockup diversi" —
+      // ogni COPPIA differisce su >=1 asse del corpo — e provata sopra via `bodyKey` (la ricetta, 5
+      // distinte). Qui si pinna il floor: l'asse e' sempre POPOLATO (mai `null`) e NON collassa a un solo
+      // layout (piu' di un valore distinto fra le 5).
       expect(layouts.every((l) => l !== null), `${vertical}: un section_layout_id manca`).toBe(true); // covers: AC-DE11-204-2
-      expect(new Set(layouts).size, `${vertical}: layout di corpo non tutti distinti`).toBe(VARIANT_COUNT); // covers: AC-DE11-204-2
+      expect(
+        new Set(layouts).size,
+        `${vertical}: il corpo collassa a un solo section_layout`,
+      ).toBeGreaterThan(1); // covers: AC-DE11-204-2
     }
   });
 
