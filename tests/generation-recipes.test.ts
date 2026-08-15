@@ -187,7 +187,7 @@ function sequenzeDi(recipe: SiteRecipe): readonly { nome: string; sequenza: read
 function ricettaDiProva(id: string, home_blocks: readonly string[]): SiteRecipe {
   return {
     id,
-    theme_id: 'linea-essenziale@1',
+    theme_id: 'moderno-minimale@1',
     home_blocks,
     inner_page_rules: {
       offerings: ['offerte'],
@@ -226,7 +226,7 @@ type RicettaAttesa = {
 
 const RICETTE_ATTESE: Record<string, RicettaAttesa> = {
   'vetrina-dell-offerta@1': {
-    theme_id: 'sole-mediterraneo@1',
+    theme_id: 'trattoria-rustica@1',
     home_blocks: ['hero', 'offerte', 'orari', 'chi-siamo', 'faq', 'contatti', 'cta-whatsapp'],
     inner_page_rules: {
       offerings: ['offerte'],
@@ -237,7 +237,7 @@ const RICETTE_ATTESE: Record<string, RicettaAttesa> = {
     },
   },
   'racconto-di-bottega@1': {
-    theme_id: 'bottega-artigiana@1',
+    theme_id: 'agriturismo-toscano@1',
     home_blocks: ['hero', 'chi-siamo', 'offerte', 'faq', 'contatti', 'orari', 'cta-whatsapp'],
     inner_page_rules: {
       offerings: ['offerte'],
@@ -248,7 +248,7 @@ const RICETTE_ATTESE: Record<string, RicettaAttesa> = {
     },
   },
   'scatto-alla-conversione@1': {
-    theme_id: 'scatto-vitale@1',
+    theme_id: 'griglia-e-brace@1',
     home_blocks: ['hero', 'cta-whatsapp', 'offerte', 'chi-siamo', 'contatti', 'orari'],
     inner_page_rules: {
       offerings: ['offerte'],
@@ -259,7 +259,7 @@ const RICETTE_ATTESE: Record<string, RicettaAttesa> = {
     },
   },
   'mappa-e-orari@1': {
-    theme_id: 'brezza-costiera@1',
+    theme_id: 'cucina-di-mare@1',
     home_blocks: ['hero', 'orari', 'contatti', 'offerte', 'chi-siamo', 'cta-whatsapp', 'faq'],
     inner_page_rules: {
       offerings: ['offerte'],
@@ -270,7 +270,7 @@ const RICETTE_ATTESE: Record<string, RicettaAttesa> = {
     },
   },
   'scheda-sobria@1': {
-    theme_id: 'linea-essenziale@1',
+    theme_id: 'moderno-minimale@1',
     home_blocks: ['hero', 'chi-siamo', 'faq', 'offerte', 'orari', 'contatti'],
     inner_page_rules: {
       offerings: ['offerte'],

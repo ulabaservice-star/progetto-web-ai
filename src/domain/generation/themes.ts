@@ -1,95 +1,57 @@
-// T-211 (macrotask generation-engine, P2; cresciuti in DE-202) — I TEMI DEL SITO GENERATO: colori,
-// tipografia, spaziature e raggi che appartengono al SITO DEL CLIENTE e non al chrome
-// del builder. Dominio PURO: nessun accesso al DB, nessun I/O, nessun side effect — e
-// nessun import, perche' il modulo e' un catalogo dichiarato e nient'altro.
+// DV2-101 (macrotask `foundation`, design-engine-v2) — I TEMI DEL SITO GENERATO, ora tradotti dal
+// design system PROFESSIONALE di Claude Design (progetto "Design System Ristoranti Italia"). Sono i
+// colori/tipografia/spaziature/raggi che appartengono al SITO DEL CLIENTE, non al chrome del builder.
+// Dominio PURO: nessun accesso al DB, nessun I/O, nessun side effect, nessun import.
 //
-// PERCHE' VIVONO QUI E NON IN src/ui/theme/ (P2-D14): il design system dell'app
-// (src/ui/theme/tokens.ts) e' il vestito del PANNELLO e cambia quando cambia il
-// pannello; i suoi colori sono per costruzione dei RIFERIMENTI a CSS custom property
-// ('var(--color-background)'), cioe' valori che qualcun altro decide a runtime. Un tema
-// del sito generato non puo' poggiare su quei riferimenti: il sito del cliente e' un
-// ARTEFATTO CONGELATO, scelto una volta e pubblicato, e un ritocco al pannello non deve
-// poterlo riscrivere. Per questo i valori qui sotto sono PROPRI — esadecimali, rem, nomi
-// di famiglia — e non c'e' alcun 'var(--...)' in nessuno di essi.
+// PERCHE' VIVONO QUI E NON IN src/ui/theme/ (P2-D14): il design system del PANNELLO cambia col
+// pannello e i suoi colori sono riferimenti `var(--color-...)` decisi a runtime; un tema del sito
+// generato e' un ARTEFATTO CONGELATO, scelto una volta e pubblicato, e non puo' poggiare su quei
+// riferimenti. Per questo i valori qui sono PROPRI — esadecimali e `color-mix()` — e non c'e' alcun
+// `var(--...)`. La separazione e' imposta da una regola ESLint (no-restricted-imports) che vieta a
+// src/ui/site/** di importare src/ui/theme/tokens (verificata da generation-theme-isolation.test.ts).
 //
-// LA SEPARAZIONE E' IMPOSTA DAL MECCANISMO, non sorvegliata dalla disciplina: una regola
-// ESLint no-restricted-imports (eslint.config.mjs) vieta a src/ui/site/** — il layer che
-// rendera' i blocchi, T-231 — di importare src/ui/theme/tokens, per alias e per percorso
-// relativo. E' lo stesso pattern con cui P1-D7 chiude il confine LLM (T-131), ed e'
-// verificata da tests/generation-theme-isolation.test.ts eseguendo ESLint su un modulo
-// fixture VIRTUALE. Senza quella regola la separazione sarebbe una convenzione, cioe'
-// una cosa che regge finche' nessuno ha fretta.
+// GLI ID NASCONO VERSIONATI ('nome-kebab@N'): il documento congelato registra `theme_id` in questa
+// forma e un ritocco futuro a un tema non deve riscrivere un sito gia' scelto (si passa a '@2').
 //
-// GLI ID NASCONO VERSIONATI, ed e' una PRECONDIZIONE EREDITATA e misurata (T-202,
-// 2026-07-28): il documento congelato registra `theme_id` nella forma 'nome-kebab@N' e
-// un id senza '@N' fa cadere l'INTERO documento, non solo il campo. La versione e' DENTRO
-// l'id e non accanto perche' e' cosi' che un ritocco futuro a un tema non riscrive un
-// sito gia' scelto: cambiare i valori di 'sole-mediterraneo@1' senza passare a '@2'
-// significa cambiare sotto i piedi i siti che lo citano.
+// DS-V2-D1 — le 23 PALETTE di Claude Design sostituiscono gli 8 temi "poveri" di v1.1 (gated come
+// amatoriali al gate visivo). La forma `SiteTheme` (Record TOTALE) resta l'interfaccia stabile; il
+// vocabolario dei token colore si ESTENDE ai 21 semantici di Claude Design. In Claude Design la
+// tipografia/spaziatura/raggi sono GLOBALI (token condivisi, non per-palette): la varieta' viene dalla
+// palette + dalla struttura, non da una scala tipografica diversa per tema. I valori-colore sono
+// COPIATI ESATTI dai file `palettes/<nome>.css` del catalogo (inclusi i `color-mix()`).
 //
-// IL CARATTERE DI OGNI TEMA E' DICHIARATO IN UN COMMENTO, MA IL COMMENTO NON E'
-// UN'ASSERZIONE (L-COL-006): "caldo", "essenziale", "asciutto" dicono a chi si rivolge il
-// tema e che sensazione punta a dare, e servono a chi in futuro dovra' scegliere dove
-// mettere le mani. Nessun test prova che un tema sia BELLO — lo stile non e' oracolabile
-// (P1 §6-bis p.8). Cio' che i test provano e' che il layer esiste, che le chiavi sono le
-// stesse ovunque, che le palette sono distinte a due a due e che nessun valore rimanda al
-// builder.
+// RETRO-COMPAT (DS-V2-D1) — gli id storici (es. 'sole-mediterraneo@1') restano RISOLVIBILI via
+// THEME_ID_ALIASES: `recipes.ts` li cita per stringa e i documenti P4 gia' congelati li registrano in
+// `theme_id`; l'alias li rimappa alla paletta CD piu' vicina (nessun clone silenzioso, nessuna rottura).
 //
-// COSA NON C'E' QUI, deliberatamente:
-// - l'APPLICAZIONE del tema nel rendering (T-231): questo modulo dichiara i valori, non
-//   li scrive in nessuna pagina e non conosce React;
-// - l'ACCOPPIAMENTO tema-ricetta (T-212): quale direzione usi quale tema e' una
-//   decisione delle ricette, e dichiararla qui la scriverebbe due volte;
-// - `brand_hints` come SELETTORE del tema: escluso in v1. E' testo libero che il cliente
-//   scrive e che il modello puo' riscrivere (update_brief, T-132): farne un selettore
-//   aprirebbe un canale dal testo NON FIDATO alla scelta dell'aspetto del sito, cioe'
-//   una leva in piu' per chi tentasse un'injection. Il tema lo sceglie la ricetta.
-// - l'IMAGERY del tema: il documento (T-202) nomina i placeholder con un token, ma il
-//   catalogo di quei token non e' di questo task.
+// LO STILE NON E' ORACOLABILE (L-COL-006): i commenti di carattere ("terracotta", "vinaccia") dicono a
+// chi si rivolge la paletta, non asseriscono che sia bella. I test provano che il layer esiste, che le
+// chiavi sono le stesse ovunque, che le palette hanno i token semantici e che nessun valore e' un
+// riferimento del builder.
 
 /**
- * I TOKEN DI COLORE, gli stessi per tutti i temi. Sono SEMANTICI e non descrittivi
- * ('accent', non 'arancione'): e' cio' che permette al rendering (T-231) di essere
- * scritto una volta sola per tutti i temi.
- *
- * `accent_contrast` e' il colore del testo che sta SOPRA l'accento (l'etichetta dentro
- * il bottone): non e' un secondo accento, e tenerlo separato e' cio' che evita che un
- * tema scuro finisca con un testo scuro su fondo scuro.
+ * I TOKEN DI COLORE, gli stessi per tutti i temi. Sono SEMANTICI (non descrittivi): e' cio' che
+ * permette al rendering di essere scritto una volta per tutti i temi.
  */
 type ColorToken =
-  // I token SEMANTICI storici (P2), INVARIATI per retro-compat: i documenti gia' congelati e il
-  // rendering (T-231) li leggono per nome, quindi non si toccano.
-  | 'background'
-  | 'surface'
-  | 'text'
-  | 'text_muted'
-  | 'accent'
-  | 'accent_contrast'
-  | 'border'
-  // DE11-101 — la palette EDITORIALE del DNA ristorazione, per-tema e coordinata col carattere di
-  // ciascuno, PIU' una superficie SCURA distinta dalla chiara (`surface_dark`: menu su fondo scuro,
-  // sezioni alternate). Token DESCRITTIVI che AFFIANCANO i semantici, non li sostituiscono; poiche'
-  // `colors` e' un Record TOTALE su questa unione, ogni tema DEVE definirli o non compila.
-  | 'crema'
-  | 'panna'
-  | 'rosso_mattone'
-  | 'oro'
-  | 'verde_basilico'
-  | 'ink'
-  | 'surface_dark';
+  // I 21 token SEMANTICI di Claude Design (DS-V2-D1) — l'interfaccia colore primaria dei blocchi v2.
+  | 'surface_page' | 'surface_alt' | 'surface_card' | 'surface_dark' | 'surface_dark_raise'
+  | 'text_heading' | 'text_body' | 'text_muted'
+  | 'on_dark' | 'on_dark_70' | 'on_dark_line'
+  | 'line' | 'line_strong'
+  | 'accent' | 'accent_hover' | 'accent_contrast'
+  | 'accent_2' | 'accent_2_deep' | 'accent_2_contrast'
+  | 'eyebrow_color' | 'eyebrow_on_dark'
+  // Token LEGACY (P2/DE11) mantenuti DERIVATI per retro-compat coi blocchi non ancora riscritti
+  // (Hero/Offerte/corpo dei macrotask 02-04) e coi loro test: transitori, spariranno quando quei
+  // blocchi useranno i token CD. Sono DERIVATI dai semantici CD in `cdColors()`, mai scritti a mano.
+  | 'background' | 'surface' | 'text' | 'border'
+  | 'crema' | 'panna' | 'rosso_mattone' | 'oro' | 'verde_basilico' | 'ink';
 
-/**
- * I ruoli tipografici: i titoli, il corpo, e — DE11-101 — il `display`, la serif didone dei DISPLAY
- * editoriali (titoli/prezzi/citazioni). La famiglia display e' CONDIVISA da tutti i temi e verra'
- * caricata self-host da DE11-102; qui e' solo lo STACK dichiarato, col fallback serif di sistema.
- */
+/** I ruoli tipografici: titoli, corpo, e il `display` (serif didone editoriale di Claude Design). */
 type FontRole = 'heading' | 'body' | 'display';
 
-/**
- * DE11-101 — i token di TRACKING (letter-spacing) memorizzati dal tema. `label` e' il tracking
- * esteso delle label/eyebrow uppercase del DNA editoriale. Qui e' solo il valore-dato: l'APPLICAZIONE
- * nel CSS e' DE11-103.
- */
+/** Il tracking (letter-spacing) memorizzato dal tema. `label` = tracking esteso delle eyebrow uppercase. */
 type TrackingToken = 'label';
 
 /** I passi della scala tipografica, dal piu' piccolo al piu' grande. */
@@ -102,34 +64,17 @@ type SpacingStep = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 type RadiusStep = 'sm' | 'md' | 'lg' | 'pill';
 
 /**
- * UN TEMA DEL SITO GENERATO.
- *
- * IL TIPO E' TOTALE SULLE CHIAVI, ed e' il punto: ogni gruppo e' un `Record` sulla
- * propria unione chiusa di token, quindi un tema a cui manchi anche un solo token NON
- * COMPILA (AC-211-5). Non e' pedanteria: il rendering leggera' `colors.border` senza
- * chiedersi se quel tema ce l'ha, e un token mancante diventerebbe `undefined` in una
- * proprieta' CSS — cioe' un bordo che sparisce in produzione su un tema solo, che e' il
- * genere di difetto che nessuno vede finche' non lo vede un cliente.
+ * UN TEMA DEL SITO GENERATO. Il tipo e' TOTALE sulle chiavi: ogni gruppo e' un `Record` sulla propria
+ * unione chiusa di token, quindi un tema a cui manchi anche un solo token NON COMPILA. Il rendering
+ * legge i token per nome senza chiedersi se il tema li ha: un token mancante sarebbe un `undefined` in
+ * una proprieta' CSS, cioe' un difetto invisibile finche' non lo vede un cliente.
  */
 export type SiteTheme = {
-  /**
-   * Identificatore STABILE e VERSIONATO nella forma 'nome-kebab@N', che e' quella
-   * richiesta da `SiteDocumentSchema` (T-202) per `theme_id`. Qui non e' confrontato con
-   * quello schema — il confronto vive dove il documento si costruisce (T-214) — ma e'
-   * scelto per passarlo, e il test lo verifica DERIVANDO il controllo da quello schema.
-   */
   readonly id: string;
   readonly colors: Readonly<Record<ColorToken, string>>;
   readonly typography: {
-    /** Stack completi, col fallback di sistema: un font che non carica non lascia il sito senza testo. */
     readonly font_family: Readonly<Record<FontRole, string>>;
     readonly scale: Readonly<Record<TypeScaleStep, string>>;
-    /**
-     * DE11-101 — le regole tipografiche editoriali MEMORIZZATE dal tema (l'APPLICAZIONE nel CSS e'
-     * DE11-103, l'asse trattamento-H1 e' DE11-201): il tracking esteso delle label, il flag
-     * `tabular_nums` del DNA ristorazione (cifre a larghezza fissa su orari/prezzi), e l'hook
-     * `h1_italic_default` — qui solo un token booleano, non ancora applicato.
-     */
     readonly tracking: Readonly<Record<TrackingToken, string>>;
     readonly tabular_nums: boolean;
     readonly h1_italic_default: boolean;
@@ -139,463 +84,472 @@ export type SiteTheme = {
 };
 
 /**
- * I TEMI, nell'ordine in cui vengono offerti. Sono dichiarati a mano da noi e non inventati dal
- * modello (P2-D1): insieme alle ricette (T-212) sono la ragione per cui la promessa "risultati
- * brutti strutturalmente impossibili" e' verificabile — il modello scrive prosa, non sceglie i
- * colori.
- *
- * NATI CINQUE (T-211), CRESCIUTI A OTTO con DE-202, e DISACCOPPIATI dalla ricetta (DS-D3): il tema
- * non e' piu' un'appendice 1:1 di una direzione, ma un ASSE che il selettore design (DE-204)
- * sceglie fra tutti quelli ammessi dalla matrice. Per questo i temi sono PIU' delle cinque ricette:
- * i primi cinque id restano quelli storici (i documenti P4 gia' congelati li citano per id), gli
- * altri allargano la tavolozza di scelta senza che nessuna ricetta debba "possederli".
- *
- * I VALORI SONO PROPRI DI P2. Nessuno e' un 'var(--...)', nemmeno dove coincide per caso
- * con un numero del builder: una spaziatura di '1rem' e' un rem scelto qui, non il
- * medesimo rem del pannello, e il giorno in cui il pannello cambia il suo questo resta
- * dov'e'.
+ * I 21 token semantici di una paletta di Claude Design, così come vivono in `palettes/<nome>.css`.
+ * `cdColors` li completa coi token legacy DERIVATI, così ogni tema resta un Record TOTALE su ColorToken.
+ */
+type CdPalette = {
+  readonly surface_page: string;
+  readonly surface_alt: string;
+  readonly surface_card: string;
+  readonly surface_dark: string;
+  readonly surface_dark_raise: string;
+  readonly text_heading: string;
+  readonly text_body: string;
+  readonly text_muted: string;
+  readonly on_dark: string;
+  readonly on_dark_70: string;
+  readonly on_dark_line: string;
+  readonly line: string;
+  readonly line_strong: string;
+  readonly accent: string;
+  readonly accent_hover: string;
+  readonly accent_contrast: string;
+  readonly accent_2: string;
+  readonly accent_2_deep: string;
+  readonly accent_2_contrast: string;
+  readonly eyebrow_color: string;
+  readonly eyebrow_on_dark: string;
+};
+
+/**
+ * Completa i 21 token CD coi 10 token LEGACY, DERIVATI dai semantici (mai scritti a mano): così i
+ * blocchi non ancora riscritti (che leggono `--site-color-background/surface/text/border/...`) e i loro
+ * test restano verdi finché i macrotask 02-04 non passano ai token CD.
+ */
+function cdColors(c: CdPalette): Readonly<Record<ColorToken, string>> {
+  return {
+    ...c,
+    background: c.surface_page,
+    surface: c.surface_card,
+    text: c.text_heading,
+    border: c.line,
+    crema: c.surface_alt,
+    panna: c.surface_page,
+    ink: c.text_heading,
+    rosso_mattone: c.accent,
+    oro: c.eyebrow_color,
+    verde_basilico: c.accent_2,
+  };
+}
+
+/**
+ * Tipografia, spaziatura e raggi CONDIVISI da tutti i temi (in Claude Design sono token globali in
+ * `tokens/typography.css` + `tokens/spacing.css`). Playfair Display (titoli/display) + Source Sans 3
+ * (corpo); scala/spazi/raggi editoriali. La famiglia display e' self-host (site-fonts.ts).
+ */
+const CD_TYPOGRAPHY: SiteTheme['typography'] = {
+  font_family: {
+    // Nomi di famiglia SENZA virgolette: theme-style.fontStackWithVariable fa split(',')[0].trim() e
+    // cerca la chiave in FONT_VAR_BY_FAMILY ('Playfair Display' / 'Source Sans 3'), entrambe self-host.
+    heading: 'Playfair Display, Georgia, serif',
+    body: 'Source Sans 3, Helvetica Neue, Arial, sans-serif',
+    display: 'Playfair Display, Georgia, serif',
+  },
+  scale: {
+    sm: '14px',
+    base: '16.5px',
+    lg: 'clamp(17px, 1.6vw, 20px)',
+    xl: 'clamp(22px, 2.4vw, 27px)',
+    '2xl': 'clamp(32px, 4.2vw, 50px)',
+    '3xl': 'clamp(44px, 6vw, 78px)',
+  },
+  tracking: { label: '0.22em' },
+  tabular_nums: true,
+  h1_italic_default: false,
+};
+const CD_SPACING: SiteTheme['spacing'] = {
+  xs: '8px',
+  sm: '12px',
+  md: '16px',
+  lg: '32px',
+  xl: '48px',
+  '2xl': '64px',
+};
+const CD_RADIUS: SiteTheme['radius'] = { sm: '5px', md: '10px', lg: '16px', pill: '999px' };
+
+/**
+ * I TEMI, in ordine ALFABETICO dei nomi di paletta. Sono le 23 palette coese di Claude Design (DS-V2-D1),
+ * ognuna una "personalita'" di locale. I 21 valori colore sono COPIATI ESATTI da `palettes/<nome>.css`.
+ * Sono dichiarati da noi e non inventati dal modello (P2-D1): la scelta del design e' manopole nostre,
+ * il modello scrive solo prosa a runtime.
  */
 export const THEMES: readonly SiteTheme[] = [
   {
-    // SOLE MEDITERRANEO — per osterie, trattorie, forni e botteghe di gastronomia.
-    // Terracotta su crema, titoli con le grazie: punta alla sensazione della tavola
-    // apparecchiata di giorno, calda e senza pretese. E' il tema piu' "vecchia insegna"
-    // dei cinque.
-    id: 'sole-mediterraneo@1',
-    colors: {
-      background: '#fdf6ec',
-      surface: '#fffdf9',
-      text: '#2b1d14',
-      text_muted: '#7a6a5c',
-      accent: '#c0492b',
-      accent_contrast: '#fff8f2',
-      border: '#e6d7c3',
-      // DE11-101 — palette editoriale calda "vecchia insegna": crema/panna morbide, mattone e oro
-      // di terracotta, basilico spento; superficie scura per menu/sezioni su fondo bruno.
-      crema: '#f3e3c9',
-      panna: '#fbf3e3',
-      rosso_mattone: '#a83a22',
-      oro: '#c69a3e',
-      verde_basilico: '#5c7a3f',
-      ink: '#241812',
-      surface_dark: '#33241a',
-    },
-    typography: {
-      font_family: {
-        heading: 'Fraunces, Georgia, serif',
-        body: 'Source Sans 3, Segoe UI, sans-serif',
-        display: 'Playfair Display, Georgia, serif',
-      },
-      scale: {
-        sm: '0.875rem',
-        base: '1.0625rem',
-        lg: '1.375rem',
-        xl: '1.875rem',
-        '2xl': '2.5rem',
-        '3xl': '3.25rem',
-      },
-      tracking: { label: '0.18em' },
-      tabular_nums: true,
-      h1_italic_default: true,
-    },
-    spacing: {
-      xs: '0.375rem',
-      sm: '0.75rem',
-      md: '1.25rem',
-      lg: '2rem',
-      xl: '3.25rem',
-      '2xl': '5rem',
-    },
-    radius: { sm: '0.25rem', md: '0.5rem', lg: '1rem', pill: '99rem' },
+    // Agriturismo toscano — girasole, sienna e cipresso.
+    id: 'agriturismo-toscano@1',
+    colors: cdColors({
+      surface_page: '#FBF5E6', surface_alt: '#F3E8CF', surface_card: '#FFFDF3', surface_dark: '#262012',
+      surface_dark_raise: 'color-mix(in srgb, #262012 86%, white)',
+      text_heading: '#2B2415', text_body: 'color-mix(in srgb, #2B2415 80%, #FBF5E6)', text_muted: 'color-mix(in srgb, #2B2415 55%, #FBF5E6)',
+      on_dark: '#F4E9CE', on_dark_70: 'color-mix(in srgb, #F4E9CE 72%, transparent)', on_dark_line: 'color-mix(in srgb, #F4E9CE 18%, transparent)',
+      line: 'color-mix(in srgb, #2B2415 14%, transparent)', line_strong: 'color-mix(in srgb, #2B2415 28%, transparent)',
+      accent: '#B4652A', accent_hover: 'color-mix(in srgb, #B4652A 78%, black)', accent_contrast: '#FCF3E4',
+      accent_2: '#4F5B2E', accent_2_deep: 'color-mix(in srgb, #4F5B2E 60%, black)', accent_2_contrast: '#F6F2E8',
+      eyebrow_color: '#B18A2C', eyebrow_on_dark: '#E0C583',
+    }),
+    typography: CD_TYPOGRAPHY, spacing: CD_SPACING, radius: CD_RADIUS,
   },
   {
-    // LINEA ESSENZIALE — per studi professionali, consulenti, saloni con clientela
-    // urbana. Grafite su bianco, un blu di lavoro come unico accento, raggi quasi vivi:
-    // punta alla sensazione della competenza sobria, dove il sito non alza la voce.
-    id: 'linea-essenziale@1',
-    colors: {
-      background: '#ffffff',
-      surface: '#f5f7f9',
-      text: '#14171a',
-      text_muted: '#5c656e',
-      accent: '#1f4fd8',
-      accent_contrast: '#ffffff',
-      border: '#dfe3e8',
-      // DE11-101 — palette editoriale FREDDA e sobria: crema/panna quasi bianche, mattone e oro
-      // desaturati, basilico ombroso; superficie scura grafite per le sezioni notturne.
-      crema: '#eef1f4',
-      panna: '#f8fafb',
-      rosso_mattone: '#b23a2e',
-      oro: '#b8923f',
-      verde_basilico: '#4a7358',
-      ink: '#101418',
-      surface_dark: '#1b2129',
-    },
-    typography: {
-      font_family: {
-        heading: 'Space Grotesk, Helvetica Neue, sans-serif',
-        body: 'Inter, Helvetica Neue, sans-serif',
-        display: 'Playfair Display, Georgia, serif',
-      },
-      scale: {
-        sm: '0.8125rem',
-        base: '1rem',
-        lg: '1.25rem',
-        xl: '1.625rem',
-        '2xl': '2.125rem',
-        '3xl': '2.75rem',
-      },
-      tracking: { label: '0.18em' },
-      tabular_nums: true,
-      h1_italic_default: false,
-    },
-    spacing: {
-      xs: '0.25rem',
-      sm: '0.5rem',
-      md: '1rem',
-      lg: '1.75rem',
-      xl: '2.75rem',
-      '2xl': '4rem',
-    },
-    radius: { sm: '0.125rem', md: '0.25rem', lg: '0.5rem', pill: '99rem' },
+    // Alpina elegante — ardesia e pino, tono freddo.
+    id: 'alpina-elegante@1',
+    colors: cdColors({
+      surface_page: '#F6F7F4', surface_alt: '#E9ECE6', surface_card: '#FFFFFF', surface_dark: '#232A26',
+      surface_dark_raise: 'color-mix(in srgb, #232A26 86%, white)',
+      text_heading: '#252B27', text_body: 'color-mix(in srgb, #252B27 80%, #F6F7F4)', text_muted: 'color-mix(in srgb, #252B27 55%, #F6F7F4)',
+      on_dark: '#ECEFE9', on_dark_70: 'color-mix(in srgb, #ECEFE9 72%, transparent)', on_dark_line: 'color-mix(in srgb, #ECEFE9 18%, transparent)',
+      line: 'color-mix(in srgb, #252B27 14%, transparent)', line_strong: 'color-mix(in srgb, #252B27 28%, transparent)',
+      accent: '#44614F', accent_hover: 'color-mix(in srgb, #44614F 78%, black)', accent_contrast: '#F0F5F1',
+      accent_2: '#7E6A4A', accent_2_deep: 'color-mix(in srgb, #7E6A4A 60%, black)', accent_2_contrast: '#F6F2E8',
+      eyebrow_color: '#7E7458', eyebrow_on_dark: '#C0B79A',
+    }),
+    typography: CD_TYPOGRAPHY, spacing: CD_SPACING, radius: CD_RADIUS,
   },
   {
-    // SCATTO VITALE — per palestre, box di functional training, scuole di danza.
-    // Il tema SCURO fra i cinque storici: lime elettrico su antracite, titoli condensati,
-    // spigoli vivi (il raggio piu' piccolo e' zero). Punta alla sensazione dell'energia
-    // e del movimento, ed e' anche il tema che regge meglio le foto a tutta larghezza.
-    id: 'scatto-vitale@1',
-    colors: {
-      background: '#0f1115',
-      surface: '#191d24',
-      text: '#f2f5f8',
-      text_muted: '#9aa6b2',
-      accent: '#b6ff3b',
-      accent_contrast: '#101318',
-      border: '#2b323d',
-      // DE11-101 — palette editoriale su fondo scuro: crema/panna pallide per il testo caldo,
-      // mattone e oro accesi, basilico lime; superficie scura ANCORA piu' profonda della base.
-      crema: '#e4e7d0',
-      panna: '#f0f2e6',
-      rosso_mattone: '#c8452b',
-      oro: '#cbb23f',
-      verde_basilico: '#7fae3a',
-      ink: '#0a0c0f',
-      surface_dark: '#10141a',
-    },
-    typography: {
-      font_family: {
-        heading: 'Barlow Condensed, Oswald, sans-serif',
-        body: 'Barlow, Roboto, sans-serif',
-        display: 'Playfair Display, Georgia, serif',
-      },
-      scale: {
-        sm: '0.875rem',
-        base: '1.0625rem',
-        lg: '1.3125rem',
-        xl: '1.75rem',
-        '2xl': '2.375rem',
-        '3xl': '3.5rem',
-      },
-      tracking: { label: '0.18em' },
-      tabular_nums: true,
-      h1_italic_default: false,
-    },
-    spacing: {
-      xs: '0.25rem',
-      sm: '0.625rem',
-      md: '1.125rem',
-      lg: '1.5rem',
-      xl: '2.5rem',
-      '2xl': '3.5rem',
-    },
-    radius: { sm: '0rem', md: '0.125rem', lg: '0.25rem', pill: '99rem' },
+    // Baita di montagna — legno scuro e abete.
+    id: 'baita-di-montagna@1',
+    colors: cdColors({
+      surface_page: '#F8F2E7', surface_alt: '#EDE2CF', surface_card: '#FFFBF2', surface_dark: '#241A10',
+      surface_dark_raise: 'color-mix(in srgb, #241A10 86%, white)',
+      text_heading: '#2C2114', text_body: 'color-mix(in srgb, #2C2114 80%, #F8F2E7)', text_muted: 'color-mix(in srgb, #2C2114 55%, #F8F2E7)',
+      on_dark: '#F1E5CF', on_dark_70: 'color-mix(in srgb, #F1E5CF 72%, transparent)', on_dark_line: 'color-mix(in srgb, #F1E5CF 18%, transparent)',
+      line: 'color-mix(in srgb, #2C2114 14%, transparent)', line_strong: 'color-mix(in srgb, #2C2114 28%, transparent)',
+      accent: '#8A4B24', accent_hover: 'color-mix(in srgb, #8A4B24 78%, black)', accent_contrast: '#F9EFE1',
+      accent_2: '#3E5232', accent_2_deep: 'color-mix(in srgb, #3E5232 60%, black)', accent_2_contrast: '#F6F2E8',
+      eyebrow_color: '#A0762E', eyebrow_on_dark: '#D3B27E',
+    }),
+    typography: CD_TYPOGRAPHY, spacing: CD_SPACING, radius: CD_RADIUS,
   },
   {
-    // BOTTEGA ARTIGIANA — per laboratori, negozi di quartiere, produttori che vendono
-    // cio' che fanno. Carta e inchiostro con un verde bosco, titoli con le grazie e
-    // ritmo stretto: punta alla sensazione del mestiere fatto a mano, dove conta il
-    // prodotto e non la vetrina.
-    id: 'bottega-artigiana@1',
-    colors: {
-      background: '#f4f1ea',
-      surface: '#fffdf8',
-      text: '#1f2a1f',
-      text_muted: '#6b7566',
-      accent: '#2f6b4f',
-      accent_contrast: '#f7fdf9',
-      border: '#d8d2c2',
-      // DE11-101 — palette editoriale "carta e inchiostro": crema/panna calde, mattone terroso,
-      // oro spento, verde bosco a fare da basilico; superficie scura verde-inchiostro.
-      crema: '#ece3cf',
-      panna: '#f7f1e2',
-      rosso_mattone: '#9c3b26',
-      oro: '#b58a3c',
-      verde_basilico: '#3f6b4a',
-      ink: '#1a221a',
-      surface_dark: '#2b3327',
-    },
-    typography: {
-      font_family: {
-        heading: 'Libre Baskerville, Georgia, serif',
-        body: 'Karla, Helvetica, sans-serif',
-        display: 'Playfair Display, Georgia, serif',
-      },
-      scale: {
-        sm: '0.8125rem',
-        base: '1rem',
-        lg: '1.1875rem',
-        xl: '1.5rem',
-        '2xl': '2rem',
-        '3xl': '2.625rem',
-      },
-      tracking: { label: '0.18em' },
-      tabular_nums: true,
-      h1_italic_default: true,
-    },
-    spacing: {
-      xs: '0.375rem',
-      sm: '0.625rem',
-      md: '1rem',
-      lg: '1.625rem',
-      xl: '2.5rem',
-      '2xl': '3.75rem',
-    },
-    radius: { sm: '0.1875rem', md: '0.375rem', lg: '0.625rem', pill: '99rem' },
+    // Bistrot mediterraneo — azzurro profondo e sabbia.
+    id: 'bistrot-mediterraneo@1',
+    colors: cdColors({
+      surface_page: '#FAF6ED', surface_alt: '#F0E9D8', surface_card: '#FFFEF8', surface_dark: '#1E2A30',
+      surface_dark_raise: 'color-mix(in srgb, #1E2A30 86%, white)',
+      text_heading: '#23303A', text_body: 'color-mix(in srgb, #23303A 80%, #FAF6ED)', text_muted: 'color-mix(in srgb, #23303A 55%, #FAF6ED)',
+      on_dark: '#EAF0EE', on_dark_70: 'color-mix(in srgb, #EAF0EE 72%, transparent)', on_dark_line: 'color-mix(in srgb, #EAF0EE 18%, transparent)',
+      line: 'color-mix(in srgb, #23303A 14%, transparent)', line_strong: 'color-mix(in srgb, #23303A 28%, transparent)',
+      accent: '#2E6E7E', accent_hover: 'color-mix(in srgb, #2E6E7E 78%, black)', accent_contrast: '#F2F7F5',
+      accent_2: '#C4703B', accent_2_deep: 'color-mix(in srgb, #C4703B 60%, black)', accent_2_contrast: '#F6F2E8',
+      eyebrow_color: '#B08A3E', eyebrow_on_dark: '#D9C08D',
+    }),
+    typography: CD_TYPOGRAPHY, spacing: CD_SPACING, radius: CD_RADIUS,
   },
   {
-    // BREZZA COSTIERA — per B&B, case vacanza, stabilimenti, servizi al turismo.
-    // Acqua e sabbia chiara, geometrie morbide e uno dei ritmi piu' ARIOSI (spaziature
-    // fra le piu' larghe del catalogo): punta alla sensazione dell'aria aperta e del
-    // tempo che non stringe.
-    id: 'brezza-costiera@1',
-    colors: {
-      background: '#f5fafc',
-      surface: '#ffffff',
-      text: '#0e2a38',
-      text_muted: '#5b7684',
-      accent: '#0f7c93',
-      accent_contrast: '#ffffff',
-      border: '#cfe2ea',
-      // DE11-101 — palette editoriale marina: crema/panna sabbiose, un mattone corallo, oro caldo
-      // e un basilico verde-mare; superficie scura blu profondo per le sezioni notturne.
-      crema: '#f0ead8',
-      panna: '#f9f5ea',
-      rosso_mattone: '#b8503a',
-      oro: '#cba64a',
-      verde_basilico: '#4f8f78',
-      ink: '#0e2330',
-      surface_dark: '#123141',
-    },
-    typography: {
-      font_family: {
-        heading: 'Poppins, Avenir Next, sans-serif',
-        body: 'Nunito Sans, Segoe UI, sans-serif',
-        display: 'Playfair Display, Georgia, serif',
-      },
-      scale: {
-        sm: '0.875rem',
-        base: '1.0625rem',
-        lg: '1.3125rem',
-        xl: '1.6875rem',
-        '2xl': '2.25rem',
-        '3xl': '3rem',
-      },
-      tracking: { label: '0.18em' },
-      tabular_nums: true,
-      h1_italic_default: false,
-    },
-    spacing: {
-      xs: '0.5rem',
-      sm: '0.875rem',
-      md: '1.375rem',
-      lg: '2.25rem',
-      xl: '3.5rem',
-      '2xl': '5.5rem',
-    },
-    radius: { sm: '0.5rem', md: '0.875rem', lg: '1.5rem', pill: '99rem' },
+    // Caffè storico — espresso e rame.
+    id: 'caffe-storico@1',
+    colors: cdColors({
+      surface_page: '#F7F1E9', surface_alt: '#ECE2D4', surface_card: '#FFFBF5', surface_dark: '#211812',
+      surface_dark_raise: 'color-mix(in srgb, #211812 86%, white)',
+      text_heading: '#2A1F17', text_body: 'color-mix(in srgb, #2A1F17 80%, #F7F1E9)', text_muted: 'color-mix(in srgb, #2A1F17 55%, #F7F1E9)',
+      on_dark: '#EFE3D6', on_dark_70: 'color-mix(in srgb, #EFE3D6 72%, transparent)', on_dark_line: 'color-mix(in srgb, #EFE3D6 18%, transparent)',
+      line: 'color-mix(in srgb, #2A1F17 14%, transparent)', line_strong: 'color-mix(in srgb, #2A1F17 28%, transparent)',
+      accent: '#96502F', accent_hover: 'color-mix(in srgb, #96502F 78%, black)', accent_contrast: '#F8EEE5',
+      accent_2: '#5C4B3B', accent_2_deep: 'color-mix(in srgb, #5C4B3B 60%, black)', accent_2_contrast: '#F6F2E8',
+      eyebrow_color: '#A87E2F', eyebrow_on_dark: '#D6B98A',
+    }),
+    typography: CD_TYPOGRAPHY, spacing: CD_SPACING, radius: CD_RADIUS,
   },
   {
-    // LINEA ESSENZIALE NOTTE — la sorella NOTTURNA di 'linea-essenziale', per gli stessi studi e
-    // consulenti quando l'insegna e' accesa dopo il tramonto: grafite scura con un oro caldo e
-    // sobrio, lo STESSO carattere geometrico dei titoli su fondo profondo. E' fra i temi SCURI
-    // (con 'scatto-vitale'), ma dove scatto e' energia elettrica questo e'
-    // eleganza trattenuta. DE-202: cresce il catalogo e — non per caso — porta un id il cui NOME
-    // e' PREFISSO di quello base ('linea-essenziale'), cosi' che `themeFor` provi l'uguaglianza
-    // esatta e non un match lasco sul prefisso.
-    id: 'linea-essenziale-notte@1',
-    colors: {
-      background: '#0f1319',
-      surface: '#171d26',
-      text: '#eef2f6',
-      text_muted: '#97a2b0',
-      accent: '#d9a441',
-      accent_contrast: '#14171d',
-      border: '#29323e',
-      // DE11-101 — palette editoriale notturna "eleganza trattenuta": crema/panna tenui, mattone
-      // sobrio, oro caldo, basilico attutito; superficie scura ancora piu' profonda della base.
-      crema: '#e7e2d3',
-      panna: '#f2eee2',
-      rosso_mattone: '#b4472f',
-      oro: '#cf9c3d',
-      verde_basilico: '#5c7d5a',
-      ink: '#0b0e13',
-      surface_dark: '#10151c',
-    },
-    typography: {
-      font_family: {
-        heading: 'Space Grotesk, Helvetica Neue, sans-serif',
-        body: 'Nunito Sans, Segoe UI, sans-serif',
-        display: 'Playfair Display, Georgia, serif',
-      },
-      scale: {
-        sm: '0.875rem',
-        base: '1.0625rem',
-        lg: '1.4375rem',
-        xl: '2rem',
-        '2xl': '2.75rem',
-        '3xl': '3.75rem',
-      },
-      tracking: { label: '0.18em' },
-      tabular_nums: true,
-      h1_italic_default: true,
-    },
-    spacing: {
-      xs: '0.3125rem',
-      sm: '0.6875rem',
-      md: '1.1875rem',
-      lg: '1.75rem',
-      xl: '2.875rem',
-      '2xl': '4.25rem',
-    },
-    radius: { sm: '0.125rem', md: '0.25rem', lg: '0.5rem', pill: '99rem' },
+    // Cantina naturale — ambra, ruggine e carta grezza.
+    id: 'cantina-naturale@1',
+    colors: cdColors({
+      surface_page: '#F9F3E6', surface_alt: '#F0E5CE', surface_card: '#FFFBEF', surface_dark: '#271E14',
+      surface_dark_raise: 'color-mix(in srgb, #271E14 86%, white)',
+      text_heading: '#2C2216', text_body: 'color-mix(in srgb, #2C2216 80%, #F9F3E6)', text_muted: 'color-mix(in srgb, #2C2216 55%, #F9F3E6)',
+      on_dark: '#F2E7CF', on_dark_70: 'color-mix(in srgb, #F2E7CF 72%, transparent)', on_dark_line: 'color-mix(in srgb, #F2E7CF 18%, transparent)',
+      line: 'color-mix(in srgb, #2C2216 14%, transparent)', line_strong: 'color-mix(in srgb, #2C2216 28%, transparent)',
+      accent: '#A34E22', accent_hover: 'color-mix(in srgb, #A34E22 78%, black)', accent_contrast: '#FAEFE3',
+      accent_2: '#7A6A2E', accent_2_deep: 'color-mix(in srgb, #7A6A2E 60%, black)', accent_2_contrast: '#F6F2E8',
+      eyebrow_color: '#B08434', eyebrow_on_dark: '#DCBE83',
+    }),
+    typography: CD_TYPOGRAPHY, spacing: CD_SPACING, radius: CD_RADIUS,
   },
   {
-    // FESTA BRILLANTE — per pizzerie, street food, gelaterie, chi vende allegria oltre al piatto.
-    // Bianco caldo con un arancio ACCESO e titoli tondi: punta alla sensazione della festa di
-    // quartiere, colorata e diretta. E' il tema piu' vivace dei nostri, l'unico dichiaratamente
-    // giocoso, e regge le promozioni e i banner senza spegnersi.
-    id: 'festa-brillante@1',
-    colors: {
-      background: '#fffdf7',
-      surface: '#ffffff',
-      text: '#2a2018',
-      text_muted: '#7c7160',
-      accent: '#e6541f',
-      accent_contrast: '#fff6f0',
-      border: '#f0e7d6',
-      // DE11-101 — palette editoriale della festa: crema/panna dorate, un mattone-arancio acceso,
-      // oro brillante, basilico vivo; superficie scura calda per banner e promozioni su fondo bruno.
-      crema: '#ffe9cf',
-      panna: '#fff4e6',
-      rosso_mattone: '#d23f1c',
-      oro: '#e2a233',
-      verde_basilico: '#5f9a42',
-      ink: '#241a12',
-      surface_dark: '#3a2a1c',
-    },
-    typography: {
-      font_family: {
-        heading: 'Poppins, Avenir Next, sans-serif',
-        body: 'Barlow, Roboto, sans-serif',
-        display: 'Playfair Display, Georgia, serif',
-      },
-      scale: {
-        sm: '0.9375rem',
-        base: '1.125rem',
-        lg: '1.5rem',
-        xl: '2.0625rem',
-        '2xl': '2.875rem',
-        '3xl': '4rem',
-      },
-      tracking: { label: '0.18em' },
-      tabular_nums: true,
-      h1_italic_default: false,
-    },
-    spacing: {
-      xs: '0.4375rem',
-      sm: '0.8125rem',
-      md: '1.3125rem',
-      lg: '2.125rem',
-      xl: '3.375rem',
-      '2xl': '5.25rem',
-    },
-    radius: { sm: '0.5rem', md: '0.875rem', lg: '1.5rem', pill: '99rem' },
+    // Costiera di sera — teal profondo e perla, fine dining di mare.
+    id: 'costiera-di-sera@1',
+    colors: cdColors({
+      surface_page: '#F7F7F2', surface_alt: '#EBECE4', surface_card: '#FFFFFB', surface_dark: '#12262A',
+      surface_dark_raise: 'color-mix(in srgb, #12262A 86%, white)',
+      text_heading: '#1B2C30', text_body: 'color-mix(in srgb, #1B2C30 80%, #F7F7F2)', text_muted: 'color-mix(in srgb, #1B2C30 55%, #F7F7F2)',
+      on_dark: '#EBF0EC', on_dark_70: 'color-mix(in srgb, #EBF0EC 72%, transparent)', on_dark_line: 'color-mix(in srgb, #EBF0EC 18%, transparent)',
+      line: 'color-mix(in srgb, #1B2C30 14%, transparent)', line_strong: 'color-mix(in srgb, #1B2C30 28%, transparent)',
+      accent: '#1F5F66', accent_hover: 'color-mix(in srgb, #1F5F66 78%, black)', accent_contrast: '#EFF6F4',
+      accent_2: '#A8763F', accent_2_deep: 'color-mix(in srgb, #A8763F 60%, black)', accent_2_contrast: '#F6F2E8',
+      eyebrow_color: '#93804C', eyebrow_on_dark: '#CBBC8E',
+    }),
+    typography: CD_TYPOGRAPHY, spacing: CD_SPACING, radius: CD_RADIUS,
   },
   {
-    // ORTO SALVIA — per cucine vegetali, poke, gastronomie del fresco, cantine e chi racconta la
-    // materia prima. Bianco venato di verde con un accento salvia: e' il nostro tema NATURALE, il
-    // solo dove l'accento e' un verde fresco e non un caldo — pensato per pesce, vegetariano,
-    // healthy, dove il colore deve dire "di stagione" prima ancora del testo. Titoli con le grazie,
-    // ritmo ampio e arioso.
-    id: 'orto-salvia@1',
-    colors: {
-      background: '#f6faf6',
-      surface: '#ffffff',
-      text: '#1b2a20',
-      text_muted: '#5f7166',
-      accent: '#4f8f6b',
-      accent_contrast: '#f6fbf8',
-      border: '#d9e5da',
-      // DE11-101 — palette editoriale naturale "di stagione": crema/panna verdoline, mattone
-      // terroso, oro-ottone spento, basilico fresco; superficie scura verde-inchiostro.
-      crema: '#eef0dd',
-      panna: '#f7f8ec',
-      rosso_mattone: '#a84a30',
-      oro: '#bfa049',
-      verde_basilico: '#4f8f6b',
-      ink: '#14201a',
-      surface_dark: '#1e2c24',
-    },
-    typography: {
-      font_family: {
-        heading: 'Fraunces, Georgia, serif',
-        body: 'Karla, Helvetica, sans-serif',
-        display: 'Playfair Display, Georgia, serif',
-      },
-      scale: {
-        sm: '0.8125rem',
-        base: '1rem',
-        lg: '1.3125rem',
-        xl: '1.75rem',
-        '2xl': '2.375rem',
-        '3xl': '3.125rem',
-      },
-      tracking: { label: '0.18em' },
-      tabular_nums: true,
-      h1_italic_default: true,
-    },
-    spacing: {
-      xs: '0.5rem',
-      sm: '0.9375rem',
-      md: '1.5rem',
-      lg: '2.375rem',
-      xl: '3.625rem',
-      '2xl': '6rem',
-    },
-    radius: { sm: '0.25rem', md: '0.5rem', lg: '1rem', pill: '99rem' },
+    // Cucina di mare — verde mare e corallo.
+    id: 'cucina-di-mare@1',
+    colors: cdColors({
+      surface_page: '#F8FAF6', surface_alt: '#EAF0E9', surface_card: '#FFFFFF', surface_dark: '#14262B',
+      surface_dark_raise: 'color-mix(in srgb, #14262B 86%, white)',
+      text_heading: '#1C2E33', text_body: 'color-mix(in srgb, #1C2E33 80%, #F8FAF6)', text_muted: 'color-mix(in srgb, #1C2E33 55%, #F8FAF6)',
+      on_dark: '#E8F1EE', on_dark_70: 'color-mix(in srgb, #E8F1EE 72%, transparent)', on_dark_line: 'color-mix(in srgb, #E8F1EE 18%, transparent)',
+      line: 'color-mix(in srgb, #1C2E33 14%, transparent)', line_strong: 'color-mix(in srgb, #1C2E33 28%, transparent)',
+      accent: '#C25B4A', accent_hover: 'color-mix(in srgb, #C25B4A 78%, black)', accent_contrast: '#FDF4F0',
+      accent_2: '#2F6B62', accent_2_deep: 'color-mix(in srgb, #2F6B62 60%, black)', accent_2_contrast: '#F6F2E8',
+      eyebrow_color: '#8E8449', eyebrow_on_dark: '#C9C08A',
+    }),
+    typography: CD_TYPOGRAPHY, spacing: CD_SPACING, radius: CD_RADIUS,
+  },
+  {
+    // Da Nonna Rosa — crema, mattone, oro, basilico (la palette di partenza di Claude Design).
+    id: 'da-nonna-rosa@1',
+    colors: cdColors({
+      surface_page: '#FBF6EC', surface_alt: '#F3EADB', surface_card: '#FFFDF7', surface_dark: '#221B13',
+      surface_dark_raise: 'color-mix(in srgb, #221B13 86%, white)',
+      text_heading: '#27211B', text_body: 'color-mix(in srgb, #27211B 80%, #FBF6EC)', text_muted: 'color-mix(in srgb, #27211B 55%, #FBF6EC)',
+      on_dark: '#F3E9D7', on_dark_70: 'color-mix(in srgb, #F3E9D7 72%, transparent)', on_dark_line: 'color-mix(in srgb, #F3E9D7 18%, transparent)',
+      line: 'color-mix(in srgb, #27211B 14%, transparent)', line_strong: 'color-mix(in srgb, #27211B 28%, transparent)',
+      accent: '#A23E2C', accent_hover: 'color-mix(in srgb, #A23E2C 78%, black)', accent_contrast: '#FBF6EC',
+      accent_2: '#4C6440', accent_2_deep: 'color-mix(in srgb, #4C6440 60%, black)', accent_2_contrast: '#F6F2E8',
+      eyebrow_color: '#A87E2F', eyebrow_on_dark: '#D9C08D',
+    }),
+    typography: CD_TYPOGRAPHY, spacing: CD_SPACING, radius: CD_RADIUS,
+  },
+  {
+    // Enoteca scura — vinaccia e pergamena fredda.
+    id: 'enoteca-scura@1',
+    colors: cdColors({
+      surface_page: '#F5F1EA', surface_alt: '#EAE3D8', surface_card: '#FDFBF6', surface_dark: '#241820',
+      surface_dark_raise: 'color-mix(in srgb, #241820 86%, white)',
+      text_heading: '#2B2026', text_body: 'color-mix(in srgb, #2B2026 80%, #F5F1EA)', text_muted: 'color-mix(in srgb, #2B2026 55%, #F5F1EA)',
+      on_dark: '#EFE5E0', on_dark_70: 'color-mix(in srgb, #EFE5E0 72%, transparent)', on_dark_line: 'color-mix(in srgb, #EFE5E0 18%, transparent)',
+      line: 'color-mix(in srgb, #2B2026 14%, transparent)', line_strong: 'color-mix(in srgb, #2B2026 28%, transparent)',
+      accent: '#6E2436', accent_hover: 'color-mix(in srgb, #6E2436 78%, black)', accent_contrast: '#F6EBE7',
+      accent_2: '#746A54', accent_2_deep: 'color-mix(in srgb, #746A54 60%, black)', accent_2_contrast: '#F6F2E8',
+      eyebrow_color: '#97753C', eyebrow_on_dark: '#CFAF7E',
+    }),
+    typography: CD_TYPOGRAPHY, spacing: CD_SPACING, radius: CD_RADIUS,
+  },
+  {
+    // Fine dining — avorio e champagne, quasi monocroma.
+    id: 'fine-dining@1',
+    colors: cdColors({
+      surface_page: '#F8F6F1', surface_alt: '#EFEBE2', surface_card: '#FFFFFF', surface_dark: '#191714',
+      surface_dark_raise: 'color-mix(in srgb, #191714 86%, white)',
+      text_heading: '#1E1C18', text_body: 'color-mix(in srgb, #1E1C18 80%, #F8F6F1)', text_muted: 'color-mix(in srgb, #1E1C18 55%, #F8F6F1)',
+      on_dark: '#EDE7DA', on_dark_70: 'color-mix(in srgb, #EDE7DA 72%, transparent)', on_dark_line: 'color-mix(in srgb, #EDE7DA 18%, transparent)',
+      line: 'color-mix(in srgb, #1E1C18 14%, transparent)', line_strong: 'color-mix(in srgb, #1E1C18 28%, transparent)',
+      accent: '#8C7845', accent_hover: 'color-mix(in srgb, #8C7845 78%, black)', accent_contrast: '#FAF8F2',
+      accent_2: '#5A5346', accent_2_deep: 'color-mix(in srgb, #5A5346 60%, black)', accent_2_contrast: '#F6F2E8',
+      eyebrow_color: '#9A854E', eyebrow_on_dark: '#D6C69A',
+    }),
+    typography: CD_TYPOGRAPHY, spacing: CD_SPACING, radius: CD_RADIUS,
+  },
+  {
+    // Forno e farina — grano, crosta e lievito madre.
+    id: 'forno-e-farina@1',
+    colors: cdColors({
+      surface_page: '#FCF8EF', surface_alt: '#F5ECDB', surface_card: '#FFFEF8', surface_dark: '#251D12',
+      surface_dark_raise: 'color-mix(in srgb, #251D12 86%, white)',
+      text_heading: '#2A2318', text_body: 'color-mix(in srgb, #2A2318 80%, #FCF8EF)', text_muted: 'color-mix(in srgb, #2A2318 55%, #FCF8EF)',
+      on_dark: '#F4ECDA', on_dark_70: 'color-mix(in srgb, #F4ECDA 72%, transparent)', on_dark_line: 'color-mix(in srgb, #F4ECDA 18%, transparent)',
+      line: 'color-mix(in srgb, #2A2318 14%, transparent)', line_strong: 'color-mix(in srgb, #2A2318 28%, transparent)',
+      accent: '#9E6B2F', accent_hover: 'color-mix(in srgb, #9E6B2F 78%, black)', accent_contrast: '#FBF3E7',
+      accent_2: '#5E6039', accent_2_deep: 'color-mix(in srgb, #5E6039 60%, black)', accent_2_contrast: '#F6F2E8',
+      eyebrow_color: '#AD8737', eyebrow_on_dark: '#DBC28C',
+    }),
+    typography: CD_TYPOGRAPHY, spacing: CD_SPACING, radius: CD_RADIUS,
+  },
+  {
+    // Griglia e brace — carbone, fumo e brace.
+    id: 'griglia-e-brace@1',
+    colors: cdColors({
+      surface_page: '#F6F2EC', surface_alt: '#EAE4DA', surface_card: '#FFFCF7', surface_dark: '#1B1917',
+      surface_dark_raise: 'color-mix(in srgb, #1B1917 86%, white)',
+      text_heading: '#232019', text_body: 'color-mix(in srgb, #232019 80%, #F6F2EC)', text_muted: 'color-mix(in srgb, #232019 55%, #F6F2EC)',
+      on_dark: '#EFE8DE', on_dark_70: 'color-mix(in srgb, #EFE8DE 72%, transparent)', on_dark_line: 'color-mix(in srgb, #EFE8DE 18%, transparent)',
+      line: 'color-mix(in srgb, #232019 14%, transparent)', line_strong: 'color-mix(in srgb, #232019 28%, transparent)',
+      accent: '#C05A2B', accent_hover: 'color-mix(in srgb, #C05A2B 78%, black)', accent_contrast: '#FCF2E9',
+      accent_2: '#575148', accent_2_deep: 'color-mix(in srgb, #575148 60%, black)', accent_2_contrast: '#F6F2E8',
+      eyebrow_color: '#B07E35', eyebrow_on_dark: '#D9B888',
+    }),
+    typography: CD_TYPOGRAPHY, spacing: CD_SPACING, radius: CD_RADIUS,
+  },
+  {
+    // Liberty storico — borgogna e ottone, salotto d'epoca.
+    id: 'liberty-storico@1',
+    colors: cdColors({
+      surface_page: '#F8F3EC', surface_alt: '#EFE5D8', surface_card: '#FFFDF7', surface_dark: '#26161A',
+      surface_dark_raise: 'color-mix(in srgb, #26161A 86%, white)',
+      text_heading: '#2C1D20', text_body: 'color-mix(in srgb, #2C1D20 80%, #F8F3EC)', text_muted: 'color-mix(in srgb, #2C1D20 55%, #F8F3EC)',
+      on_dark: '#F1E4DC', on_dark_70: 'color-mix(in srgb, #F1E4DC 72%, transparent)', on_dark_line: 'color-mix(in srgb, #F1E4DC 18%, transparent)',
+      line: 'color-mix(in srgb, #2C1D20 14%, transparent)', line_strong: 'color-mix(in srgb, #2C1D20 28%, transparent)',
+      accent: '#86293A', accent_hover: 'color-mix(in srgb, #86293A 78%, black)', accent_contrast: '#F8ECE8',
+      accent_2: '#6A5B3E', accent_2_deep: 'color-mix(in srgb, #6A5B3E 60%, black)', accent_2_contrast: '#F6F2E8',
+      eyebrow_color: '#A5813B', eyebrow_on_dark: '#D8BC86',
+    }),
+    typography: CD_TYPOGRAPHY, spacing: CD_SPACING, radius: CD_RADIUS,
+  },
+  {
+    // Moderno minimale — grigi caldi, un solo rosso pomodoro.
+    id: 'moderno-minimale@1',
+    colors: cdColors({
+      surface_page: '#F9F8F5', surface_alt: '#EFEDE8', surface_card: '#FFFFFF', surface_dark: '#211F1C',
+      surface_dark_raise: 'color-mix(in srgb, #211F1C 86%, white)',
+      text_heading: '#232019', text_body: 'color-mix(in srgb, #232019 80%, #F9F8F5)', text_muted: 'color-mix(in srgb, #232019 55%, #F9F8F5)',
+      on_dark: '#F0EEE8', on_dark_70: 'color-mix(in srgb, #F0EEE8 72%, transparent)', on_dark_line: 'color-mix(in srgb, #F0EEE8 18%, transparent)',
+      line: 'color-mix(in srgb, #232019 14%, transparent)', line_strong: 'color-mix(in srgb, #232019 28%, transparent)',
+      accent: '#C13E2B', accent_hover: 'color-mix(in srgb, #C13E2B 78%, black)', accent_contrast: '#FDF5F2',
+      accent_2: '#6E6A61', accent_2_deep: 'color-mix(in srgb, #6E6A61 60%, black)', accent_2_contrast: '#F6F2E8',
+      eyebrow_color: '#8F8677', eyebrow_on_dark: '#C9C0B0',
+    }),
+    typography: CD_TYPOGRAPHY, spacing: CD_SPACING, radius: CD_RADIUS,
+  },
+  {
+    // Orto vegetariano — salvia, erbe e senape chiara.
+    id: 'orto-vegetariano@1',
+    colors: cdColors({
+      surface_page: '#F9FAF3', surface_alt: '#EEF0E2', surface_card: '#FFFFFC', surface_dark: '#22281C',
+      surface_dark_raise: 'color-mix(in srgb, #22281C 86%, white)',
+      text_heading: '#262C20', text_body: 'color-mix(in srgb, #262C20 80%, #F9FAF3)', text_muted: 'color-mix(in srgb, #262C20 55%, #F9FAF3)',
+      on_dark: '#EFF2E2', on_dark_70: 'color-mix(in srgb, #EFF2E2 72%, transparent)', on_dark_line: 'color-mix(in srgb, #EFF2E2 18%, transparent)',
+      line: 'color-mix(in srgb, #262C20 14%, transparent)', line_strong: 'color-mix(in srgb, #262C20 28%, transparent)',
+      accent: '#5E7C3A', accent_hover: 'color-mix(in srgb, #5E7C3A 78%, black)', accent_contrast: '#F6F9EC',
+      accent_2: '#B98A2C', accent_2_deep: 'color-mix(in srgb, #B98A2C 60%, black)', accent_2_contrast: '#F6F2E8',
+      eyebrow_color: '#9C8A33', eyebrow_on_dark: '#D9CC8A',
+    }),
+    typography: CD_TYPOGRAPHY, spacing: CD_SPACING, radius: CD_RADIUS,
+  },
+  {
+    // Osteria contemporanea — senape e petrolio.
+    id: 'osteria-contemporanea@1',
+    colors: cdColors({
+      surface_page: '#FAF6EC', surface_alt: '#F0E8D6', surface_card: '#FFFDF4', surface_dark: '#1D2A2A',
+      surface_dark_raise: 'color-mix(in srgb, #1D2A2A 86%, white)',
+      text_heading: '#223030', text_body: 'color-mix(in srgb, #223030 80%, #FAF6EC)', text_muted: 'color-mix(in srgb, #223030 55%, #FAF6EC)',
+      on_dark: '#EDEFE6', on_dark_70: 'color-mix(in srgb, #EDEFE6 72%, transparent)', on_dark_line: 'color-mix(in srgb, #EDEFE6 18%, transparent)',
+      line: 'color-mix(in srgb, #223030 14%, transparent)', line_strong: 'color-mix(in srgb, #223030 28%, transparent)',
+      accent: '#B98A22', accent_hover: 'color-mix(in srgb, #B98A22 78%, black)', accent_contrast: '#26220F',
+      accent_2: '#2F5455', accent_2_deep: 'color-mix(in srgb, #2F5455 60%, black)', accent_2_contrast: '#F6F2E8',
+      eyebrow_color: '#96742A', eyebrow_on_dark: '#D6BC79',
+    }),
+    typography: CD_TYPOGRAPHY, spacing: CD_SPACING, radius: CD_RADIUS,
+  },
+  {
+    // Osteria di città — sangue di bue e grigi caldi, urbana.
+    id: 'osteria-di-citta@1',
+    colors: cdColors({
+      surface_page: '#F7F3ED', surface_alt: '#EDE6DC', surface_card: '#FFFEFA', surface_dark: '#241F1E',
+      surface_dark_raise: 'color-mix(in srgb, #241F1E 86%, white)',
+      text_heading: '#262120', text_body: 'color-mix(in srgb, #262120 80%, #F7F3ED)', text_muted: 'color-mix(in srgb, #262120 55%, #F7F3ED)',
+      on_dark: '#EFE7DD', on_dark_70: 'color-mix(in srgb, #EFE7DD 72%, transparent)', on_dark_line: 'color-mix(in srgb, #EFE7DD 18%, transparent)',
+      line: 'color-mix(in srgb, #262120 14%, transparent)', line_strong: 'color-mix(in srgb, #262120 28%, transparent)',
+      accent: '#7E2D26', accent_hover: 'color-mix(in srgb, #7E2D26 78%, black)', accent_contrast: '#F7EFE7',
+      accent_2: '#55584A', accent_2_deep: 'color-mix(in srgb, #55584A 60%, black)', accent_2_contrast: '#F6F2E8',
+      eyebrow_color: '#8A6D3B', eyebrow_on_dark: '#CDB588',
+    }),
+    typography: CD_TYPOGRAPHY, spacing: CD_SPACING, radius: CD_RADIUS,
+  },
+  {
+    // Pizzeria napoletana — pomodoro, basilico e bianco mozzarella.
+    id: 'pizzeria-napoletana@1',
+    colors: cdColors({
+      surface_page: '#FFF9F0', surface_alt: '#FBEEDD', surface_card: '#FFFFFF', surface_dark: '#26221C',
+      surface_dark_raise: 'color-mix(in srgb, #26221C 86%, white)',
+      text_heading: '#2B2118', text_body: 'color-mix(in srgb, #2B2118 80%, #FFF9F0)', text_muted: 'color-mix(in srgb, #2B2118 55%, #FFF9F0)',
+      on_dark: '#FBF1E0', on_dark_70: 'color-mix(in srgb, #FBF1E0 72%, transparent)', on_dark_line: 'color-mix(in srgb, #FBF1E0 18%, transparent)',
+      line: 'color-mix(in srgb, #2B2118 14%, transparent)', line_strong: 'color-mix(in srgb, #2B2118 28%, transparent)',
+      accent: '#C6392B', accent_hover: 'color-mix(in srgb, #C6392B 78%, black)', accent_contrast: '#FFF6EC',
+      accent_2: '#3E7A3F', accent_2_deep: 'color-mix(in srgb, #3E7A3F 60%, black)', accent_2_contrast: '#F6F2E8',
+      eyebrow_color: '#C98A2E', eyebrow_on_dark: '#F0C87E',
+    }),
+    typography: CD_TYPOGRAPHY, spacing: CD_SPACING, radius: CD_RADIUS,
+  },
+  {
+    // Rosticceria popolare — paprika e zafferano, popolare e viva.
+    id: 'rosticceria-popolare@1',
+    colors: cdColors({
+      surface_page: '#FDF7EC', surface_alt: '#F8ECD6', surface_card: '#FFFFF9', surface_dark: '#291E13',
+      surface_dark_raise: 'color-mix(in srgb, #291E13 86%, white)',
+      text_heading: '#2C2115', text_body: 'color-mix(in srgb, #2C2115 80%, #FDF7EC)', text_muted: 'color-mix(in srgb, #2C2115 55%, #FDF7EC)',
+      on_dark: '#F6EBD5', on_dark_70: 'color-mix(in srgb, #F6EBD5 72%, transparent)', on_dark_line: 'color-mix(in srgb, #F6EBD5 18%, transparent)',
+      line: 'color-mix(in srgb, #2C2115 14%, transparent)', line_strong: 'color-mix(in srgb, #2C2115 28%, transparent)',
+      accent: '#B23A24', accent_hover: 'color-mix(in srgb, #B23A24 78%, black)', accent_contrast: '#FBEFE7',
+      accent_2: '#C08A24', accent_2_deep: 'color-mix(in srgb, #C08A24 60%, black)', accent_2_contrast: '#2B2110',
+      eyebrow_color: '#B58A2E', eyebrow_on_dark: '#E2C77F',
+    }),
+    typography: CD_TYPOGRAPHY, spacing: CD_SPACING, radius: CD_RADIUS,
+  },
+  {
+    // Sicilia e agrumi — limone, zafferano e maiolica blu.
+    id: 'sicilia-e-agrumi@1',
+    colors: cdColors({
+      surface_page: '#FCF8EA', surface_alt: '#F6EDD2', surface_card: '#FFFFF8', surface_dark: '#1E2837',
+      surface_dark_raise: 'color-mix(in srgb, #1E2837 86%, white)',
+      text_heading: '#24303F', text_body: 'color-mix(in srgb, #24303F 80%, #FCF8EA)', text_muted: 'color-mix(in srgb, #24303F 55%, #FCF8EA)',
+      on_dark: '#F5EFDC', on_dark_70: 'color-mix(in srgb, #F5EFDC 72%, transparent)', on_dark_line: 'color-mix(in srgb, #F5EFDC 18%, transparent)',
+      line: 'color-mix(in srgb, #24303F 14%, transparent)', line_strong: 'color-mix(in srgb, #24303F 28%, transparent)',
+      accent: '#2C5F8A', accent_hover: 'color-mix(in srgb, #2C5F8A 78%, black)', accent_contrast: '#F1F6FA',
+      accent_2: '#C9912B', accent_2_deep: 'color-mix(in srgb, #C9912B 60%, black)', accent_2_contrast: '#2B2110',
+      eyebrow_color: '#C08F2C', eyebrow_on_dark: '#E6C878',
+    }),
+    typography: CD_TYPOGRAPHY, spacing: CD_SPACING, radius: CD_RADIUS,
+  },
+  {
+    // Trattoria adriatica — blu notte e sabbia dorata.
+    id: 'trattoria-adriatica@1',
+    colors: cdColors({
+      surface_page: '#F9F6EF', surface_alt: '#EFE9DB', surface_card: '#FFFEF9', surface_dark: '#182231',
+      surface_dark_raise: 'color-mix(in srgb, #182231 86%, white)',
+      text_heading: '#202B3A', text_body: 'color-mix(in srgb, #202B3A 80%, #F9F6EF)', text_muted: 'color-mix(in srgb, #202B3A 55%, #F9F6EF)',
+      on_dark: '#EAEDF0', on_dark_70: 'color-mix(in srgb, #EAEDF0 72%, transparent)', on_dark_line: 'color-mix(in srgb, #EAEDF0 18%, transparent)',
+      line: 'color-mix(in srgb, #202B3A 14%, transparent)', line_strong: 'color-mix(in srgb, #202B3A 28%, transparent)',
+      accent: '#27476E', accent_hover: 'color-mix(in srgb, #27476E 78%, black)', accent_contrast: '#EEF2F7',
+      accent_2: '#B9763C', accent_2_deep: 'color-mix(in srgb, #B9763C 60%, black)', accent_2_contrast: '#F6F2E8',
+      eyebrow_color: '#A08243', eyebrow_on_dark: '#CDBA8C',
+    }),
+    typography: CD_TYPOGRAPHY, spacing: CD_SPACING, radius: CD_RADIUS,
+  },
+  {
+    // Trattoria rustica — terracotta e oliva su carta calda.
+    id: 'trattoria-rustica@1',
+    colors: cdColors({
+      surface_page: '#FAF4E8', surface_alt: '#F1E6D2', surface_card: '#FFFCF4', surface_dark: '#2A2014',
+      surface_dark_raise: 'color-mix(in srgb, #2A2014 86%, white)',
+      text_heading: '#2E2418', text_body: 'color-mix(in srgb, #2E2418 80%, #FAF4E8)', text_muted: 'color-mix(in srgb, #2E2418 55%, #FAF4E8)',
+      on_dark: '#F4EAD6', on_dark_70: 'color-mix(in srgb, #F4EAD6 72%, transparent)', on_dark_line: 'color-mix(in srgb, #F4EAD6 18%, transparent)',
+      line: 'color-mix(in srgb, #2E2418 14%, transparent)', line_strong: 'color-mix(in srgb, #2E2418 28%, transparent)',
+      accent: '#B05A31', accent_hover: 'color-mix(in srgb, #B05A31 78%, black)', accent_contrast: '#FBF3E6',
+      accent_2: '#6B6B33', accent_2_deep: 'color-mix(in srgb, #6B6B33 60%, black)', accent_2_contrast: '#F6F2E8',
+      eyebrow_color: '#9C7B2F', eyebrow_on_dark: '#D8C08A',
+    }),
+    typography: CD_TYPOGRAPHY, spacing: CD_SPACING, radius: CD_RADIUS,
   },
 ];
 
 /**
- * IL TEMA DI QUESTO ID, o `undefined` se nessuno lo porta. RIALLOCATO qui da variant-document.ts
- * (DE-202) ed ESPORTATO: era un helper privato del compositore delle card, ma il selettore design
- * (DE-204) sceglie il tema come ASSE proprio — disaccoppiato dalla ricetta (DS-D3) — quindi ha
- * bisogno dello stesso lookup canonico. Averne uno solo, qui accanto al catalogo che interroga,
- * evita un secondo confronto che divergerebbe in silenzio.
- *
- * IL CONFRONTO E' PER UGUAGLIANZA ESATTA E MAI PER PREFISSO: gli id dei temi sono versionati
- * ('nome-kebab@N'), quindi 'linea-essenziale' e 'linea-essenziale@1' sono due stringhe diverse e la
- * prima non e' un tema; e due temi possono condividere un prefisso di nome ('linea-essenziale@1' e
- * 'linea-essenziale-notte@1') senza che l'uno risolva l'altro. Un confronto lasco registrerebbe nel
- * documento (T-202) un id che nessuna versione ha mai prodotto.
- *
- * LA RICERCA E' SULL'ARRAY, non su un oggetto indicizzato per id, per la stessa ragione di
- * `recipeFor` (T-212): l'id puo' arrivare da un artefatto salvato (il `theme_id` di un documento
- * gia' scritto), quindi con una mappa-oggetto le chiavi speciali di JavaScript ('__proto__',
- * 'constructor', 'toString') risolverebbero il membro EREDITATO da Object.prototype e questa
- * funzione restituirebbe qualcosa che non e' un tema.
+ * RETRO-COMPAT (DS-V2-D1): gli id dei temi STORICI di v1.1 → la paletta di Claude Design piu' vicina.
+ * `recipes.ts` cita questi id per stringa (`theme_id`) e i documenti P4 gia' congelati li registrano;
+ * `themeFor` li rimappa cosi' che continuino a rendere invece di cadere. Rimappatura ESPLICITA, mai un
+ * clone silenzioso. Non sono selezionabili: il pool di varieta' (design-matrix) offre solo i 23 CD.
+ */
+export const THEME_ID_ALIASES: Readonly<Record<string, string>> = {
+  'sole-mediterraneo@1': 'trattoria-rustica@1',
+  'bottega-artigiana@1': 'agriturismo-toscano@1',
+  'scatto-vitale@1': 'griglia-e-brace@1',
+  'brezza-costiera@1': 'cucina-di-mare@1',
+  'linea-essenziale@1': 'moderno-minimale@1',
+  'linea-essenziale-notte@1': 'enoteca-scura@1',
+  'festa-brillante@1': 'pizzeria-napoletana@1',
+  'orto-salvia@1': 'orto-vegetariano@1',
+};
+
+/**
+ * IL TEMA DI QUESTO ID, o `undefined` se nessuno lo porta. Confronto per UGUAGLIANZA ESATTA (mai per
+ * prefisso: gli id sono versionati 'nome@N'), poi ALIAS storico (DS-V2-D1). PROTO-SAFE: la ricerca dei
+ * temi e' su ARRAY (non un oggetto indicizzato) e l'alias usa `hasOwnProperty`, così '__proto__' /
+ * 'constructor' provenienti da un artefatto salvato non risolvono un membro ereditato di Object.prototype.
  */
 export function themeFor(themeId: string): SiteTheme | undefined {
-  return THEMES.find((theme) => theme.id === themeId);
+  const exact = THEMES.find((theme) => theme.id === themeId);
+  if (exact) return exact;
+  if (Object.prototype.hasOwnProperty.call(THEME_ID_ALIASES, themeId)) {
+    const aliased = THEME_ID_ALIASES[themeId];
+    return THEMES.find((theme) => theme.id === aliased);
+  }
+  return undefined;
 }

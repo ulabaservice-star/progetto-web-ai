@@ -157,7 +157,7 @@ export const RECIPES: readonly SiteRecipe[] = [
     // QUANDO si e' aperti (in questo mestiere si decide sapendo se si mangia stasera), e
     // solo dopo il racconto. Chiude con le domande, i contatti e l'invito a scrivere.
     id: 'vetrina-dell-offerta@1',
-    theme_id: 'sole-mediterraneo@1',
+    theme_id: 'trattoria-rustica@1',
     home_blocks: ['hero', 'offerte', 'orari', 'chi-siamo', 'faq', 'contatti', 'cta-whatsapp'],
     inner_page_rules: {
       offerings: ['offerte'],
@@ -174,7 +174,7 @@ export const RECIPES: readonly SiteRecipe[] = [
     // E' la stessa sequenza della vetrina con le prime due sezioni scambiate: la differenza
     // fra le due direzioni e' TUTTA nell'ordine, ed e' voluto che si veda.
     id: 'racconto-di-bottega@1',
-    theme_id: 'bottega-artigiana@1',
+    theme_id: 'agriturismo-toscano@1',
     home_blocks: ['hero', 'chi-siamo', 'offerte', 'faq', 'contatti', 'orari', 'cta-whatsapp'],
     inner_page_rules: {
       offerings: ['offerte'],
@@ -191,7 +191,7 @@ export const RECIPES: readonly SiteRecipe[] = [
     // rispondere e' una sola e la si risponde in chat, non in un elenco. E' l'unica
     // direzione che rinuncia a una sezione per accorciare la strada verso l'azione.
     id: 'scatto-alla-conversione@1',
-    theme_id: 'scatto-vitale@1',
+    theme_id: 'griglia-e-brace@1',
     home_blocks: ['hero', 'cta-whatsapp', 'offerte', 'chi-siamo', 'contatti', 'orari'],
     inner_page_rules: {
       offerings: ['offerte'],
@@ -209,7 +209,7 @@ export const RECIPES: readonly SiteRecipe[] = [
     // cima, prima di qualunque altra cosa; l'offerta e il racconto vengono dopo, perche' chi
     // guarda ha gia' deciso cosa cerca e deve solo capire se ci arriva.
     id: 'mappa-e-orari@1',
-    theme_id: 'brezza-costiera@1',
+    theme_id: 'cucina-di-mare@1',
     home_blocks: ['hero', 'orari', 'contatti', 'offerte', 'chi-siamo', 'cta-whatsapp', 'faq'],
     inner_page_rules: {
       offerings: ['offerte'],
@@ -228,7 +228,7 @@ export const RECIPES: readonly SiteRecipe[] = [
     // dichiara e ne ha misurato il costo), quindi togliere la CTA dalla home toglie
     // l'insistenza, non il recapito.
     id: 'scheda-sobria@1',
-    theme_id: 'linea-essenziale@1',
+    theme_id: 'moderno-minimale@1',
     home_blocks: ['hero', 'chi-siamo', 'faq', 'offerte', 'orari', 'contatti'],
     inner_page_rules: {
       offerings: ['offerte'],

@@ -91,8 +91,9 @@ describe('AC-308-2 — le scelte sono esattamente gli 8 temi versionati del cata
   it('offre una scelta per ognuno degli 8 temi, con i loro id versionati, e non una di piu', () => {
     const { container } = render(createElement(Harness, { startId: THEMES[0].id }));
 
-    // Anti-vacuita' e ancoraggio: il catalogo ha davvero 8 temi (DE-202: cresciuto da 5 a 8).
-    expect(THEMES).toHaveLength(8); // covers: AC-308-2
+    // Anti-vacuita': il catalogo CD e' ampio (DS-V2-D1/D2: ≥8, di fatto 23). Non pinniamo il conteggio
+    // (inclusione, non biiezione): l'uguaglianza per-id qui sotto ancora la scelta al catalogo reale.
+    expect(THEMES.length).toBeGreaterThanOrEqual(8); // covers: AC-308-2
 
     // Le opzioni sono, per id e in ordine, ESATTAMENTE gli 8 del catalogo: non 7, non 9, e nessun
     // id inventato. Un tema aggiunto/rimosso al catalogo cambierebbe qui, mai in un elenco a mano.

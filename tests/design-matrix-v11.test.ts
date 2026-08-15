@@ -187,9 +187,9 @@ describe('AC-DE11-203-2 — isAllowed AMMETTE le combinazioni conformi sui nuovi
     // scatta. Prova che il lookup esatto risolve anche il membro CORTO della coppia-prefisso.
     expect(
       isAllowed({
-        theme_id: 'linea-essenziale-notte@1',
+        theme_id: 'enoteca-scura@1',
         hero_layout_id: 'split@1',
-        section_treatment_id: 'fasce-alternate@1',
+        section_treatment_id: 'piano@1',
         effect_level: 'L3',
         h1_treatment_id: 'occhiello@1',
         section_layout_id: 'contatti-scheda@1',

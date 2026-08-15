@@ -64,11 +64,11 @@ describe('AC-DE-203-1 — isAllowed VIETA le combinazioni che violano una regola
 
   // covers: AC-DE-203-1
   it('leggibilita: trattamento che fissa una superficie di segno OPPOSTO al tema → false', () => {
-    // Tema SCURO (scatto-vitale@1) + trattamento a-scheda@1 (superficie CHIARA fissata): il testo
-    // chiaro del tema finirebbe su un fondo chiaro → illeggibile. Hero senza foto + L1: solo il
-    // trattamento puo' far cadere la combo.
-    expect(isAllowed(combo('scatto-vitale@1', 'centrato@1', 'a-scheda@1', 'L1'))).toBe(false); // covers: AC-DE-203-1
-    // Verso opposto e simmetrico: tema CHIARO (sole-mediterraneo@1) + fasce-alternate@1 (superficie
+    // DS-V2-D9: le 23 palette di Claude Design sono TUTTE a superficie chiara (lo scuro e' il token
+    // surface_dark delle SEZIONI, non un tema scuro). Il caso "tema SCURO + trattamento a superficie
+    // chiara" non e' piu' rappresentabile; resta l'altra direzione, ancora valida qui sotto. (L'asse
+    // section_treatment e' comunque legacy: il rifacimento della matrice e' in variety-select.)
+    // Verso valido: tema CHIARO (sole-mediterraneo@1→trattoria-rustica@1) + fasce-alternate@1 (superficie
     // SCURA fissata) → testo scuro su fondo scuro → illeggibile.
     expect(isAllowed(combo('sole-mediterraneo@1', 'centrato@1', 'fasce-alternate@1', 'L1'))).toBe(
       false,
@@ -118,9 +118,9 @@ describe('AC-DE-203-2 — isAllowed AMMETTE le combinazioni conformi', () => {
     // La coppia-prefisso: 'centrato-foto@1' (il piu' lungo) e' un hero valido e distinto; tema chiaro
     // + a-scheda@1 (superficie chiara) sono compatibili → conforme.
     expect(isAllowed(combo('sole-mediterraneo@1', 'centrato-foto@1', 'a-scheda@1', 'L2'))).toBe(true); // covers: AC-DE-203-2
-    // Tema SCURO + fasce-alternate@1 (superficie scura): stesso segno → leggibile → conforme; hero a
-    // foto piena AL TETTO L2 → ammesso.
-    expect(isAllowed(combo('scatto-vitale@1', 'immagine-piena@1', 'fasce-alternate@1', 'L2'))).toBe(
+    // DS-V2-D9: nessun tema scuro in CD → l'effetto AL TETTO L2 su hero a foto piena si prova con
+    // superficie EREDITATA (piano@1), senza dipendere da un tema scuro. (section_treatment legacy.)
+    expect(isAllowed(combo('griglia-e-brace@1', 'immagine-piena@1', 'piano@1', 'L2'))).toBe(
       true,
     ); // covers: AC-DE-203-2
     // Combo COMPLETA (recipe_id + ornament_id valorizzati): hero split (non a foto piena) regge L4;

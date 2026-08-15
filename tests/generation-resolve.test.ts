@@ -261,7 +261,8 @@ function temaDi(id: string): SiteTheme {
 }
 
 const VETRINA = ricettaDi('vetrina-dell-offerta@1');
-const SOLE = temaDi('sole-mediterraneo@1');
+// DS-V2-D1: la ricetta 'vetrina' ora cita la paletta CD 'trattoria-rustica@1' (era 'trattoria-rustica@1').
+const SOLE = temaDi(VETRINA.theme_id);
 
 // ── strumenti di lettura ─────────────────────────────────────────────────────
 
@@ -501,7 +502,7 @@ describe('T-214 AC-214-2 — il documento passa dal gate vero e registra gli id 
 
     // Gli id VERSIONATI di ricetta e tema, per VALORE e non per presenza.
     expect(documento.recipe_id).toBe('vetrina-dell-offerta@1'); // covers: AC-214-2
-    expect(documento.theme_id).toBe('sole-mediterraneo@1'); // covers: AC-214-2
+    expect(documento.theme_id).toBe('trattoria-rustica@1'); // covers: AC-214-2
     expect(documento.recipe_id).not.toBe(documento.theme_id); // covers: AC-214-2
 
     // Le pagine sono quelle del set, nello stesso ORDINE e con gli stessi ruoli.
@@ -646,11 +647,11 @@ describe('T-214 AC-214-2 — il documento passa dal gate vero e registra gli id 
     // viene letto — con una coppia coerente le due letture sarebbero indistinguibili.
     const brief = briefRicco();
     const pagine = pagesFor(brief, { maxPages: 1 });
-    const altroTema = temaDi('scatto-vitale@1');
+    const altroTema = temaDi('griglia-e-brace@1');
     expect(altroTema.id).not.toBe(VETRINA.theme_id);
 
     const documento = accettato(resolve(poolCompleto(['home']), VETRINA, altroTema, brief, pagine));
-    expect(documento.theme_id).toBe('scatto-vitale@1'); // covers: AC-214-2
+    expect(documento.theme_id).toBe('griglia-e-brace@1'); // covers: AC-214-2
     expect(documento.theme_id).not.toBe(VETRINA.theme_id); // covers: AC-214-2
     expect(documento.recipe_id).toBe(VETRINA.id); // covers: AC-214-2
   });
@@ -1280,8 +1281,8 @@ describe('T-214 AC-214-1 — determinismo, nei DUE versi', () => {
     ); // covers: AC-214-1
 
     // 2. IL TEMA: cambia il solo theme_id.
-    const conAltroTema = resolve(pool, VETRINA, temaDi('brezza-costiera@1'), brief, pagine);
-    expect(conAltroTema.document.theme_id).toBe('brezza-costiera@1'); // covers: AC-214-1
+    const conAltroTema = resolve(pool, VETRINA, temaDi('cucina-di-mare@1'), brief, pagine);
+    expect(conAltroTema.document.theme_id).toBe('cucina-di-mare@1'); // covers: AC-214-1
     expect(JSON.stringify(conAltroTema.document)).not.toBe(jsonBase); // covers: AC-214-1
 
     // 3. IL POOL: cambia la prosa, non la struttura.
@@ -2136,7 +2137,7 @@ describe('T-214 oracolo aggiuntivo: NESSUN SEGNAPOSTO, come proprieta', () => {
         res: resolve(
           poolCompleto(['home']),
           ricettaDi('scheda-sobria@1'),
-          temaDi('linea-essenziale@1'),
+          temaDi('moderno-minimale@1'),
           ricco,
           onePager,
         ),
@@ -2687,7 +2688,7 @@ describe('T-214 purezza: nessuna mutazione degli argomenti', () => {
     const primaPagine = JSON.stringify(pagine);
 
     const prima = resolve(pool, VETRINA, SOLE, brief, pagine);
-    resolve(pool, ricettaDi('scheda-sobria@1'), temaDi('linea-essenziale@1'), brief, pagine);
+    resolve(pool, ricettaDi('scheda-sobria@1'), temaDi('moderno-minimale@1'), brief, pagine);
 
     // GUARDIA DI NON VACUITA': una resolve che non leggesse i propri argomenti non li
     // muterebbe nemmeno. Sullo stub inerte questo caso passava.
@@ -2817,7 +2818,7 @@ describe('T-214 i CATALOGHI di monte, giudicati senza dipendere dall ORDINE dei 
     // serializzabile).
     expect(BLOCKS).toHaveLength(8);
     expect(RECIPES).toHaveLength(5);
-    expect(THEMES).toHaveLength(8); // DE-202: catalogo temi cresciuto da 5 a 8 (disaccoppiato dalle ricette)
+    expect(THEMES.length).toBeGreaterThanOrEqual(8); // DS-V2-D1: catalogo temi = 23 palette di Claude Design
     expect(PAGE_CATALOG).toHaveLength(6);
   });
 
