@@ -89,6 +89,18 @@ variety-select `DV2-5xx`, e2e `DV2-6xx`. ID stabili, mai riusati.
   catalogo CD (non un minimo) — più mattoncini belli = più mockup distinti. **Tetto del wow dichiarato
   (L-COL-006):** con i soli `PhotoPlaceholder` (DS-V2-D3) il wow ha un limite strutturale; la leva #1
   (fotografia reale) resta **P4-D7/F**, fuori da v2.
+- **DS-V2-D10 — Emendamenti di scope del macrotask `hero` (decisi con l'utente al gate delle assunzioni, 2026-08-15).**
+  Quattro fette anticipate qui da `variety-select`/futuro, con via umana esplicita: (1) **wiring minimo `design→blocco`**
+  — `SiteBlockProps` porta `design?`, `renderBlock`/`SiteView` lo inoltrano, così l'hero variato si RENDE su `/s/` e il
+  gate visivo è possibile ora (l'inoltro PIENO design+vertical resta a DV2-501); (2) **CTA nell'hero** con etichette i18n
+  di catalogo (`site.hero.*`) + href interni statici (`#offerte`/`#contatti`), mai testo del brief (anti-invenzione /
+  anti-injection intatti); (3) **edge-to-edge** — `.site-hero-v2` esce dalla colonna `.site-page` (piccola regola in
+  site.css) per far respirare le varianti full-bleed CD; (4) **M5 preservato nell'hero** — `HeroPhoto` rende l'immagine
+  CARICATA (`<img src=assetPublicUrl>` object-fit cover) o il `PhotoPlaceholder` (prop `background` sopprime l'etichetta
+  nei full-bleed): sostituire `block.images`→PhotoPlaceholder-only avrebbe rotto P4-M5. **Conseguenza:** la selezione
+  v1.1 ora pesca i 20 hero CD (universali) → 5 invarianti v1/v1.1 migrate a floor/v2 (2 unit-biiezione, AC-416-5, 3 e2e),
+  con la distinzione `section_layout` PIENA demandata a DV2-503 (greedy). Vale per menu/body-sections: **M5 va preservato
+  ovunque un blocco rendeva `block.images`**.
 
 ## Contratto di altitudine (architecture)
 

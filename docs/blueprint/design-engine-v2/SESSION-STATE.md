@@ -29,12 +29,15 @@
 
 ## 2. Macrotask corrente
 
-- **Selezionato**: **`hero` è DONE** (checkpoint verde 4/4, mergiato `14b27f1`, gate visivo approvato). Prossimo =
-  **`menu`** (DV2-301…303: section-layouts menu ≥4 id CD; Offerte.tsx card-carta su surface-dark + leader-dots +
-  prezzi tabular, data-menu-layout; aggancio `vertical`→menu) **oppure** **`body-sections`** (DV2-401…404). Sono
-  INDIPENDENTI fra loro ma **entrambi toccano `site.css`** → **uno alla volta**. Dip di entrambi: solo `foundation`.
-  Il pattern `HeroPhoto` (foto caricata `<img>` / placeholder di catalogo) e `LAYOUT_TO_VARIANT` sono riusabili
-  per Offerte/blocchi del corpo.
+- **`hero` è DONE** (checkpoint 4/4, mergiato `14b27f1`, gate visivo approvato). **SELEZIONATO per la PROSSIMA
+  sessione: `menu`** (DV2-301…303). Scelta motivata: il menù è il 2° blocco più identitario dopo l'hero (alta
+  visibilità "wow"), è contenuto (3 task), e CHIUDE il buco del selettore v1.1 (`menu-card-carta@1` mai raggiunto).
+  DV2-301 section-layouts menu (≥4 id CD); DV2-302 `Offerte.tsx` card-carta su `surface-dark` + leader-dots +
+  prezzi tabular + `data-menu-layout`; DV2-303 aggancio `vertical`→`menu_layout_id` (asse per-vertical indipendente).
+  Dip: solo `foundation` (verde). **⚠️ `Offerte.tsx` rende `block.images` via `SiteSection`→`SiteImage` → applicare
+  la LEZIONE M5 (riusare `HeroPhoto`/SiteImage, NON sostituire con PhotoPlaceholder-only).** Riusabili da hero:
+  `HeroPhoto` (con prop `background`) e il pattern `LAYOUT_TO_VARIANT`. `body-sections` (DV2-401…404) resta il
+  macrotask del corpo DOPO `menu` (entrambi toccano `site.css` → uno alla volta).
 - **Ordine (DAG):** `foundation → {hero, menu, body-sections} → variety-select → e2e-visual-v2`. I tre
   macrotask del corpo dipendono solo da `foundation` e sono indipendenti fra loro; `hero`, `menu`,
   `body-sections` toccano `site.css` → **un macrotask alla volta** per evitare conflitti.
@@ -66,6 +69,14 @@
   al confine dei macrotask (R-04, impronte sensibili alla POSIZIONE: i record-dato dei temi/cataloghi
   ri-fingerprintano impronte pre-esistenti; sono FP legittimi, mai gonfiare policy). `e2e/` escluso da
   jscpd. Ri-attribuire **prima** di ri-catturare.
+- **`hero` (confine, VERDE `14b27f1`)**: baseline igiene **RI-CATTURATA** (`baseline.mjs capture . --hygiene`):
+  R-04 legittimo — le 20 varianti CD (struttura condivisa dei componenti-slot + text-stack) + prosa dei docs
+  blueprint → ~22 dup "nuove" vs baseline v1.1, ri-attribuite e assorbite (**178 dup totali baselinati**).
+  Aggiungere `background` ai 4 full-bleed DOPO la re-baseline NON ha spostato le impronte tracciate → **nessuna 2a
+  re-baseline**. Baseline sicurezza **invariata** — semgrep 0 (`src/`), **gitleaks 0 sul diff `main..HEAD`** (i 3
+  CRITICAL erano FP su `.env.local`/`siti css/` gitignorati, contro-provati), osv/rls 2 FP noti. knip 0, madge 0.
+  **0 retry** (checkpoint verde; il rosso su C2 era FP, e sull'e2e AC-DE-401-2 = invariante v1.1 migrata, non un
+  difetto). Batteria mutazione 2/2 uccise (sed + backup+sha256).
 - **`foundation` (confine, VERDE `70c756a`)**: baseline igiene **INVARIATA** — jscpd **0 cloni** nei file
   nuovi (l'helper `cdColors` deriva i token legacy → nessuna dup verbatim dei 23 record; **NESSUNA
   ri-cattura**, a differenza di editorial-skin v1.1). Baseline sicurezza **invariata** — gitleaks 0
