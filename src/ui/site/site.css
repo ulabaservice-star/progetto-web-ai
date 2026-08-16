@@ -578,3 +578,18 @@ blockquote::after {
   display: grid;
   gap: var(--site-space-sm);
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   DV2-402 (macrotask body-sections) — I BLOCCHI DI CORPO v2 EDGE-TO-EDGE. Come hero/menu, i renderer del
+   corpo (blocks/ChiSiamo, e — coi rispettivi task — Recensioni/Faq) rendono la radice come
+   <section class="site-<sezione>-v2">: le varianti Claude Design a banda piena (la banda scura, la foto
+   full-bleed) vogliono coprire tutta la larghezza del viewport, non la colonna .site-page (min(72rem,
+   100%)). Questa regola le fa uscire dalla colonna; il contenuto INTERNO di ogni variante resta
+   incolonnato dal proprio BodyContainer centrato (body-kit.tsx). Nessun colore qui: solo geometria. */
+.site-about-v2,
+.site-reviews-v2,
+.site-faq-v2 {
+  width: 100vw;
+  max-width: 100vw;
+  margin-inline: calc(50% - 50vw);
+}

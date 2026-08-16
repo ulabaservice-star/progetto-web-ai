@@ -102,6 +102,34 @@ variety-select `DV2-5xx`, e2e `DV2-6xx`. ID stabili, mai riusati.
   con la distinzione `section_layout` PIENA demandata a DV2-503 (greedy). Vale per menu/body-sections: **M5 va preservato
   ovunque un blocco rendeva `block.images`**.
 
+- **DS-V2-D11 — Emendamenti di scope/architettura del macrotask `body-sections` (decisi con l'utente al
+  gate delle assunzioni, 2026-08-16).** Quattro decisioni prese prima della BUILD, con via umana esplicita
+  (stesso metodo di DS-V2-D10 per hero):
+  1. **Split in 2 sotto-macrotask** (ammesso dal §5.4 / 04-body-sections «Nota di dimensione»): `body-sections-a`
+     = chi-siamo/recensioni/faq; `body-sections-b` = orari/contatti/header+footer. Stessi ID `DV2-401..404`
+     applicati al sottoinsieme, due checkpoint + due gate visivi. Motivazione: 7 tipi-sezione × ~20 varianti CD
+     + header/footer nuovi supera la finestra/contesto di un ciclo; lo split isola il nodo P2-D7 nel primo.
+  2. **`section_layout_id` PER-BLOCCO** (non un solo asse-documento). Oggi il documento porta UN
+     `section_layout_id` (default `chi-siamo-ritratto@1`) e il render NON lo proietta (non è in
+     `SiteDesignSelection`): asse «morto al render». Il corpo ha sezioni ETEROGENEE → un solo id non può
+     descrivere layout diversi. Decisione: campo `section_layout_id?` (VersionedId opzionale) aggiunto a
+     `BlockSchema` (gate `parseDocument`); ogni blocco del corpo porta il SUO id congelato e proietta
+     `data-section-layout` sulla radice del blocco via `SiteSection` `data` (pattern `hero-menu-wow` `fff6904`).
+     La greedy (DV2-503) lo congela per-blocco. Il singolo asse-documento resta per retro-compat v1.1.
+  3. **Recensioni/faq: COMPOSIZIONE DI PRESENTAZIONE** (non emendare P2-D7 alla radice). `blocksFor`/`generatable`
+     restano INTATTI — il gate di costo (P5) e P2-D7 del gate a pagamento non cambiano (un brief senza dati
+     recensioni resta «non generabile» sui blocchi reali). Un passo di composizione per anteprima/pubblicazione
+     AGGIUNGE i blocchi scheletro recensioni/faq al SOLO documento reso. Lo scheletro è **copy UI FISSA** del
+     componente (stringa statica), MAI uno slot LLM riempito: anti-invenzione intatta. `recensioni.precondition`
+     resta `() => false` e `generation-blocks.test` non regredisce.
+  4. **Header/footer = CHROME del `SiteView`** (fuori dal documento congelato), non blocchi registrati. Resi
+     sempre attorno alle pagine; contenuti da attributi-sito derivati (business_name/contatti), non slot LLM.
+     Meno blast-radius su `slots.ts`/`generatable`/ricette; scelta della variante via `section_layout` come gli
+     altri. (In `body-sections-b`.)
+  **Copertura calibrata (L-COL-006):** DS-V2-D9 chiede «tutte» le varianti CD; il catalogo del corpo ne porta
+  ~20/tipo. La BUILD traduce un insieme robusto e strutturalmente diverso per tipo (il gate visivo giudica il
+  wow, non il conteggio); l'ampiezza effettiva è dichiarata nella copertura del macrotask.
+
 ## Contratto di altitudine (architecture)
 
 design-engine-v2 **non ridichiara** il contratto: riusa quello **globale** già enforced dal repo

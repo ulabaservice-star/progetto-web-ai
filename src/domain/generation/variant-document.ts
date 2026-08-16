@@ -55,6 +55,7 @@ import { resolve } from '@/domain/generation/resolve';
 import { recipeFor, type SiteRecipe } from '@/domain/generation/recipes';
 import { themeFor, type SiteTheme } from '@/domain/generation/themes';
 import { selectDesign } from '@/domain/generation/design-select';
+import { withPresentationSections } from '@/domain/generation/presentation';
 import type { Brief } from '@/domain/onboarding/brief';
 
 /**
@@ -121,11 +122,16 @@ export function resolveVariantHome(
   const safePool = (isPlainObject(pool) ? pool : { pages: {} }) as Pool;
 
   const { document } = resolve(safePool, recipe, theme, brief, [homeSpec]);
+  // DV2-402/AC-402-3 (body-sections-a) — COMPOSIZIONE DI PRESENTAZIONE: aggiunge alla home i blocchi
+  // recensioni/faq (scheletro) quando mancano, cosi' il mockup non resta coi vuoti (DS-V2-D11 #3). Puro
+  // e A VALLE di resolve: `blocksFor`/`generatable` (il gate di costo, T-210/T-215) restano INTATTI e la
+  // regola anti-invenzione non cambia (le sezioni rendono copy UI fissa, mai dati del modello).
+  const presentato = withPresentationSections(document);
   // CONGELA la tupla di selezione (DS-D4): id versionati che il gate registra e non ri-deriva al
   // render, cosi' un sito scelto non si re-stila da solo dopo un ritocco ai cataloghi. `ornament_id`
   // solo se la selezione lo porta (un sito puo' non avere ornamento, DS-D5): niente id fabbricato.
   const frozen = {
-    ...document,
+    ...presentato,
     hero_layout_id: selection.hero_layout_id,
     section_treatment_id: selection.section_treatment_id,
     effect_level: selection.effect_level,

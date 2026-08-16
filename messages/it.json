@@ -161,6 +161,14 @@
       "ctaSecondary": "Vedi l'offerta",
       "photoLabel": "ambiente del locale"
     },
+    "reviews": {
+      "title": "Dicono di noi",
+      "placeholder": "Le recensioni dei tuoi clienti compariranno qui, appena le riceverai."
+    },
+    "faq": {
+      "title": "Domande frequenti",
+      "placeholder": "Le risposte alle domande dei tuoi clienti compariranno qui."
+    },
     "badge": "Fatto con Belora"
   },
   "generate": {

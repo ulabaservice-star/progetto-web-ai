@@ -216,13 +216,15 @@ describe('T-232 selettore dei cinque mockup', () => {
     const firme = seqs.map((seq) => seq.join(','));
     expect(new Set(firme).size).toBe(5); // covers: AC-232-2
 
-    // Ancoraggio STRUTTURALE e SEED-INDIPENDENTE: fra le cinque direzioni ne esiste ESATTAMENTE UNA
-    // ('scatto-alla-conversione') che rinuncia alla sezione FAQ nella home; le altre quattro la
-    // portano. Poiche' la rotazione assegna TUTTE e cinque le ricette, fra le cinque card UNA SOLA
-    // manca di 'faq' e QUATTRO la hanno — qualunque sia il seed. E' una differenza di PRESENZA di un
-    // blocco (strutturale), non di colore.
-    expect(seqs.filter((seq) => !seq.includes('faq')).length).toBe(1); // covers: AC-232-2
-    expect(seqs.filter((seq) => seq.includes('faq')).length).toBe(4); // covers: AC-232-2
+    // MIGRATO DV2-402 (body-sections-a): la COMPOSIZIONE DI PRESENTAZIONE (withPresentationSections,
+    // DS-V2-D11 #3) aggiunge recensioni/faq scheletro a OGNI mockup con contenuto reale, cosi' NESSUNA
+    // card resta coi vuoti — "far sparire i vuoti". Percio' l'ancoraggio v1 "esattamente una card senza
+    // faq" NON vale piu': la presenza di recensioni/faq e' ora una GARANZIA uniforme, non un asse di
+    // differenza (la varieta' v2 vive sugli assi CD — hero/tema/section_layout — provata dalle cinque
+    // sequenze distinte qui sopra, `Set(firme).size === 5`). Si asserisce la nuova garanzia: tutte e
+    // cinque portano recensioni E faq.
+    expect(seqs.every((seq) => seq.includes('faq')), 'una card senza faq').toBe(true); // covers: AC-232-2
+    expect(seqs.every((seq) => seq.includes('recensioni')), 'una card senza recensioni').toBe(true); // covers: AC-232-2
   });
 
   // covers: AC-232-4

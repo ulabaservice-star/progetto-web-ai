@@ -202,12 +202,15 @@ describe('T-237 recensioni — il blocco RESO: titolo, introduzione ed etichetta
   it('rende reviews_title e reviews_intro nei propri slot, con l etichetta blocks.recensioni', async () => {
     const container = render(await Recensioni({ block: recensioniBlock(), locale: 'it' })).container;
 
+    // MIGRATO DV2-402 (body-sections-a): Recensioni v2 rende reviews_title/reviews_intro (se presenti)
+    // via i selettori v2 `.site-reviews-v2__*`; se non alimentato mostra uno scheletro placeholder (copy
+    // UI fissa) — provato in site-body-about-reviews-faq-v2. Qui la strada con gli slot REALI.
     // Titolo e intro escono dai LORO slot (valori DISCORDANTI): uno scambio di slot li rende
     // visibili l'uno al posto dell'altro.
-    expect(container.querySelector('.site-reviews__title')?.textContent).toBe(
+    expect(container.querySelector('.site-reviews-v2__title')?.textContent).toBe(
       'Cosa dicono i clienti',
     ); // covers: T-237 recensioni
-    expect(container.querySelector('.site-reviews__intro')?.textContent).toBe(
+    expect(container.querySelector('.site-reviews-v2__intro')?.textContent).toBe(
       'Le testimonianze di chi ci ha scelto',
     ); // covers: T-237 recensioni
 

@@ -307,3 +307,171 @@ export const MENU_LAYOUTS: readonly SiteMenuLayout[] = [
 export function menuLayoutFor(id: string): SiteMenuLayout | undefined {
   return MENU_LAYOUTS.find((layout) => layout.id === id);
 }
+
+// ── DV2-401 (macrotask body-sections, design-engine-v2) — IL CATALOGO DELLE VARIANTI DI CORPO ────────
+//
+// Il CORPO della pagina (chi-siamo, recensioni, faq — e, in body-sections-b, orari, contatti) e' cio'
+// che al gate v1.1 era "testo impilato" fra spazi morti. Claude Design (progetto c1dafc1f,
+// components/story|recensioni|faq/…) porta ~20 varianti per OGNI sezione, ognuna con la PROPRIA
+// struttura d'impaginato (un ritratto affiancato, una timeline, una citazione gigante, una lettera su
+// carta, un mosaico di foto…). Le traduciamo qui in un catalogo DOMINIO PURO di `section_layout_id`
+// versionati, che i renderer del corpo (DV2-402/403) rendono come renderer unico e che variety-select
+// (DV2-503) congela PER-BLOCCO (DS-V2-D11): ogni sezione del corpo varia il suo layout in modo
+// INDIPENDENTE, non un solo asse per tutto il corpo.
+//
+// PERCHE' UN CATALOGO E UN TIPO SEPARATI da `SECTION_LAYOUTS` (come per MENU_LAYOUTS): il catalogo v1.1
+// `SECTION_LAYOUTS` porta l'invariante DE11-202 "ogni sezione con >=2 varianti ha `kind` a due a due
+// DISTINTI" su 7 descrittori chiusi. Venti impaginati di racconto NON sono sette bordi: hanno il PROPRIO
+// vocabolario visibile (la STRUTTURA dell'impaginato). Ammassarli in `SECTION_LAYOUTS` violerebbe
+// quell'invariante o costringerebbe a `kind` fittizi. Un tipo dedicato `SiteBodyLayout` tiene il corpo
+// ORTOGONALE: `SECTION_LAYOUTS`/`RIBBONS` v1.1 restano INVARIATI (il corpo v1.1 non regredisce).
+//
+// L'ASSE VISIBILE (AC-DV2-401-3, la distinzione NON e' nominale): `variant` = la STRUTTURA
+// dell'impaginato della sezione (overlap, timeline, citazione, lettera, mosaico…), UNO per voce dentro
+// la stessa sezione. E' cio' che il renderer consuma via `data-section-layout` per impaginare DAVVERO in
+// modo diverso, non ricolorare. Id versionati '<section>-<kebab>@N', lookup per UGUAGLIANZA ESATTA su
+// array (proto-safe), scope universale/overlay come gli altri cataloghi.
+//
+// COPERTURA (L-COL-006, DS-V2-D11): DS-V2-D9 aspira a "tutte" le varianti CD; body-sections-a traduce un
+// insieme ROBUSTO e strutturalmente diverso per tipo (il gate visivo giudica il wow, non il conteggio;
+// la greedy vuole >=5/asse — qui abbondano). L'ampiezza cresce coi sotto-macrotask.
+
+/** Le sezioni di CORPO che portano varianti CD (distinte dalla union `SiteSection` v1.1 di sopra). */
+type BodySectionKind = 'chi-siamo' | 'recensioni' | 'faq';
+
+/**
+ * L'ASSE VISIBILE della variante di CHI-SIAMO: la STRUTTURA dell'impaginato del racconto (NON il
+ * colore). Uno per voce. Union CHIUSA: una struttura non prevista non compila. Tradotta 1:1 dai nomi di
+ * Claude Design (components/story/ChiSiamo.jsx).
+ *   - 'overlap': foto grande + dettaglio sovrapposto, punti numerati a indice.
+ *   - 'timeline': la storia come linea del tempo verticale, foto affiancata.
+ *   - 'punti-sotto': racconto + foto in alto, i punti in griglia di card a tutta larghezza.
+ *   - 'banda-scura': banda scura col racconto, card chiare che debordano sotto.
+ *   - 'lettera': il racconto come lettera su carta, con firma.
+ *   - 'mosaico': mosaico fotografico 2x2 accanto al racconto.
+ *   - 'numeri': l'anno come cifra gigante, i punti in colonne sotto.
+ *   - 'citazione': il racconto come grande citazione centrata, tre foto.
+ *   - 'foto-piena': foto full-bleed con pannello racconto sovrapposto.
+ *   - 'colonne': impaginato a colonne da rivista.
+ *   - 'ritratti': tre ritratti (le generazioni), i punti sotto.
+ *   - 'manifesto': titolo gigante e punti come proclami.
+ */
+type StoryVariant =
+  | 'overlap'
+  | 'timeline'
+  | 'punti-sotto'
+  | 'banda-scura'
+  | 'lettera'
+  | 'mosaico'
+  | 'numeri'
+  | 'citazione'
+  | 'foto-piena'
+  | 'colonne'
+  | 'ritratti'
+  | 'manifesto';
+
+/**
+ * L'ASSE VISIBILE della variante di RECENSIONI: la disposizione delle testimonianze (griglia di card,
+ * una centrale grande, banda scura, colonna a fili, riquadri, scontrini…). Tradotta dai nomi di Claude
+ * Design (components/recensioni/Recensioni.jsx). Nel documento v1 NON esistono testimonianze (il brief
+ * non le porta): il renderer rende uno SCHELETRO placeholder impaginato secondo questa struttura
+ * (DV2-402, AC-402-2), mai testimonianze fabbricate.
+ */
+type ReviewsVariant =
+  | 'cards'
+  | 'centrale'
+  | 'scure'
+  | 'colonna'
+  | 'stelle'
+  | 'gigante'
+  | 'numerate'
+  | 'cornici'
+  | 'scontrini'
+  | 'banda-accent';
+
+/**
+ * L'ASSE VISIBILE della variante di FAQ: la disposizione delle domande/risposte (accordion a filo,
+ * griglia di card, due colonne, numerata, tavola, schede, minimal…). Tradotta dai nomi di Claude Design
+ * (components/faq/Faq.jsx). A differenza delle recensioni, la FAQ PUO' avere dati reali (`faq_items` dal
+ * pool quando materieFaq>=3, T-210): il renderer rende i Q&A reali o, se assenti, uno SCHELETRO
+ * placeholder (DV2-402).
+ */
+type FaqVariant =
+  | 'accordion'
+  | 'griglia'
+  | 'due-colonne'
+  | 'numerata'
+  | 'centrale'
+  | 'scura'
+  | 'tavola'
+  | 'schede'
+  | 'minimal'
+  | 'carta';
+
+type BodyVariant = StoryVariant | ReviewsVariant | FaqVariant;
+
+/** UNA VARIANTE DI CORPO. Tipo TOTALE sulle chiavi: una voce cui manchi un campo non compila. */
+export type SiteBodyLayout = {
+  /** Identificatore STABILE e VERSIONATO nella forma '<section>-<kebab>@N'. */
+  readonly id: string;
+  /** L'idoneita' di settore: universale (ogni settore) o overlay di un vertical. */
+  readonly scope: CatalogScope;
+  /** La sezione di corpo a cui la variante appartiene (le varianti si raggruppano per questo campo). */
+  readonly section: BodySectionKind;
+  /** La STRUTTURA dell'impaginato (asse VISIBILE), letta dal renderer e dal test. */
+  readonly variant: BodyVariant;
+};
+
+/**
+ * LE VARIANTI DI CORPO offerte. Chi-siamo porta 12 impaginati DAVVERO diversi (non lo stesso racconto
+ * ricolorato): ogni `variant` compare una sola volta nella sezione. Lo scope e' 'universale' (un
+ * racconto con foto vale per ogni settore). (Recensioni/faq aggiunte coi rispettivi task.)
+ */
+export const BODY_LAYOUTS: readonly SiteBodyLayout[] = [
+  // CHI-SIAMO (components/story) — 12 impaginati del racconto dell'attivita'.
+  { id: 'chi-siamo-overlap@1', scope: 'universale', section: 'chi-siamo', variant: 'overlap' },
+  { id: 'chi-siamo-timeline@1', scope: 'universale', section: 'chi-siamo', variant: 'timeline' },
+  { id: 'chi-siamo-punti-sotto@1', scope: 'universale', section: 'chi-siamo', variant: 'punti-sotto' },
+  { id: 'chi-siamo-banda-scura@1', scope: 'universale', section: 'chi-siamo', variant: 'banda-scura' },
+  { id: 'chi-siamo-lettera@1', scope: 'universale', section: 'chi-siamo', variant: 'lettera' },
+  { id: 'chi-siamo-mosaico@1', scope: 'universale', section: 'chi-siamo', variant: 'mosaico' },
+  { id: 'chi-siamo-numeri@1', scope: 'universale', section: 'chi-siamo', variant: 'numeri' },
+  { id: 'chi-siamo-citazione@1', scope: 'universale', section: 'chi-siamo', variant: 'citazione' },
+  { id: 'chi-siamo-foto-piena@1', scope: 'universale', section: 'chi-siamo', variant: 'foto-piena' },
+  { id: 'chi-siamo-colonne@1', scope: 'universale', section: 'chi-siamo', variant: 'colonne' },
+  { id: 'chi-siamo-ritratti@1', scope: 'universale', section: 'chi-siamo', variant: 'ritratti' },
+  { id: 'chi-siamo-manifesto@1', scope: 'universale', section: 'chi-siamo', variant: 'manifesto' },
+  // RECENSIONI (components/recensioni) — 10 impaginati delle testimonianze. Nel documento v1 non ci sono
+  // recensioni: il renderer ne rende lo SCHELETRO (copy UI fissa), impaginato per questa struttura.
+  { id: 'recensioni-cards@1', scope: 'universale', section: 'recensioni', variant: 'cards' },
+  { id: 'recensioni-centrale@1', scope: 'universale', section: 'recensioni', variant: 'centrale' },
+  { id: 'recensioni-scure@1', scope: 'universale', section: 'recensioni', variant: 'scure' },
+  { id: 'recensioni-colonna@1', scope: 'universale', section: 'recensioni', variant: 'colonna' },
+  { id: 'recensioni-stelle@1', scope: 'universale', section: 'recensioni', variant: 'stelle' },
+  { id: 'recensioni-gigante@1', scope: 'universale', section: 'recensioni', variant: 'gigante' },
+  { id: 'recensioni-numerate@1', scope: 'universale', section: 'recensioni', variant: 'numerate' },
+  { id: 'recensioni-cornici@1', scope: 'universale', section: 'recensioni', variant: 'cornici' },
+  { id: 'recensioni-scontrini@1', scope: 'ristorazione', section: 'recensioni', variant: 'scontrini' },
+  { id: 'recensioni-banda-accent@1', scope: 'universale', section: 'recensioni', variant: 'banda-accent' },
+  // FAQ (components/faq) — 10 impaginati delle domande/risposte (Q&A reali dal pool o scheletro).
+  { id: 'faq-accordion@1', scope: 'universale', section: 'faq', variant: 'accordion' },
+  { id: 'faq-griglia@1', scope: 'universale', section: 'faq', variant: 'griglia' },
+  { id: 'faq-due-colonne@1', scope: 'universale', section: 'faq', variant: 'due-colonne' },
+  { id: 'faq-numerata@1', scope: 'universale', section: 'faq', variant: 'numerata' },
+  { id: 'faq-centrale@1', scope: 'universale', section: 'faq', variant: 'centrale' },
+  { id: 'faq-scura@1', scope: 'universale', section: 'faq', variant: 'scura' },
+  { id: 'faq-tavola@1', scope: 'universale', section: 'faq', variant: 'tavola' },
+  { id: 'faq-schede@1', scope: 'universale', section: 'faq', variant: 'schede' },
+  { id: 'faq-minimal@1', scope: 'universale', section: 'faq', variant: 'minimal' },
+  { id: 'faq-carta@1', scope: 'ristorazione', section: 'faq', variant: 'carta' },
+];
+
+/**
+ * La variante di corpo con questo id versionato, o `undefined`. Stesso contratto di `menuLayoutFor` /
+ * `sectionLayoutFor`: UGUAGLIANZA ESATTA e ricerca sull'ARRAY (mai un oggetto indicizzato per id → le
+ * chiavi '__proto__'/'constructor' danno `undefined`), mai per prefisso ('chi-siamo' non risolve, ne'
+ * 'chi-siamo-timeline' senza @N).
+ */
+export function bodyLayoutFor(id: string): SiteBodyLayout | undefined {
+  return BODY_LAYOUTS.find((layout) => layout.id === id);
+}

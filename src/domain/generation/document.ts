@@ -276,14 +276,39 @@ const BlockIdSchema = z
   .regex(/^[a-z0-9]+(?:[-_][a-z0-9]+)*$/)
   .max(DOCUMENT_LIMITS.block_id);
 
+// FORMA DELL'ID VERSIONATO di ricetta e tema, e — da DV2-401 (body-sections) — anche del
+// `section_layout_id` PER-BLOCCO: uno slug minuscolo, poi '@' e un numero di versione. La versione e'
+// DENTRO la forma, non accanto: un id senza '@n' e' rifiutato, quindi "versionato" e' imposto e non
+// sperato — che e' tutto il punto di P2-D21 (un ritocco futuro a un catalogo non deve poter riscrivere
+// un sito gia' pubblicato senza che l'id cambi).
+// NON E' UN CONFRONTO CON UN CATALOGO, deliberatamente: i cataloghi di ricette, temi e layout nascono
+// altrove e qui non esistono; vincolarli ora inventerebbe una dipendenza su un altro strato. Restano la
+// FORMA e la LUNGHEZZA — che bastano a escludere per costruzione ':' '/' '.' e le chiavi speciali di
+// JavaScript, cioe' a impedire che un id diventi un percorso, un indirizzo o un markup. Dichiarato QUI,
+// prima di BlockSchema, perche' quel blocco lo usa (DV2-401): un `const` non e' hoistato (TDZ).
+const VersionedIdSchema = z
+  .string()
+  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*@[0-9]+$/)
+  .max(DOCUMENT_LIMITS.versioned_id);
+
 /**
  * UN BLOCCO del documento: il proprio id, i contenuti risolti, i dati del brief che
- * rende direttamente coi nomi dei campi corrispondenti, e i propri slot immagine.
+ * rende direttamente coi nomi dei campi corrispondenti, e i propri slot immagine; piu' —
+ * da DV2-401 (body-sections) — il proprio `section_layout_id`, l'asse di layout della sezione
+ * congelato PER-BLOCCO.
  *
- * I quattro campi sono RICHIESTI anche quando sono vuoti (`{}` / `[]`): il documento e'
+ * I QUATTRO CAMPI DATI sono RICHIESTI anche quando sono vuoti (`{}` / `[]`): il documento e'
  * l'artefatto congelato che P3 modifichera' e P4 pubblichera', e in un contratto
  * "assente" e "vuoto" devono essere la stessa cosa detta in un modo solo, altrimenti
  * ogni consumatore a valle inventa la propria interpretazione della differenza.
+ *
+ * `section_layout_id` E' OPZIONALE E SENZA DEFAULT (DS-V2-D11): a differenza del
+ * `section_layout_id` di DOCUMENTO (che il gate normalizza a un default) e degli assi di hero/menu (un
+ * blocco solo → un asse di documento), il corpo ha sezioni ETEROGENEE e ognuna congela il PROPRIO
+ * layout. Un default per-blocco sarebbe di settore: assente resta assente, e il renderer del corpo cade
+ * sul proprio fallback. E' un id versionato (form-check come recipe_id/theme_id), che variety-select
+ * (DV2-503) congela per-blocco; qui il documento lo ACCETTA cosi' che la variante di sezione si renda
+ * su /s/.
  */
 const BlockSchema = z
   .object({
@@ -292,6 +317,9 @@ const BlockSchema = z
     data: RenderedBriefDataSchema,
     brief_fields_rendered: z.array(z.enum(BRIEF_FIELD_NAMES)).max(BRIEF_FIELD_NAMES.length),
     images: z.array(ImageSlotSchema).max(DOCUMENT_LIMITS.images_per_block),
+    // DV2-401 (body-sections) — l'asse di layout della sezione, congelato PER-BLOCCO. Opzionale e
+    // senza default (vedi sopra); form-check come gli altri id versionati.
+    section_layout_id: VersionedIdSchema.optional(),
   })
   .strict();
 
@@ -314,21 +342,6 @@ const PAGE_ROLES = [...new Set(SLOTS.map((slot) => slot.page_role))] as [PageRol
 // catalogo perdesse il ruolo 'home' questa riga non compilerebbe: l'invariante non puo'
 // sopravvivere alla sparizione della cosa su cui poggia.
 const HOME_ROLE: PageRole = 'home';
-
-// FORMA DELL'ID VERSIONATO di ricetta e tema: uno slug minuscolo, poi '@' e un numero
-// di versione. La versione e' DENTRO la forma, non accanto: un id senza '@n' e'
-// rifiutato, quindi "versionato" e' imposto e non sperato — che e' tutto il punto di
-// P2-D21 (un ritocco futuro a una ricetta non deve poter riscrivere un sito gia'
-// pubblicato senza che l'id cambi).
-// NON E' UN CONFRONTO CON UN CATALOGO, deliberatamente: i cataloghi di ricette e temi
-// nascono in T-212 e T-211 e qui non esistono; vincolarli ora inventerebbe una
-// dipendenza su task non costruiti. Restano la FORMA e la LUNGHEZZA — che bastano a
-// escludere per costruzione ':' '/' '.' e le chiavi speciali di JavaScript, cioe' a
-// impedire che un id diventi un percorso, un indirizzo o un markup.
-const VersionedIdSchema = z
-  .string()
-  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*@[0-9]+$/)
-  .max(DOCUMENT_LIMITS.versioned_id);
 
 // I CINQUE LIVELLI DI EFFETTO, ESATTAMENTE {L0, L1, L2, L3, L4} — il vocabolario CHIUSO del
 // movimento del sito (docs/design-system/ristorazione.md §2.5). E' un ENUM, non un id versionato:

@@ -161,6 +161,14 @@
       "ctaSecondary": "Ver la oferta",
       "photoLabel": "el local"
     },
+    "reviews": {
+      "title": "Lo que dicen",
+      "placeholder": "Las reseñas de tus clientes aparecerán aquí, en cuanto las recibas."
+    },
+    "faq": {
+      "title": "Preguntas frecuentes",
+      "placeholder": "Las respuestas a las preguntas de tus clientes aparecerán aquí."
+    },
     "badge": "Hecho con Belora"
   },
   "generate": {
