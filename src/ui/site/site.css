@@ -9,12 +9,16 @@
    tema vivono nelle custom property, mai qui: cambiare tema riscrive l'aspetto senza toccare
    questo foglio. */
 
-/* RITMO VERTICALE — la pagina spazia i blocchi col passo piu' largo, la sezione i propri
-   elementi con un passo intermedio. */
+/* RITMO VERTICALE — DV2-501/503 (variety-select): le sezioni v2 sono BANDE FULL-BLEED (100vw, ognuna col
+   PROPRIO fondo di tema e il proprio padding-block interno, clamp 56-104px). Devono stare A CONTATTO,
+   come le sezioni continue dei design di Claude Design — NON separate da un gap. Un `gap` fra i blocchi
+   (il ritmo a CARD di v1, quando le sezioni erano schede dentro la colonna) lascerebbe intravedere, fra
+   una banda e l'altra, il fondo del `body` (bianco) — le "strisce bianche" fra sezioni. `gap: 0` le rende
+   continue; il respiro verticale lo dà il padding INTERNO di ogni banda. */
 .site-page {
   display: flex;
   flex-direction: column;
-  gap: var(--site-space-2xl);
+  gap: 0;
 }
 
 /* INVOLUCRO DELLA SEZIONE — gli stili STATICI che DE-101 teneva inline in SiteSection ora vivono

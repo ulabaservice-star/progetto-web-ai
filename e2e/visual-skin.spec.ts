@@ -95,19 +95,21 @@ test.describe('DE-101 tipografia dell hero sulla rotta pubblica /s/<slug> (AC-DE
 });
 
 // DE-102 (macrotask visual-skin) — AC-DE-102-3: sulla rotta PUBBLICA e ANON /s/<slug> l'hero non e'
-// l'ennesima scheda identica alle altre. site.css da' a `.site-section[data-block-kind="hero"]` un
-// trattamento pieno diverso (fondo della PAGINA invece della surface, respiro maggiore): l'EFFETTO
-// misurato in un browser vero e' che il background computato dell'hero DIFFERISCE da quello di una
-// sezione non-hero. Con sole-mediterraneo@1 la surface (#fffdf9) e il background (#fdf6ec) sono due
-// colori distinti, quindi getComputedStyle li risolve a due rgb() diversi. Stesso pattern di seed e
-// contesto anon del test DE-101 qui sopra.
+// l'ennesima scheda identica alle altre. MIGRAZIONE v2 (DV2-501/503, blast-radius e2e): l'ORIGINE v1
+// misurava la distinzione col background di SEZIONE (la surface del tema vs il fondo pagina). In v2 i
+// blocchi rendono lo sfondo su <div> INTERNI (Hero.tsx), non sul <section>, e la greedy (DV2-503) puo'
+// scegliere un hero TIPOGRAFICO CD (hero-gazzetta@1) reso su surface-page: la sezione hero risulta
+// trasparente come quelle del corpo, e l'assunzione v1 non regge. La distinzione v2 e' STRUTTURALE: il
+// TITOLO display dell'hero domina in dimensione l'intestazione del corpo (vedi il test). `theme_id`
+// resta FISSATO su sole-mediterraneo@1 solo per rendere il documento deterministico. Stesso pattern di
+// seed e contesto anon del test DE-101 qui sopra.
 test.describe('DE-102 hero visivamente distinto dalle altre sezioni su /s/<slug> (AC-DE-102-3)', () => {
   const seededSites: string[] = [];
   test.afterAll(async () => {
     for (const siteId of seededSites) await cleanupSite(siteId);
   });
 
-  test('la section hero ha un background computato diverso da una sezione non-hero', async ({
+  test('il titolo display dell hero domina in font-size l intestazione di una sezione del corpo', async ({
     page,
   }) => {
     // given: un sito dell'utente di test e il documento INNOCUO reale (percorso resolveVariantHome ->
@@ -150,20 +152,28 @@ test.describe('DE-102 hero visivamente distinto dalle altre sezioni su /s/<slug>
     const response = await page.goto(`/s/${publicSlug}`);
     expect(response?.status()).toBe(200); // covers: AC-DE-102-3
 
-    // then: esistono la section hero e almeno una section non-hero, e i loro background computati
-    // DIFFERISCONO — l'hero riceve un trattamento pieno distinto, non e' un'altra scheda identica.
-    const heroSection = page.locator('section[data-block-kind="hero"]').first();
-    const otherSection = page.locator('section[data-block-kind]:not([data-block-kind="hero"])').first();
-    await expect(heroSection).toBeVisible();
-    await expect(otherSection).toBeVisible();
+    // then: l'hero e' visivamente DISTINTO da una sezione non-hero. MIGRAZIONE v2 (DV2-501/503): in v2 la
+    // distinzione dell'hero e' STRUTTURALE/tipografica, non un colore di background di SEZIONE. I blocchi
+    // v2 rendono lo sfondo su <div> INTERNI (Hero.tsx: le varianti full-bleed mettono il background su un
+    // figlio absolute, non sul <section>), quindi getComputedStyle(<section>).backgroundColor e'
+    // trasparente per OGNI sezione: l'assunzione v1 "due surface di sezione distinte" non regge sugli hero
+    // TIPOGRAFICI di Claude Design (es. hero-gazzetta@1, media 'foto-sotto', reso su surface-page). La
+    // distinzione robusta, valida per QUALUNQUE variante che la greedy (DV2-503) scelga, e' che il TITOLO
+    // dell'hero (display <h1>) DOMINA: la sua font-size supera STRETTAMENTE quella dell'intestazione di una
+    // sezione del corpo — un hero ridotto a "un'altra scheda" col titolo piccolo la farebbe cadere.
+    const heroTitle = page.locator('section[data-block-kind="hero"] h1.site-hero-v2__title').first();
+    const otherHeading = page
+      .locator('section[data-block-kind]:not([data-block-kind="hero"]) :is(h1, h2, h3)')
+      .first();
+    await expect(heroTitle).toBeVisible();
+    await expect(otherHeading).toBeVisible();
 
-    const heroBackground = await heroSection.evaluate(
-      (element) => getComputedStyle(element).backgroundColor,
+    const heroTitleSize = await heroTitle.evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+    const otherHeadingSize = await otherHeading.evaluate((el) =>
+      parseFloat(getComputedStyle(el).fontSize),
     );
-    const otherBackground = await otherSection.evaluate(
-      (element) => getComputedStyle(element).backgroundColor,
-    );
-    expect(heroBackground).not.toBe(otherBackground); // covers: AC-DE-102-3
+    // font-size in px, computata dal browser vero (i clamp/vw sono gia' risolti): l'hero e' piu' grande.
+    expect(heroTitleSize).toBeGreaterThan(otherHeadingSize); // covers: AC-DE-102-3
   });
 });
 

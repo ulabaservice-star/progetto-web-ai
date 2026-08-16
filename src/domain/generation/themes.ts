@@ -168,10 +168,11 @@ const CD_SPACING: SiteTheme['spacing'] = {
 const CD_RADIUS: SiteTheme['radius'] = { sm: '5px', md: '10px', lg: '16px', pill: '999px' };
 
 /**
- * I TEMI, in ordine ALFABETICO dei nomi di paletta. Sono le 23 palette coese di Claude Design (DS-V2-D1),
- * ognuna una "personalita'" di locale. I 21 valori colore sono COPIATI ESATTI da `palettes/<nome>.css`.
- * Sono dichiarati da noi e non inventati dal modello (P2-D1): la scelta del design e' manopole nostre,
- * il modello scrive solo prosa a runtime.
+ * I TEMI: le 23 palette coese di Claude Design (DS-V2-D1, ordine alfabetico, valori COPIATI ESATTI da
+ * `palettes/<nome>.css`) PIU' 2 palette a FONDO NON-CREMA (DV2-505, ibrido B) in coda — una scura, una
+ * fredda — per allargare lo spettro cromatico dei 5 mockup. Ognuna e' una "personalita'" di locale. Sono
+ * dichiarate da noi e non inventate dal modello (P2-D1): la scelta del design e' manopole nostre, il
+ * modello scrive solo prosa a runtime.
  */
 export const THEMES: readonly SiteTheme[] = [
   {
@@ -516,6 +517,46 @@ export const THEMES: readonly SiteTheme[] = [
       accent: '#B05A31', accent_hover: 'color-mix(in srgb, #B05A31 78%, black)', accent_contrast: '#FBF3E6',
       accent_2: '#6B6B33', accent_2_deep: 'color-mix(in srgb, #6B6B33 60%, black)', accent_2_contrast: '#F6F2E8',
       eyebrow_color: '#9C7B2F', eyebrow_on_dark: '#D8C08A',
+    }),
+    typography: CD_TYPOGRAPHY, spacing: CD_SPACING, radius: CD_RADIUS,
+  },
+  // ── DV2-505 (variety-select, ibrido B) — PALETTE A FONDO NON-CREMA ──────────────────────────────────
+  // Le 23 palette CD sopra hanno tutte un `surface_page` CREMA caldo (DS-V2-D1: identita' trattoria calda):
+  // ottima coesione, ma al gate i 5 mockup apparivano "sempre la stessa palette". Queste due allargano lo
+  // SPETTRO del FONDO — una SCURA (a lume) e una FREDDA (lacustre) — cosi' la greedy (che ora massimizza
+  // anche la distanza di LUMINOSITA' del fondo, ibrido A) puo' far divergere davvero le 5 palette. Stessa
+  // forma token-completa delle altre (mai un token mancante); i valori derivati con lo stesso `color-mix`.
+  {
+    // Trattoria a lume — sala scura a lume di candela: fondo espresso, bagliore d'ambra, oro caldo.
+    // FONDO SCURO: text_heading/on_dark sono CHIARI (crema), le linee sono chiare-trasparenti, l'accento
+    // e' brillante (pop su scuro) col contrasto SCURO per il testo sui bottoni. surface_dark resta il
+    // piu' scuro (le bande "scure" dei blocchi restano distinguibili dal fondo gia' scuro).
+    id: 'trattoria-a-lume@1',
+    colors: cdColors({
+      surface_page: '#1E1915', surface_alt: '#272019', surface_card: '#2F2820', surface_dark: '#130F0C',
+      surface_dark_raise: 'color-mix(in srgb, #130F0C 82%, white)',
+      text_heading: '#F4EAD8', text_body: 'color-mix(in srgb, #F4EAD8 82%, #1E1915)', text_muted: 'color-mix(in srgb, #F4EAD8 52%, #1E1915)',
+      on_dark: '#F4EAD8', on_dark_70: 'color-mix(in srgb, #F4EAD8 72%, transparent)', on_dark_line: 'color-mix(in srgb, #F4EAD8 18%, transparent)',
+      line: 'color-mix(in srgb, #F4EAD8 15%, transparent)', line_strong: 'color-mix(in srgb, #F4EAD8 30%, transparent)',
+      accent: '#D98A3C', accent_hover: 'color-mix(in srgb, #D98A3C 82%, white)', accent_contrast: '#1E1915',
+      accent_2: '#C7A560', accent_2_deep: 'color-mix(in srgb, #C7A560 66%, white)', accent_2_contrast: '#1E1915',
+      eyebrow_color: '#CDA153', eyebrow_on_dark: '#DDB472',
+    }),
+    typography: CD_TYPOGRAPHY, spacing: CD_SPACING, radius: CD_RADIUS,
+  },
+  {
+    // Osteria di lago — luce lacustre: fondo grigio-salvia FREDDO, accento teal d'acqua, controcanto
+    // terracotta. Struttura a fondo CHIARO (come le CD), ma la TINTA del fondo e' fredda, non crema.
+    id: 'osteria-di-lago@1',
+    colors: cdColors({
+      surface_page: '#EEF3F1', surface_alt: '#DCE6E3', surface_card: '#FAFDFC', surface_dark: '#15292B',
+      surface_dark_raise: 'color-mix(in srgb, #15292B 86%, white)',
+      text_heading: '#1E2B2B', text_body: 'color-mix(in srgb, #1E2B2B 80%, #EEF3F1)', text_muted: 'color-mix(in srgb, #1E2B2B 55%, #EEF3F1)',
+      on_dark: '#E6EFEC', on_dark_70: 'color-mix(in srgb, #E6EFEC 72%, transparent)', on_dark_line: 'color-mix(in srgb, #E6EFEC 18%, transparent)',
+      line: 'color-mix(in srgb, #1E2B2B 14%, transparent)', line_strong: 'color-mix(in srgb, #1E2B2B 28%, transparent)',
+      accent: '#1E7A78', accent_hover: 'color-mix(in srgb, #1E7A78 78%, black)', accent_contrast: '#EAF6F4',
+      accent_2: '#B06A33', accent_2_deep: 'color-mix(in srgb, #B06A33 60%, black)', accent_2_contrast: '#F6F2E8',
+      eyebrow_color: '#3E7C6E', eyebrow_on_dark: '#8FC3B3',
     }),
     typography: CD_TYPOGRAPHY, spacing: CD_SPACING, radius: CD_RADIUS,
   },

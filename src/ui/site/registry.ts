@@ -50,14 +50,21 @@ export const SITE_BLOCK_COMPONENTS: Readonly<Record<string, SiteBlockComponent>>
  * del documento, che Hero legge per la propria variante (`hero_layout_id`) e Offerte per la sua
  * (`menu_layout_id`). Additivo e OPZIONALE — un chiamante che non lo passa rende i blocchi come prima,
  * e un blocco che non lo legge lo ignora: il registry resta l'unico dispatcher, senza sdoppiarsi.
+ *
+ * `vertical` (DV2-501, variety-select) e' inoltrato accanto a `design`: il SETTORE congelato nel
+ * documento, che Offerte legge per la variante LOGICA della sezione offerte (menu-sections/service-list,
+ * etichetta, prezzo). E' separato da `design` perche' non e' un asse di STILE ma il settore; e non passa
+ * via `block.data` perche' offerte lo CONSULTA senza renderlo (non e' in `brief_fields_rendered`).
+ * Additivo e OPZIONALE — un blocco che non lo legge lo ignora.
  */
 export function renderBlock(
   block: SiteBlock,
   locale: string,
   editable?: boolean,
   design?: { readonly hero_layout_id?: string; readonly menu_layout_id?: string },
+  vertical?: SiteBlock['data']['vertical'],
 ): Promise<ReactElement> | null {
   if (!Object.hasOwn(SITE_BLOCK_COMPONENTS, block.id)) return null;
   const Component = SITE_BLOCK_COMPONENTS[block.id];
-  return Component({ block, locale, editable, design });
+  return Component({ block, locale, editable, design, vertical });
 }

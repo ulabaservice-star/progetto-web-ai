@@ -55,7 +55,7 @@ import {
 } from '@/domain/generation/section-treatments';
 import { ORNAMENTS, ornamentFor, type SiteOrnament } from '@/domain/generation/ornaments';
 import { THEMES, themeFor, type SiteTheme } from '@/domain/generation/themes';
-import { recipeFor } from '@/domain/generation/recipes';
+import { recipeFor, RECIPES } from '@/domain/generation/recipes';
 // DE11-203 (variety-engine) — i cataloghi dei nuovi assi: il tratto dell'H1 (DE11-201), i layout di
 // sezione e i nastri (DE11-202), le illustrazioni (DE11-104). Si importano sia gli ARRAY (per
 // popolare in `allowedCombinations`) sia i LOOKUP esatti (per validare in `isAllowed`, proto-safe).
@@ -294,6 +294,21 @@ function pickMenuLayout(menuLayouts: readonly SiteMenuLayout[], index: number): 
 }
 
 /**
+ * DV2-502 (macrotask variety-select) — lo STILE-RICETTA per una combinazione (emendamento DS-V2-D8): la
+ * ricetta diventa un ASSE della matrice invece di essere attaccata solo a valle (DS-D3). Ruota sul
+ * contatore GLOBALE `flavor` (come `pickH1Treatment`/`pickRibbon`/`pickMenuLayout`), cosi' l'insieme
+ * copre TUTTE le ricette del catalogo lungo il pool (>=2 id distinti per ogni vertical, AC-DV2-502-1) e
+ * combo di uno stesso hero ma flavor diverso ricevono ricette diverse — materiale perche' la greedy
+ * (DV2-503) faccia divergere anche la COPY fra i 5 mockup. Le RICETTE sono universali (non hanno scope
+ * di settore, a differenza di hero/menu): l'intero catalogo e' disponibile per ogni vertical. La ricetta
+ * resta uno STILE di copy di CATALOGO — `recipeFor(id)` lo risolve sempre (isAllowed lo verifica) — mai
+ * testo fabbricato dalla matrice.
+ */
+function pickRecipe(index: number): string {
+  return RECIPES[index % RECIPES.length].id;
+}
+
+/**
  * Enumera SOLO le combinazioni AMMESSE per un vertical. Prodotto deterministico dei tre assi
  * PRIMARI di varieta' (tema × hero × trattamento — struttura + tipografia/colore, cfr.
  * ristorazione.md §Parte 3), con gli assi DECORATIVI/DEL CORPO POPOLATI sopra: `effect_level`,
@@ -312,8 +327,10 @@ function pickMenuLayout(menuLayouts: readonly SiteMenuLayout[], index: number): 
  * trasforma in 5 varianti.
  *
  * PURA E DETERMINISTICA: cicli su cataloghi in ordine di dichiarazione + un contatore, nessun
- * Date/Math.random. `recipe_id` resta assente: la ricetta e' contenuto ortogonale (DS-D3), scelto a
- * valle da DE-206.
+ * Date/Math.random. DV2-502 (emendamento DS-V2-D8): `recipe_id` NON e' piu' assente — la ricetta e'
+ * ora un ASSE della matrice (`pickRecipe`, ruotato su `flavor`), cosi' la greedy (DV2-503) puo' far
+ * divergere anche la COPY fra i mockup. Resta uno STILE di copy di CATALOGO (recipeFor lo risolve),
+ * mai testo fabbricato dalla matrice; il contenuto reale delle caselle lo scrive l'LLM a runtime.
  */
 export function allowedCombinations(vertical: Vertical): readonly Combo[] {
   const heroes = availableByScope(HERO_LAYOUTS, vertical);
@@ -349,6 +366,9 @@ export function allowedCombinations(vertical: Vertical): readonly Combo[] {
         const illustration_id = heroHostsIllustration(hero)
           ? ILLUSTRATIONS[flavor % ILLUSTRATIONS.length].id
           : undefined;
+        // DV2-502 (DS-V2-D8) — lo STILE-RICETTA, ruotato sul MEDESIMO `flavor` degli altri assi (prima
+        // dell'incremento), sempre valorizzato (recipeFor lo risolve, isAllowed non scarta mai per questo).
+        const recipe_id = pickRecipe(flavor);
         flavor += 1;
         const candidate: Combo = {
           theme_id: theme.id,
@@ -357,6 +377,7 @@ export function allowedCombinations(vertical: Vertical): readonly Combo[] {
           effect_level,
           h1_treatment_id,
           section_layout_id,
+          recipe_id,
           ...(menu_layout_id !== undefined ? { menu_layout_id } : {}),
           ...(ornament_id !== undefined ? { ornament_id } : {}),
           ...(ribbon_id !== undefined ? { ribbon_id } : {}),

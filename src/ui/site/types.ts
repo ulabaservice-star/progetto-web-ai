@@ -44,6 +44,17 @@ export type SiteBlockProps = {
     readonly hero_layout_id?: string;
     readonly menu_layout_id?: string;
   };
+  /**
+   * DV2-501 (macrotask variety-select, design-engine-v2) — il SETTORE congelato nel documento, inoltrato
+   * da `SiteView` accanto a `design`. Oggi lo legge il SOLO Offerte, che sceglie la variante LOGICA della
+   * sezione offerte per settore (layout menu-sections/service-list, etichetta i18n, se il prezzo si
+   * mostra). NON viaggia via `block.data`: `vertical` e' CONSULTATO senza essere reso, quindi non e' in
+   * `brief_fields_rendered` e `resolve` non lo copia nei dati del blocco. Additiva e OPZIONALE: un
+   * chiamante che non la passa rende il blocco col fallback di settore ('altro'), un blocco che non la
+   * legge la ignora. Il tipo riusa `SiteBlock['data']['vertical']` (l'enum chiuso del brief) senza
+   * importare Brief.
+   */
+  readonly vertical?: SiteBlock['data']['vertical'];
 };
 
 /**

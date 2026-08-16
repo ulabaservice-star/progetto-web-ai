@@ -45,6 +45,8 @@ import {
   type Vertical,
 } from '@/domain/generation/design-matrix';
 import { RECIPES } from '@/domain/generation/recipes';
+import { BODY_LAYOUTS } from '@/domain/generation/section-layouts';
+import { themeFor } from '@/domain/generation/themes';
 
 /**
  * UNA SELEZIONE DI DESIGN congelabile nel documento (DE-205): SOLI id di catalogo esistenti. Coordina
@@ -113,58 +115,240 @@ function shuffled<T>(items: readonly T[], rng: () => number): T[] {
 }
 
 /**
- * Costruisce l'INTERO insieme ordinato delle 5 varianti di una generazione (vertical, seed), da cui
- * `selectDesign` estrae la i-esima. Deterministico:
- *  1. enumera le combinazioni AMMESSE (DE-203) per il vertical;
- *  2. semina il PRNG dal seed e mescola il pool;
- *  3. sceglie AL PIU' UNA combinazione per hero_layout DISTINTO (DE11-204): i 5 hero delle varianti
- *     sono cosi' a due a due DIVERSI — piu' forte della vecchia chiave hero+trattamento, che ammetteva
- *     lo stesso hero su due varianti;
- *  4. assegna a ROTAZIONE seminata una ricetta distinta a ciascuna (asse del CORPO che, con
- *     `section_layout_id` ancorato all'hero, garantisce la differenza di corpo per ogni coppia).
+ * DV2-501 (variety-select) — IL `section_layout_id` PER-BLOCCO di una sezione del CORPO, congelato per
+ * variante. `variant-document` lo assegna a ogni blocco del corpo (chi-siamo/orari/contatti/recensioni/
+ * faq) cosi' che il renderer renda la variante di catalogo (BODY_LAYOUTS, DV2-401) invece del proprio
+ * fallback, e le 5 varianti di un seed mostrino un CORPO diverso (la varieta' del corpo, non solo
+ * dell'hero, raggiunge il mockup).
  *
- * INVARIANTE della matrice: `allowedCombinations` offre >=5 hero_layout DISTINTI per ogni vertical
- * dell'enum (DE11-203, pinnato dai suoi test: >=5 hero universali, ciascuno almeno con `piano@1`). Se
- * cio' non fosse — regressione della matrice — la selezione non potrebbe garantire 5 varianti a hero
- * distinto: allora FALLISCE FORTE con un errore che nomina il vertical, invece di restituire in
- * silenzio meno di 5 varianti o dei cloni.
+ * PURO e DETERMINISTICO (nessun Date/Math.random): filtra il catalogo per SEZIONE e per SCOPE del
+ * vertical (universale + overlay di settore, la stessa "idoneita' di settore" di `availableByScope` della
+ * matrice), poi sceglie con un OFFSET seminato dal seed + il `variantIndex`. Con >=5 varianti per ogni
+ * sezione del catalogo (DS-V2-D2), `(offset + variantIndex)` fa cadere le 5 varianti (0..4) su id
+ * DISTINTI, senza collisione. `undefined` se la sezione non ha varianti (un blocco che NON e' del corpo —
+ * hero/offerte — non ne riceve una: hanno un asse di DOCUMENTO, non un layout per-blocco).
+ *
+ * NON e' l'algoritmo greedy (DV2-503, out_of_scope qui): e' la derivazione per-blocco dell'asse
+ * section_layout, seminata dal solo seed. La distinzione FORTE di hero/theme e la scelta delle combo
+ * restano al selettore combinatorio.
+ */
+export function selectBodyLayout(
+  section: string,
+  vertical: Vertical,
+  seed: string,
+  variantIndex: number,
+): string | undefined {
+  const candidati = BODY_LAYOUTS.filter(
+    (layout) =>
+      layout.section === section && (layout.scope === 'universale' || layout.scope === vertical),
+  );
+  if (candidati.length === 0) return undefined;
+  const offset = hashStringToInt(`${seed}:body:${section}`) % candidati.length;
+  return candidati[(offset + variantIndex) % candidati.length].id;
+}
+
+/**
+ * DV2-503 (variety-select) — GLI ASSI DI VARIETA' v2 (DS-V2-D9), la base della metrica di somiglianza
+ * della greedy: theme, hero, menu, section-layout (di DOCUMENTO), recipe. NON gli assi decorativi legacy
+ * (section_treatment/effect/ornament/ribbon/illustration): la decorazione vive DENTRO le varianti CD, la
+ * greedy la ignora (DS-V2-D9). `section_layout_id` qui e' quello di DOCUMENTO del Combo; il corpo
+ * per-blocco lo diversifica `selectBodyLayout`, seminato dal seed (sopra).
+ */
+const VARIETY_AXES = [
+  'theme_id',
+  'hero_layout_id',
+  'menu_layout_id',
+  'section_layout_id',
+  'recipe_id',
+] as const;
+
+/** SOMIGLIANZA = numero di assi di varieta' col MEDESIMO valore fra due combinazioni (recipe inclusa). */
+function similarity(a: Combo, b: Combo): number {
+  let n = 0;
+  for (const axis of VARIETY_AXES) {
+    const va = a[axis];
+    if (va !== undefined && va === b[axis]) n += 1;
+  }
+  return n;
+}
+
+/** La somiglianza MASSIMA di `c` con un insieme di gia' scelte (0 se l'insieme e' vuoto). */
+function maxSimilarityTo(c: Combo, chosen: readonly Combo[]): number {
+  let max = 0;
+  for (const p of chosen) {
+    const s = similarity(c, p);
+    if (s > max) max = s;
+  }
+  return max;
+}
+
+// ── DV2-505 (variety-select, ibrido A) — DISTANZA CROMATICA DELLE PALETTE ─────────────────────────────
+// La greedy esclude il `theme_id` esatto (5 temi distinti), ma un id distinto non garantisce una PALETTE
+// visibilmente diversa: il catalogo ristorazione tende al caldo-crema, e senza guida la scelta puo'
+// pescare 5 accenti tutti terracotta/bruno (il difetto "palette sempre uguale" notato al gate). Qui si
+// misura una DISTANZA CROMATICA fra due temi — differenza di TINTA dell'accento (l'occhio nota l'accento)
+// + differenza di LUMINOSITA' del fondo pagina (crema chiaro vs fondo scuro/freddo) — e la si usa come
+// obiettivo SECONDARIO del farthest-first: fra i candidati che gia' minimizzano la somiglianza d'assi, si
+// preferisce il tema piu' LONTANO cromaticamente da quelli scelti. Puro/deterministico (nessun
+// Date/Math.random): legge i colori del catalogo dei temi.
+
+/** HSL da un colore '#rrggbb'. PURO. `h` in [0,360), `s`/`l` in [0,1]. Un colore malformato -> l=0. */
+function hexToHsl(hex: string): { h: number; s: number; l: number } {
+  const m = /^#?([0-9a-fA-F]{6})$/.exec(hex.trim());
+  if (m === null) return { h: 0, s: 0, l: 0 };
+  const int = parseInt(m[1], 16);
+  const r = ((int >> 16) & 0xff) / 255;
+  const g = ((int >> 8) & 0xff) / 255;
+  const b = (int & 0xff) / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  const d = max - min;
+  if (d === 0) return { h: 0, s: 0, l };
+  const s = d / (1 - Math.abs(2 * l - 1));
+  let h: number;
+  if (max === r) h = ((g - b) / d) % 6;
+  else if (max === g) h = (b - r) / d + 2;
+  else h = (r - g) / d + 4;
+  h *= 60;
+  if (h < 0) h += 360;
+  return { h, s, l };
+}
+
+/**
+ * Distanza cromatica fra i temi di due id, in [0, ~1.7]. Componente TINTA d'accento (circolare, 0..1
+ * normalizzando la differenza di hue su 180 gradi) PIU' componente LUMINOSITA' del fondo pagina (0..1),
+ * quest'ultima pesata 0.7 (l'accento pesa piu' del fondo). La saturazione dell'accento scala il peso
+ * della tinta: due accenti quasi grigi non "distano" per tinta (evita di inseguire hue instabili su colori
+ * desaturati). Un id non risolvibile da' 0 (difesa; non accade coi temi del catalogo).
+ */
+function paletteDistance(themeIdA: string, themeIdB: string): number {
+  const a = themeFor(themeIdA);
+  const b = themeFor(themeIdB);
+  if (a === undefined || b === undefined) return 0;
+  const accA = hexToHsl(a.colors.accent);
+  const accB = hexToHsl(b.colors.accent);
+  const bgA = hexToHsl(a.colors.surface_page);
+  const bgB = hexToHsl(b.colors.surface_page);
+  const hueRaw = Math.abs(accA.h - accB.h);
+  const hueDiff = Math.min(hueRaw, 360 - hueRaw) / 180; // circolare, 0..1
+  const satWeight = Math.min(accA.s, accB.s); // tinte poco sature contano meno
+  const lightDiff = Math.abs(bgA.l - bgB.l); // 0..1
+  return hueDiff * satWeight + lightDiff * 0.7;
+}
+
+/** La distanza cromatica MINIMA di `c` dai temi gia' scelti (Infinity se l'insieme e' vuoto). */
+function minPaletteDistTo(c: Combo, chosen: readonly Combo[]): number {
+  let min = Infinity;
+  for (const p of chosen) {
+    const d = paletteDistance(c.theme_id, p.theme_id);
+    if (d < min) min = d;
+  }
+  return min;
+}
+
+/**
+ * DV2-504 (variety-select) — IL FAIL-SAFE DEL MATERIALE (DS-V2-D4 punto 6). L'esclusione DURA della
+ * greedy presuppone che il pool offra >=VARIANT_COUNT `hero_layout_id` DISTINTI E >=VARIANT_COUNT
+ * `theme_id` distinti: senza, non si possono dare 5 varianti a hero+theme a due a due diversi. Se il
+ * materiale non c'e' (una regressione della matrice o un vertical povero), FALLISCE FORTE con un errore
+ * che NOMINA il vertical — meglio un errore esplicito che 5 cloni silenziosi (L-COL-006). Puro: conta i
+ * valori distinti, nessun Date/Math.random. E' esportato cosi' che il suo ramo di errore sia oracolabile
+ * con un pool CRAFTED (i 5 vertical reali hanno sempre materiale sufficiente, DS-V2-D2, quindi
+ * `selectDesign` non lo raggiunge mai su di essi — ma la rete c'e').
+ */
+export function assertSufficientMaterial(vertical: Vertical, pool: readonly Combo[]): void {
+  const distinctHeroes = new Set(pool.map((c) => c.hero_layout_id)).size;
+  const distinctThemes = new Set(pool.map((c) => c.theme_id)).size;
+  if (distinctHeroes < VARIANT_COUNT || distinctThemes < VARIANT_COUNT) {
+    throw new Error(
+      `design-select: materiale insufficiente per '${vertical}' (hero distinti ${distinctHeroes}, ` +
+        `theme distinti ${distinctThemes}, attesi almeno ${VARIANT_COUNT} ciascuno) — ` +
+        `regressione di design-matrix`,
+    );
+  }
+}
+
+/**
+ * Costruisce l'INTERO insieme ordinato delle 5 varianti di una generazione (vertical, seed), da cui
+ * `selectDesign` estrae la i-esima. SELEZIONE GREEDY FARTHEST-FIRST (DS-V2-D4), deterministica:
+ *  1. enumera le combinazioni AMMESSE (DE-203) per il vertical — ognuna porta gli assi di varieta' v2
+ *     (theme/hero/menu/section-layout/recipe, quest'ultimo da DV2-502);
+ *  2. semina il PRNG dal seed e mescola il pool (`order`): unica sorgente di casualita';
+ *  3. PRIMA variante = la prima del pool mescolato;
+ *  4. variante `i` (i>=1) = fra le combo NON scelte, quella che MINIMIZZA la somiglianza MASSIMA (n. di
+ *     assi in comune, recipe inclusa) con le gia' scelte — la piu' "lontana" — con ESCLUSIONE DURA di
+ *     hero_layout_id e theme_id finche' esistono hero/temi liberi (il primo schermo e la palette sono
+ *     cio' che l'occhio nota per primo); tie-break DETERMINISTICO via l'ordine seminato (il primo
+ *     candidato di `order` che raggiunge il minimo).
+ *
+ * L'esclusione dura si RILASSA in ordine solo se il materiale finisse (prima il theme, poi l'hero: l'hero
+ * si difende piu' a lungo). Con DS-V2-D2 (molte palette + molti hero) non accade per N=5; DV2-504 pinna
+ * il requisito. Se il pool non offre >=5 hero E >=5 theme DISTINTI, `buildVariants` FALLISCE FORTE
+ * nominando il vertical (mai cloni silenziosi, L-COL-006).
+ *
+ * PURA E DETERMINISTICA: nessun Date/Math.random; l'unica sorgente e' `mulberry32(hash(seed))`. Stessi
+ * (vertical, seed) -> stesse 5 varianti byte per byte.
  */
 function buildVariants(vertical: Vertical, seed: string): readonly DesignSelection[] {
   const pool = allowedCombinations(vertical);
+  // Requisito di materiale per l'esclusione dura (DV2-504): >=VARIANT_COUNT hero E theme DISTINTI. Senza,
+  // la greedy non potrebbe dare 5 varianti a hero+theme distinti: FALLISCE FORTE nominando il vertical
+  // (mai cloni silenziosi). Prima di seminare il PRNG: il fallimento non dipende dal seed.
+  assertSufficientMaterial(vertical, pool);
+
   const rng = mulberry32(hashStringToInt(seed));
-
   const order = shuffled(pool, rng);
-  const recipeOffset = Math.floor(rng() * RECIPES.length);
 
-  // DE11-204 — DEDUP per hero_layout DISTINTO (non piu' per scheletro hero+trattamento): si prende la
-  // PRIMA combinazione di ogni hero nell'ordine mescolato, cosi' i 5 hero risultano a due a due diversi
-  // (il primo schermo cambia davvero). La differenza sul CORPO viene sopra, garantita: `section_layout_id`
-  // e' ancorato all'indice dell'hero nella matrice (hero distinti ⇒ layout di corpo distinti) e la
-  // ricetta e' a rotazione (5 ricette distinte).
-  const picked: Combo[] = [];
-  const usedHeroes = new Set<string>();
-  for (const combo of order) {
-    if (picked.length >= VARIANT_COUNT) break;
-    if (usedHeroes.has(combo.hero_layout_id)) continue;
-    usedHeroes.add(combo.hero_layout_id);
-    picked.push(combo);
+  const chosen: Combo[] = [order[0]];
+  const chosenSet = new Set<Combo>([order[0]]);
+  const usedHero = new Set<string>([order[0].hero_layout_id]);
+  const usedTheme = new Set<string>([order[0].theme_id]);
+
+  // Tiers di eleggibilita': esclusione DURA di hero+theme finche' c'e' materiale; poi rilassa in ordine
+  // (prima il theme, poi l'hero, infine qualunque non-scelto).
+  const tiers: readonly ((c: Combo) => boolean)[] = [
+    (c) => !usedHero.has(c.hero_layout_id) && !usedTheme.has(c.theme_id),
+    (c) => !usedHero.has(c.hero_layout_id),
+    (c) => !usedTheme.has(c.theme_id),
+    () => true,
+  ];
+
+  while (chosen.length < VARIANT_COUNT) {
+    let candidati: Combo[] = [];
+    for (const tier of tiers) {
+      candidati = order.filter((c) => !chosenSet.has(c) && tier(c));
+      if (candidati.length > 0) break;
+    }
+    // FARTHEST-FIRST a due obiettivi: (1) PRIMARIO — minimizza la somiglianza MASSIMA d'assi con le gia'
+    // scelte; (2) SECONDARIO (DV2-505, ibrido A) — a parita' di somiglianza, MASSIMIZZA la distanza
+    // cromatica minima dai temi scelti (palette piu' lontana: accento di tinta diversa, fondo piu'
+    // chiaro/scuro). I candidati sono in `order` (mescolato dal seed) e i confronti sono STRETTI, quindi a
+    // parita' PIENA vince il PRIMO in quell'ordine: tie-break deterministico e seminato.
+    let best = candidati[0];
+    let bestSim = maxSimilarityTo(best, chosen);
+    let bestPal = minPaletteDistTo(best, chosen);
+    for (const c of candidati) {
+      const sim = maxSimilarityTo(c, chosen);
+      if (sim > bestSim) continue;
+      const pal = minPaletteDistTo(c, chosen);
+      if (sim < bestSim || pal > bestPal) {
+        best = c;
+        bestSim = sim;
+        bestPal = pal;
+      }
+    }
+    chosen.push(best);
+    chosenSet.add(best);
+    usedHero.add(best.hero_layout_id);
+    usedTheme.add(best.theme_id);
   }
 
-  if (picked.length < VARIANT_COUNT) {
-    throw new Error(
-      `design-select: la matrice offre solo ${picked.length} hero_layout distinti per ` +
-        `'${vertical}' (attesi almeno ${VARIANT_COUNT}) — regressione di design-matrix (DE11-203)`,
-    );
-  }
-
-  return picked.map((combo, position) => {
-    const recipe = RECIPES[(recipeOffset + position) % RECIPES.length];
-    // La selezione E' la combinazione ammessa (TUTTI i suoi assi, inclusi i nuovi di DE11-203 —
-    // h1_treatment/section_layout/ribbon/illustration) PIU' la ricetta. Lo spread TRASPORTA ogni asse
-    // senza che uno possa "cadere" per dimenticanza; `allowedCombinations` non emette mai chiavi a
-    // valore undefined (usa spread condizionali), quindi la copia resta pulita e `recipe_id` (una
-    // stringa definita) soddisfa il tipo di `DesignSelection`.
-    const selection: DesignSelection = { ...combo, recipe_id: recipe.id };
+  return chosen.map((combo) => {
+    // La selezione E' la combinazione ammessa (TUTTI i suoi assi) con `recipe_id` obbligatorio. La
+    // matrice (DV2-502) lo valorizza sempre; `?? RECIPES[0].id` e' la difesa DICHIARATA (mai un caso
+    // vivo) contro una futura combo senza ricetta, e soddisfa il tipo di `DesignSelection`.
+    const selection: DesignSelection = { ...combo, recipe_id: combo.recipe_id ?? RECIPES[0].id };
     return selection;
   });
 }

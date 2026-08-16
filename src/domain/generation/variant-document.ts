@@ -54,7 +54,7 @@ import type { Pool } from '@/domain/generation/pool';
 import { resolve } from '@/domain/generation/resolve';
 import { recipeFor, type SiteRecipe } from '@/domain/generation/recipes';
 import { themeFor, type SiteTheme } from '@/domain/generation/themes';
-import { selectDesign } from '@/domain/generation/design-select';
+import { selectDesign, selectBodyLayout } from '@/domain/generation/design-select';
 import { withPresentationSections } from '@/domain/generation/presentation';
 import type { Brief } from '@/domain/onboarding/brief';
 
@@ -127,15 +127,34 @@ export function resolveVariantHome(
   // e A VALLE di resolve: `blocksFor`/`generatable` (il gate di costo, T-210/T-215) restano INTATTI e la
   // regola anti-invenzione non cambia (le sezioni rendono copy UI fissa, mai dati del modello).
   const presentato = withPresentationSections(document);
+  // DV2-501 (variety-select) — CONGELA il `section_layout_id` PER-BLOCCO di ogni sezione del CORPO
+  // (DS-V2-D11 #2): il renderer del corpo (DV2-402/403) legge `block.section_layout_id` e rende la
+  // variante di catalogo (BODY_LAYOUTS) invece del proprio fallback, cosi' le 5 varianti mostrano un
+  // corpo diverso. `selectBodyLayout` e' PURO/DETERMINISTICO (seminato dal solo seed): un blocco che NON
+  // e' del corpo (hero/offerte — hanno un asse di DOCUMENTO) riceve `undefined` e resta invariato.
+  const pagineCongelate = presentato.pages.map((page) => ({
+    ...page,
+    blocks: page.blocks.map((block) => {
+      const sectionLayoutId = selectBodyLayout(block.id, brief.vertical, seed, variantIndex);
+      return sectionLayoutId !== undefined ? { ...block, section_layout_id: sectionLayoutId } : block;
+    }),
+  }));
   // CONGELA la tupla di selezione (DS-D4): id versionati che il gate registra e non ri-deriva al
   // render, cosi' un sito scelto non si re-stila da solo dopo un ritocco ai cataloghi. `ornament_id`
   // solo se la selezione lo porta (un sito puo' non avere ornamento, DS-D5): niente id fabbricato.
+  // DV2-501 aggiunge: l'asse MENU (`menu_layout_id`, se la selezione lo porta) cosi' Offerte rende la
+  // variante scelta e non il fallback; e il `vertical`, che SiteView INOLTRA ai blocchi (Offerte sceglie
+  // la variante logica per settore) — `vertical` non e' in `brief_fields_rendered` di offerte, quindi
+  // NON arriva via `block.data`, e senza congelarlo il menu cadrebbe sulla variante generica.
   const frozen = {
     ...presentato,
+    pages: pagineCongelate,
+    vertical: brief.vertical,
     hero_layout_id: selection.hero_layout_id,
     section_treatment_id: selection.section_treatment_id,
     effect_level: selection.effect_level,
     ...(selection.ornament_id !== undefined ? { ornament_id: selection.ornament_id } : {}),
+    ...(selection.menu_layout_id !== undefined ? { menu_layout_id: selection.menu_layout_id } : {}),
   };
   const parsed = parseDocument(frozen);
   if (!parsed.ok) return null;

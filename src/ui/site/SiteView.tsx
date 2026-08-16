@@ -58,6 +58,7 @@ export async function SitePageView({
   locale,
   editable,
   design,
+  vertical,
 }: {
   page: SitePage;
   theme: SiteTheme;
@@ -69,14 +70,20 @@ export async function SitePageView({
    * omette un attributo il cui valore e' `undefined`). SiteView la passa sempre giu' dal documento.
    */
   design?: SiteDesignSelection;
+  /**
+   * DV2-501 (variety-select) — il SETTORE congelato, inoltrato ai blocchi accanto a `design` (Offerte
+   * sceglie la variante logica della sezione offerte per settore). Opzionale: assente, Offerte cade sul
+   * settore generico. SiteView lo passa sempre giu' dal documento (`document.vertical`).
+   */
+  vertical?: SiteDocument['vertical'];
 }) {
   // DV2-202 (macrotask hero) — la selezione design del documento scende fino al blocco: `renderBlock`
   // la inoltra e oggi il solo Hero la legge (sceglie la variante da `hero_layout_id`). Cosi' l'hero
   // variato si vede su ogni superficie del renderer UNICO (card, anteprima, /s/), senza una seconda
   // copia. `design` puo' essere assente (una pagina resa standalone senza selezione): l'hero cade sul
-  // proprio fallback.
+  // proprio fallback. DV2-501 aggiunge `vertical` accanto a `design` (per Offerte).
   const rendered = await Promise.all(
-    page.blocks.map((block) => renderBlock(block, locale, editable, design)),
+    page.blocks.map((block) => renderBlock(block, locale, editable, design, vertical)),
   );
 
   return (
@@ -142,6 +149,12 @@ export async function SiteView({
     menu_layout_id: siteDocument.menu_layout_id,
   };
 
+  // DV2-501 (variety-select) — il SETTORE congelato, estratto UNA VOLTA e inoltrato a ogni pagina/blocco
+  // accanto a `design`. Non e' un asse di STILE (non entra in `SiteDesignSelection` ne' nei data-* della
+  // radice), e' il settore che Offerte legge per la variante logica della sezione offerte. Puo' restare
+  // `undefined` (un documento in formato P4 non lo porta): allora Offerte cade sul settore generico.
+  const vertical = siteDocument.vertical;
+
   // DE-302 — IL LIVELLO EFFETTIVO del movimento, deciso QUI e in un solo posto. In modalita EDITABLE
   // scende a 'L0': mentre si scrive nel sito, un reveal che nasconde il blocco appena toccato e' un
   // difetto, non un effetto. Un documento senza `effect_level` (il campo e' opzionale nel tipo, il
@@ -157,7 +170,9 @@ export async function SiteView({
   const blockCount = siteDocument.pages.reduce((total, page) => total + page.blocks.length, 0);
 
   const pages: ReactElement[] = await Promise.all(
-    siteDocument.pages.map((page) => SitePageView({ page, theme, locale, editable, design })),
+    siteDocument.pages.map((page) =>
+      SitePageView({ page, theme, locale, editable, design, vertical }),
+    ),
   );
 
   // DV2-404 (body-sections-b) — LA CHROME (header/footer), resa ATTORNO alle pagine (DS-V2-D11 #4). I

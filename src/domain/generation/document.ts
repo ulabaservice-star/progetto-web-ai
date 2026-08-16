@@ -474,6 +474,15 @@ export const SiteDocumentSchema = z
     // overlay), e il renderer `Offerte` ha gia' il suo fallback. Il congelamento PIENO lo scrive
     // variety-select; qui il documento lo ACCETTA cosi' che l'Offerte variato si renda su /s/.
     menu_layout_id: VersionedIdSchema.optional(),
+    // DV2-501 (macrotask variety-select, design-engine-v2): il SETTORE congelato. E' l'enum CHIUSO del
+    // brief (`vertical`), non un id di catalogo — riusa lo schema di P1 (`BriefUpdateSchema.shape`, gia'
+    // importato) invece di re-dichiararlo, cosi' il vocabolario non puo' divergere. Opzionale per
+    // retro-compatibilita' (un documento in formato P4 non lo porta e valida ancora); il freeze lo
+    // scrive sempre. Serve a SiteView per INOLTRARLO ai blocchi (Offerte sceglie la variante logica per
+    // vertical): `vertical` non e' in `brief_fields_rendered` di offerte — e' consultato, non reso —
+    // quindi NON arriva ai blocchi via `block.data`, e senza questo campo cadrebbero sulla variante
+    // generica 'altro'. Un valore fuori dall'enum fa cadere l'INTERO documento, come ogni altro campo.
+    vertical: BriefUpdateSchema.shape.vertical,
     pages: z.array(PageSchema).min(1).max(DOCUMENT_LIMITS.max_pages),
   })
   .strict()
