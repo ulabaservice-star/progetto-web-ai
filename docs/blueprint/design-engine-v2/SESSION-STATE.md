@@ -9,8 +9,8 @@
 |---|---|
 | **Progetto** | Belora/Ulaba |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase) |
-| **Ultimo aggiornamento** | 2026-08-16 (**`body-sections-b` COSTRUITO — checkpoint VERDE 4/4 + merge su `main`** (`d405eaa`, deploy ulaba.net): parte-b del corpo = orari/contatti/header+footer, ULTIMA prima di variety-select. **DV2-401-b:** `BODY_LAYOUTS` +12 orari +12 contatti; **catalogo dedicato `CHROME_LAYOUTS`** (`SiteChromeLayout`+`chromeLayoutFor`, 6 header + 6 footer) — header/footer NON in `BODY_LAYOUTS` (chrome, non per-blocco). **DV2-403:** `Orari`/`Contatti` riscritti al pattern per-blocco v2 (24 varianti CD, `body-kit`); **giorno-corrente = isola CLIENT** `OrariToday` + funzione pura `matchTodayKey` (doc byte-identico, AC-403-2; `new Date` SOLO nell'isola); **mappa = PhotoPlaceholder di catalogo + pin**, `geo` in `data-attr`, href dai costruttori validati. **DV2-404 (DS-V2-D11 #4):** header/footer = **CHROME del SiteView** attorno alle pagine, contenuti DERIVATI (`deriveChromeData`: nome dall'hero, nav dalle pagine `#slug` con `id=slug` su SitePageView, recapiti/orari sintetici), MAI slot LLM; **credito NEUTRO senza `new Date`**. i18n `site.contact.*`+`site.footer.*`. Fix overflow `con-foto`/`quartiere` (aspect-ratio+`stretch`). Checkpoint: C1 R-04 **179→207** delta0, C2 semgrep 0 + gitleaks gitignorati + osv/rls invariati, C3 **1692/1692**, C4 covers; `next build` 0; **e2e Chromium 30/30**; mutazioni 2/2; **gate visivo APPROVATO**. **Prossimo: `variety-select`** (penultimo nodo del DAG)) |
-| **Sessione corrente** | 2026-08-16 — BUILD `body-sections-b` COMPLETO E MERGIATO (deploy). Gate delle assunzioni con l'utente confermato (header/footer=chrome; orari/contatti = solo dal Brief, niente scheletro anti-vuoto). Metodo FOREGROUND (io scrivo test-first + verifico; niente subagenti). Gate visivo APPROVATO al 1° giro (galleria `renderToStaticMarkup`, 36 varianti × trattoria-rustica) DOPO fix overflow foto. Migrati 3 test v1→v2. Prossimo: aprire `prompts/session-start.md`, macrotask `variety-select` |
+| **Ultimo aggiornamento** | 2026-08-16 (**`variety-select` COSTRUITO — checkpoint VERDE + merge su `main`** (`362847f`, deploy ulaba.net): la varietà diventa VERA. **DV2-501:** `variant-document` congela TUTTI gli assi v2 (theme/hero/menu + **`section_layout_id` PER-BLOCCO** del corpo via `selectBodyLayout` + recipe) + **`vertical`** (SiteView lo inoltra ai blocchi: NON arrivava via `block.data` — `vertical` è consultato, non reso → il menu cadeva su 'altro'). **DV2-502:** `recipe_id` ASSE in `allowedCombinations` (DS-V2-D8, `pickRecipe` su flavor). **DV2-503:** **greedy farthest-first** (esclusione dura hero+theme, recipe nella distanza, `mulberry32(seed)`). **DV2-504:** requisito materiale (≥5 hero/theme + ≥2 recipe) o `selectDesign` fallisce forte (`assertSufficientMaterial` esportata, testata con pool crafted). **Rifiniture emerse al GATE, incluse nel commit:** (1) `site.css .site-page gap:0` — bande full-bleed CONTINUE (le strisce bianche erano il fondo `body` visto tra le bande); (2) migrazione e2e **DE-102** (distinzione hero v2 = tipografica, non background di sezione — in v2 la `<section>` è trasparente); (3) **IBRIDO PALETTE A+B (DV2-505):** greedy massimizza anche la **distanza cromatica** (accent-hue + luminosità fondo) + 2 palette a fondo NON-crema (`trattoria-a-lume` scura, `osteria-di-lago` fredda) → 5 mockup con palette davvero distinte (rosso/oro/verde/teal/magenta + una scura), non 5 caldi. Checkpoint: C1 R-04 **207→223** delta0 poi **new=0** post-palette (color-mix a valori unici, come `cdColors`), C2 semgrep 0, C3 **1717/1717**, C4 covers; `next build` 0; **e2e Chromium 30/30**; **mutazioni 6/6**; **gate visivo APPROVATO** (tema scuro premium). **Prossimo: `e2e-visual-v2`** (ULTIMO nodo del DAG)) |
+| **Sessione corrente** | 2026-08-16 — BUILD `variety-select` COMPLETO E MERGIATO (deploy). Metodo FOREGROUND (io scrivo test-first + verifico; niente subagenti). Gate visivo su `/s/` (5 varianti reali di un seed via Playwright, JS-off per catturare l'SSR intero) → 2 giri di rifinitura con l'utente: (a) `gap:0` per le bande continue, (b) ibrido palette A+B (accento spread + 2 palette non-crema) per la varietà cromatica. Recensioni "attaccato" = misurato 102px corretto (era il layout pre-`gap:0`). Prossimo: aprire `prompts/session-start.md`, macrotask `e2e-visual-v2` |
 
 ---
 
@@ -25,24 +25,22 @@
 | `menu` | **done** | **VERDE 4/4** (`df642ef`) | DV2-301/302/303: **tipo dedicato `SiteMenuLayout` + `MENU_LAYOUTS` (20)** + `menuLayoutFor` (assi `arrangement`/`price`, `SECTION_LAYOUTS` INVARIATO); `Offerte.tsx` renderer unico 20 varianti CD (card-carta/leader-dots/tabular/`data-menu-layout`, classi `site-menu-v2__*`) + **wiring `menu_layout_id`** (schema doc + SiteView + registry + `SiteBlockProps.design`) + **M5** (`block.images` via SiteImage); `design-matrix` **asse `menu_layout_id` INDIPENDENTE** (`pickMenuLayout` su `flavor`). Rifinitura visiva post-gate (in-linea centrate/numerate/full-width). Migrati 2 test v1 (`site-blocks-data`, `site-effects-css`). Dip: `foundation` |
 | `body-sections-a` (chi-siamo/recensioni/faq) | **done** | **VERDE 4/4** (`77ccb12`) | DV2-401/402/403 parte-a: **`section_layout_id` PER-BLOCCO** nel `BlockSchema` (DS-V2-D11 #2, corpo eterogeneo); catalogo `SiteBodyLayout`+`BODY_LAYOUTS` (12 chi-siamo, 10 recensioni, 10 faq) + `bodyLayoutFor` proto-safe; renderer unici `ChiSiamo`/`Recensioni`/`Faq` + `body-kit` (container/eyebrow/**foto M5** un solo URL builder); **recensioni = scheletro** (copy UI fissa i18n, mai testimonianze finte), **faq = dual-mode** (Q&A reali o scheletro); **composizione di presentazione** (`presentation.ts`) emette recensioni/faq nel mockup SENZA toccare `blocksFor`/`generatable` (gate di costo P5 intatto, P2-D7 preservato, DS-V2-D11 #3). Checkpoint 4/4: suite **1669/1669**, `next build` 0, **e2e Chromium 30/30**, R-04 **210→179**, semgrep 0, mutazioni 2/2. **Gate visivo APPROVATO.** Migrati `site-blocks-data`/`generation-chooser`. Dip: `foundation` |
 | `body-sections-b` (orari/contatti/header+footer) | **done** | **VERDE 4/4** (`d405eaa`) | DV2-401b/403/404: `BODY_LAYOUTS` +12 orari +12 contatti + **catalogo dedicato `CHROME_LAYOUTS`** (6 header + 6 footer, `chromeLayoutFor`). `Orari`/`Contatti` renderer per-blocco v2 (24 varianti); **giorno-corrente = isola CLIENT** (`OrariToday`+`matchTodayKey` puro, doc byte-identico); **mappa = PhotoPlaceholder+pin**, geo in data-attr, href validati. **Header/footer = CHROME del SiteView** (DS-V2-D11 #4, `deriveChromeData`, contenuti derivati non-LLM, credito neutro **senza `new Date`**, nav `#slug`+`id=slug`). i18n `site.contact/footer.*`. Fix overflow foto (aspect-ratio+stretch). Checkpoint 4/4: suite **1692/1692**, `next build` 0, **e2e 30/30**, R-04 **179→207**, semgrep 0, mutazioni 2/2. **Gate visivo APPROVATO.** Migrati `site-blocks-data`/`site-blocks-untrusted`/`public-site-route`. Dip: `foundation`, `body-sections-a` |
-| `variety-select` | **todo** | — | 4 task (DV2-501…504): riuso aggancio varietà (variant-document congela tutti gli assi + inoltro design+vertical ai blocchi, da `hero-menu-wow` `fff6904`); **`recipe_id` asse della matrice (DS-V2-D8)**; greedy multi-asse farthest-first (esclusione dura hero+theme, **recipe inclusa**, seed mulberry32); requisito materiale ≥5 hero + ≥5 theme + ≥2 recipe/vertical o `selectDesign` fallisce forte. Dip: `hero`, `menu`, `body-sections` |
+| `variety-select` | **done** | **VERDE** (`362847f`) | DV2-501/502/503/504 + rifiniture gate (`gap:0`, DE-102 e2e, ibrido palette A+B/DV2-505). Freeze per-blocco `section_layout_id` (`selectBodyLayout`) + menu + `vertical` (inoltrato da SiteView, non in `block.data`); `recipe_id` asse matrice; greedy farthest-first (esclusione dura hero+theme + **distanza cromatica** accent-hue/bg-lightness); `assertSufficientMaterial` fail-forte. themes.ts +2 palette non-crema. Suite **1717/1717**, e2e 30/30, next build 0, mutazioni 6/6, gate APPROVATO. Migrati 0 test (5 nuovi: document-design-selection-v2, design-matrix-recipe-v2, design-select-greedy-v2, design-select-material-v2, design-select-palette-v2). Dip: `hero`, `menu`, `body-sections` |
 | `e2e-visual-v2` | **todo** | — | 2 task (DV2-601…602): e2e-nucleo GATE (5 varianti reali di un seed divergono su hero VISIBILE + corpo computed + wow + canary rosso); anti-injection sui nuovi blocchi ricchi (doc ostile su /s/ + canary). Harness P4. **ULTIMO nodo del DAG.** Dip: `variety-select` |
 
 ## 2. Macrotask corrente
 
-- **`body-sections-b` è DONE** (checkpoint 4/4, mergiato `d405eaa`, gate visivo APPROVATO, deploy ulaba.net) →
-  **`body-sections` COMPLETO (a+b): tutto il corpo tradotto.** orari/contatti per-blocco v2 + header/footer chrome.
-  **SELEZIONATO per la PROSSIMA sessione: `variety-select`** (DV2-501…504, penultimo nodo del DAG), dip `hero`+`menu`+
-  `body-sections` (tutti verdi). Task: riuso aggancio varietà da `hero-menu-wow` `fff6904` (variant-document congela TUTTI
-  gli assi + inoltra design+vertical ai blocchi); **`recipe_id` asse della matrice (DS-V2-D8)**; **greedy multi-asse
-  farthest-first** (esclusione dura hero+theme, recipe inclusa, seed mulberry32); requisito materiale ≥5 hero + ≥5 theme +
-  ≥2 recipe/vertical o `selectDesign` fallisce forte. **NB (L-COL-006 body-a/b):** il congelamento PER-BLOCCO dei
-  `section_layout_id` del corpo (chi-siamo/orari/contatti) e dei `menu_layout_id` è DI QUESTO macrotask — oggi su /s/ i
-  blocchi del corpo cadono sul fallback. Gli assi di varietà sono {theme, hero_layout, menu_layout, section_layout, recipe}:
-  **header/footer NON sono assi (DS-V2-D9)** → restano sulla variante default della chrome. Poi `e2e-visual-v2` (ultimo).
-- **Ordine (DAG):** `foundation → {hero, menu, body-sections} → variety-select → e2e-visual-v2`. I tre
-  macrotask del corpo (tutti done) dipendevano solo da `foundation`; ora restano `variety-select` → `e2e-visual-v2`.
-- **Criteri/test di riferimento**: vedi il modulo `05-variety-select.md` e i `target_tests` dei task.
+- **`variety-select` è DONE** (checkpoint VERDE, mergiato `362847f`, gate visivo APPROVATO, deploy ulaba.net) →
+  **la varietà è VERA su /s/**: le 5 varianti di un seed divergono su hero, menu, palette (accento + fondo scuro/freddo),
+  e OGNI sezione del corpo ha un layout diverso; le bande sono continue (`gap:0`).
+  **SELEZIONATO per la PROSSIMA sessione: `e2e-visual-v2`** (DV2-601/602, ULTIMO nodo del DAG), dip `variety-select` (verde).
+  Task: e2e-nucleo GATE (5 varianti reali di un seed divergono su hero VISIBILE computed + ≥1 asse del corpo computed + wow
+  + **canary rosso PRIMA del verde**); anti-injection sui blocchi ricchi (doc ostile su /s/ + canary). Harness P4 (seed.ts,
+  hostile-brief.ts, effect-assertions.ts). **NB:** l'e2e generale (30/30) già copre /s/ ma NON la MISURA computed della
+  varietà fra 5 varianti reali — quello è DV2-601. Riusare l'idea del gate-spec throwaway di questa sessione (5 varianti via
+  `resolveVariantHome` seed `gate-visivo-v2`, screenshot JS-off), ma con asserzioni computed-style + canary, non screenshot.
+- **Ordine (DAG):** `foundation → {hero, menu, body-sections} → variety-select → e2e-visual-v2`. Restano solo `e2e-visual-v2`.
+- **Criteri/test di riferimento**: vedi il modulo `06-e2e-visual-v2.md` e i `target_tests` dei task.
 
 ## 3. Stato git
 
@@ -50,9 +48,9 @@
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `body-sections-b` costruito su `trueline/build/body-sections-b` (da `main` pulito), poi **mergiato ff su `main`** (`d405eaa`) e branch cancellato. Prossimo: aprire `trueline/build/variety-select` da `main` pulito. Mai lavorare su `main` |
-| Ultimo commit | `d405eaa` feat(design-engine-v2): body-sections-b — orari/contatti (12+12 varianti CD) + header/footer chrome (6+6) + section_layout_id per-blocco (DV2-401b/403/404) [checkpoint VERDE 4/4]. Preceduto da `body-sections-a` (`77ccb12`), `menu` (`df642ef`), `hero` (`14b27f1`), `foundation` (`70c756a`) |
-| Stato merge su `main` | **`body-sections-b` MERGIATO su `main`** su via umana esplicita (deploy-coupling coupled → deploy su ulaba.net). Verifica locale COMPLETA prima del merge: vitest **1692/1692**, `next build` 0, **e2e Chromium 30/30**, checkpoint 4/4 (C1 R-04 179→207 delta0, C2 semgrep 0), mutazioni 2/2, gate visivo APPROVATO. I prossimi macrotask restano human-gated anche sul verde |
+| Branch di lavoro | `variety-select` costruito su `trueline/build/variety-select` (da `main` pulito), poi **mergiato ff su `main`** (`362847f`) e branch cancellato. Prossimo: aprire `trueline/build/e2e-visual-v2` da `main` pulito. Mai lavorare su `main` |
+| Ultimo commit | `362847f` feat(design-engine-v2): variety-select — greedy farthest-first + freeze assi + palette ibrida A+B (DV2-501..505) [checkpoint VERDE, gate APPROVATO]. Preceduto da `body-sections-b` (`d405eaa`), `body-sections-a` (`77ccb12`), `menu` (`df642ef`), `hero` (`14b27f1`), `foundation` (`70c756a`) |
+| Stato merge su `main` | **`variety-select` MERGIATO su `main`** su via umana esplicita (deploy-coupling coupled → deploy su ulaba.net). Verifica locale COMPLETA prima del merge: vitest **1717/1717**, `next build` 0, **e2e Chromium 30/30**, checkpoint (C1 R-04 207→223 delta0 + new=0 post-palette, C2 semgrep 0), mutazioni 6/6, gate visivo APPROVATO. `e2e-visual-v2` resta human-gated anche sul verde |
 | Deploy-coupling | **`coupled`** — Vercel connesso al repo (`ulabaservice-star/progetto-web-ai`): **push su `main` = deploy in produzione** su `ulaba.net`. Verificare **in locale** (vitest, e2e Chromium, computed-style, `next build`) prima di ogni merge |
 
 ## 4. Baseline & budget
@@ -70,6 +68,22 @@
   al confine dei macrotask (R-04, impronte sensibili alla POSIZIONE: i record-dato dei temi/cataloghi
   ri-fingerprintano impronte pre-esistenti; sono FP legittimi, mai gonfiare policy). `e2e/` escluso da
   jscpd. Ri-attribuire **prima** di ri-catturare.
+- **`variety-select` (confine, VERDE `362847f`)**: baseline igiene **RI-CATTURATA 207→223** al 1° confine (18 dup NUOVE
+  tutte LOW nei renderer del corpo NON toccati — la mia edit a `Offerte.tsx` ri-attribuisce le coppie clone Offerte↔body
+  preesistenti; **0 cloni nei miei file**). **Post-ibrido-palette (A+B): delta new=0 SENZA re-cattura** — le 2 palette nuove
+  col pattern `color-mix`/valori unici + il codice palette-distance NON creano dup verbatim (stessa lezione di `cdColors`
+  foundation). Baseline sicurezza **INVARIATA**: **semgrep 0** (`run_semgrep.mjs "$(pwd -W)"`, docker), gitleaks solo
+  gitignorati (`.env.local`/`siti css/`, contro-provati), osv/rls invarianti (**nessuna dip/migrazione/segreto**: solo TS
+  puro + dati palette). knip 0, tsc/eslint 0. **0 retry.** Batteria mutazione **6/6 uccise**: freeze `vertical:'altro'`→
+  AC-501-1/2; `selectBodyLayout` ignora variantIndex→AC-501-3; `pickRecipe` costante→AC-502-1; greedy `<`→`>`→AC-503-2;
+  soglia materiale `<1`→AC-504-2; `paletteDistance`→0→AC-505 (test **rinforzato a 24 seed** perché pochi seed passavano
+  anche senza la feature: `paletteDistance→0` = greedy originale = i cluster caldi lamentati). Ripristino backup+sha256.
+  **🔴 GOTCHA GATE su /s/: scattare con JS OFF** (`javaScriptEnabled:false`), NON `reducedMotion` — l'isola reveal
+  (IntersectionObserver) nasconde i blocchi sotto la piega e lo screenshot full-page li perde; senza JS l'SSR resta a
+  opacità piena (progressive-enhancement, DE-401-3). Il clip full-page+viewport dà "Clipped area outside": usare scroll +
+  viewport screenshot. **GOTCHA:** `scratchpad/` NON gitignorato → i suoi `.json` gonfiano jscpd (1 falso "new"); cancellarlo
+  prima del delta/commit. **GOTCHA:** commit message con apostrofi italiani → `git commit -F <file>` (l'here-string PS
+  `@'...'@` NON vale nel tool Bash).
 - **`body-sections-b` (confine, VERDE `d405eaa`)**: baseline igiene **RI-CATTURATA 179→207** (`baseline.mjs capture
   "$(pwd -W)" --oracles jscpd --out .trueline/hygiene-baseline.json`): le 24 varianti CD di `Orari`/`Contatti` + la chrome
   (`SiteHeader`/`SiteFooter`) hanno introdotto **31 dup NUOVE, tutte LOW** — 16 nei renderer body-b (componenti-slot ripetuti
@@ -127,6 +141,38 @@
 
 ## 5. Carry-over / note ereditate
 
+- **🔴 LEZIONE variety-select — `vertical` NON arriva ai blocchi via `block.data` (va INOLTRATO).** `vertical` è
+  "consultato, non reso" (blocks.ts): NON è in `brief_fields_rendered` di offerte, quindi `resolve` non lo copia in
+  `block.data` → su /s/ `Offerte` cadeva sul settore generico 'altro' (layout logico sbagliato). DV2-501: congelare
+  `vertical` nel documento (`SiteDocumentSchema` riusa `BriefUpdateSchema.shape.vertical`) e **inoltrarlo** via
+  `SiteView`→`renderBlock`→`SiteBlockProps.vertical` accanto a `design`; `Offerte` legge `props.vertical ?? block.data.vertical
+  ?? 'altro'`. Wiring reale, non speculativo (colmava un buco).
+- **🔴 LEZIONE variety-select — `section_layout_id` PER-BLOCCO del corpo = derivazione seminata, non asse-documento.** Il
+  Combo/`DesignSelection` porta UN `section_layout_id` (doc-level, `SECTION_LAYOUTS` v1.1, morto nel render v2). I blocchi del
+  corpo v2 leggono `block.section_layout_id` da `BODY_LAYOUTS` (per tipo-sezione). `variant-document` assegna a ogni blocco del
+  corpo (chi-siamo/orari/contatti/recensioni/faq) un id via `selectBodyLayout(section, vertical, seed, variantIndex)` =
+  `candidati[(offset+variantIndex) % len]` su `BODY_LAYOUTS[section]` scope-filtrato (offset seminato dal seed). Con ≥5
+  varianti/sezione, le 5 varianti (0..4) cadono su id DISTINTI → il corpo varia. hero/offerte (asse-documento) → `undefined`.
+- **🔴 LEZIONE variety-select — IBRIDO PALETTE A+B (la greedy per-ID non spande il COLORE).** L'esclusione dura del `theme_id`
+  dà 5 temi distinti ma NON palette visibilmente diverse (catalogo ristorazione caldo-crema → 5 accenti caldi, "palette sempre
+  uguale" al gate). **A:** obiettivo SECONDARIO nel farthest-first = massimizzare `minPaletteDistTo` (distanza cromatica =
+  tinta d'accento circolare×saturazione + luminosità del `surface_page`×0.7); a parità di similarità-assi vince la palette più
+  lontana; tie-break seminato. Non regredisce le invarianti greedy (il PRIMARIO resta min-similarità). **B:** `themes.ts` +2
+  palette a fondo NON-crema — una SCURA (`trattoria-a-lume`: surface_page scuro, text_heading/on_dark chiari, line chiare-
+  trasparenti, accento brillante con `accent_contrast` SCURO, surface_dark il più scuro per le bande) e una FREDDA
+  (`osteria-di-lago`: fondo grigio-salvia, accento teal). Il fondo-scuro RENDE PREMIUM (le bande dei blocchi reggono: text
+  chiaro ovunque, card in rilievo). Conteggi temi via `toBeGreaterThanOrEqual` (inclusione) → aggiungere è sicuro.
+- **🔴 GOTCHA variety-select — `.site-page gap` = STRISCE BIANCHE tra le bande v2.** `.site-page` aveva `gap: 2xl` (ritmo a
+  CARD di v1, quando le sezioni erano schede dentro la colonna). In v2 le sezioni sono BANDE full-bleed 100vw (`margin-inline:
+  calc(50%-50vw)`) con fondo proprio + padding interno (`BODY_SECTION_PAD_Y` 56-104px); il `body` è `#ffffff`, `.site-view`/
+  `.site-page` senza fondo → il gap mostrava il bianco del body tra le bande. **Fix: `gap: 0`** (bande a contatto, continue).
+- **🔴 LEZIONE variety-select — DE-102 e2e OBSOLETO in v2 (background di sezione).** In v2 lo sfondo dei blocchi sta su `<div>`
+  INTERNI (Hero.tsx full-bleed), non sulla `<section>` → `getComputedStyle(section).backgroundColor` è TRASPARENTE per ogni
+  sezione. L'asserzione v1 "hero bg ≠ non-hero bg" non regge (la greedy pesca hero tipografici es. `hero-gazzetta`). Migrata:
+  il **titolo display dell'hero domina in font-size** l'intestazione del corpo (distinzione strutturale, robusta a ogni hero).
+- **🔴 LEZIONE variety-select — `assertSufficientMaterial` ESPORTATA per oracolabilità.** Il fail-forte (hero o theme < 5) non
+  è raggiungibile dai 5 vertical reali (materiale abbondante) → estratto in funzione pura esportata, testata con pool CRAFTED
+  (povero) + un test che INIETTA il pool in `allowedCombinations` (`vi.spyOn`) provando che `selectDesign` propaga.
 - **🔴 LEZIONE body-b — HEADER/FOOTER = CHROME del SiteView (DS-V2-D11 #4), NON blocchi.** `deriveChromeData(document)`
   (`src/ui/site/chrome/derive.ts`, PURA) estrae gli attributi-sito: nome dall'hero (`data.business_name`, primo blocco che
   ce l'ha, per PRESENZA di campo non per id), nav dalle PAGINE (`title` → `#slug`; `SitePageView` porta ora `id={page.slug}`
@@ -309,6 +355,26 @@
 
 ## 6. Copertura dichiarata
 
+- **`variety-select` (DV2-501..505) — tutti gli AC coperti e verdi + GATE VISIVO ESEGUITO E APPROVATO.** Target_tests:
+  `document-design-selection-v2` (AC-501-1/2/3: freeze theme/hero/menu versionati + `vertical` + `section_layout_id` per-blocco
+  valido per tipo-sezione; SiteView proietta i data-* + inoltra design+vertical; Offerte riceve menu congelato E vertical
+  [`data-offerings-layout=menu-sections`]; due doc hero/menu diversi → data-* distinti + corpo diverge); `design-matrix-recipe-v2`
+  (AC-502-1/2/3: `recipe_id` valido ≥2/vertical, `recipeFor` risolve, deterministico); `design-select-greedy-v2` (AC-503-1/2/3:
+  hero+theme distinti; farthest-first ricalcolato dal pool [non tautologico]; recipe/menu diversificati; determinismo);
+  `design-select-material-v2` (AC-504-1/2/3: ≥5 hero/theme + ≥2 recipe/vertical; fail-forte con pool crafted + inietta pool in
+  selectDesign; nessun falso allarme); `design-select-palette-v2` (DV2-505 ibrido A: ogni seed ≥1 accento freddo + media
+  famiglie ≥3.5 su 24 seed, tinta ricalcolata dal catalogo). **Mutazioni 6/6 uccise.** Suite 1717, next build 0, e2e 30/30.
+  **Gate visivo: 5 varianti reali di un seed su /s/ (Playwright JS-off), APPROVATO** — palette spread (rosso/oro/verde/teal/
+  magenta + tema SCURO premium) + bande continue.
+- **NON coperto / dichiarato (L-COL-006, variety-select):** (a) la **bellezza** non è oracolabile (gate umano fatto). (b) La
+  MISURA COMPUTED della varietà fra 5 varianti reali su /s/ (font-size hero, layout corpo, background) + il **canary** sono di
+  **`e2e-visual-v2`** (DV2-601) — qui il gate è per screenshot umano, l'e2e generale (30/30) copre /s/ ma non la misura inter-
+  variante. (c) L'asse `section_layout` per-blocco del corpo NON entra nella distanza farthest-first della greedy (è derivato
+  da `selectBodyLayout` seminato per-variante, non un asse-Combo): le 5 varianti hanno corpo diverso per variantIndex, non per
+  metrica di distanza. (d) **Foto reali** fuori scope (P4-D7/F): PhotoPlaceholder. (e) `osteria-di-lago` (palette fredda) non
+  selezionata dal seed di gate, ma il catalogo+greedy la offrono (materiale per altri seed). (f) Il `section_layout_id`
+  doc-level del Combo (`SECTION_LAYOUTS` v1.1) resta un asse greedy ma è **morto nel render v2** (i blocchi leggono BODY_LAYOUTS
+  per-blocco) — inerte, non rimosso (pulizia fuori scope).
 - **`body-sections-b` (DV2-401b/403/404 parte-b) — tutti gli AC coperti e verdi + GATE VISIVO ESEGUITO E APPROVATO.**
   Target_tests: `design-section-layouts-body-v2` (ESTESO: orari/contatti in `BODY_LAYOUTS` + blocco dedicato per `CHROME_LAYOUTS`
   — AC-401-1/2/3 su tutti e 7 i tipi, ≥2 varianti/tipo, id versionati unici, lookup esatto proto-safe, firma `section|variant`

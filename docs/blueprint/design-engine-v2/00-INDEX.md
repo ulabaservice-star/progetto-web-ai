@@ -140,6 +140,17 @@ variety-select `DV2-5xx`, e2e `DV2-6xx`. ID stabili, mai riusati.
   per una futura selezione, senza campo orfano). (b) **#3 vale SOLO per recensioni/faq: orari/contatti restano SOLO dal Brief**
   (già generabili da `generatable.ts`) — niente scheletro di presentazione anti-vuoto per loro (decisione utente al gate di
   body-b). Il **giorno-corrente** degli orari è un effetto CLIENT dell'isola `OrariToday` (`new Date` solo lì; doc byte-identico).
+- **DS-V2-D12 — Rifiniture di `variety-select` emerse al gate visivo (decise con l'utente, 2026-08-16).** Attuate nel commit
+  del macrotask (`362847f`): (a) **`site.css .site-page gap: 0`** — in v2 le sezioni sono BANDE full-bleed 100vw col proprio
+  fondo; il `gap` (ritmo a CARD di v1) lasciava intravedere il bianco del `body` fra le bande ("strisce"). Ora continue, col
+  respiro dato dal padding interno di ogni banda. (b) **Migrazione e2e DE-102** — la distinzione dell'hero in v2 è TIPOGRAFICA
+  (titolo display domina), non un background di SEZIONE (in v2 la `<section>` è trasparente, lo sfondo sta su div interni):
+  l'assunzione v1 non regge sugli hero tipografici CD. (c) **DV2-505 — Ibrido palette A+B (l'utente al gate: «palette sempre
+  la stessa»).** **A:** la greedy (DV2-503) massimizza anche la DISTANZA CROMATICA (tinta d'accento + luminosità del fondo
+  pagina) come obiettivo secondario del farthest-first → i 5 accenti spaziano sulla ruota invece di restare caldi (il catalogo
+  i freddi li ha: basilico, teal). **B:** `themes.ts` guadagna 2 palette a fondo NON-crema — `trattoria-a-lume` (scura, a lume
+  di candela) e `osteria-di-lago` (fredda lacustre) — così il fondo, non solo l'accento, varia (una pagina scura premium fra
+  le 5). Resta manopole nostre (P2-D1): palette dichiarate da noi, il modello scrive solo prosa.
 
 ## Contratto di altitudine (architecture)
 
