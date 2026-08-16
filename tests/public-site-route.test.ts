@@ -403,8 +403,11 @@ describe('AC-405-5 — payload ostile reso come testo, nessun markup attivo, nes
 
     // FALSIFICABILITA': i due social sono resi (due voci), ma solo l'https VALIDO produce un link;
     // il javascript: resta solo testo. Se il render costruisse href da testo libero, i link sarebbero due.
-    expect(container.querySelectorAll('.site-contact__social')).toHaveLength(2); // covers: AC-405-5
-    const socialLinks = [...container.querySelectorAll('.site-contact__social a')];
+    // MIGRATO DV2-403 (body-sections-b): Contatti v2 rende i social come `.site-contact-v2__social` (chip
+    // <a> se valido, <span> altrimenti). La chrome del SiteView NON aggiunge social (il blocco contatti
+    // ostile porta solo social_links, senza address/phone: deriveChromeData non trova un blocco recapiti).
+    expect(container.querySelectorAll('.site-contact-v2__social')).toHaveLength(2); // covers: AC-405-5
+    const socialLinks = [...container.querySelectorAll('a.site-contact-v2__social')];
     expect(socialLinks).toHaveLength(1); // covers: AC-405-5
     expect(socialLinks[0].getAttribute('href')).toBe(HTTPS_SOCIAL); // covers: AC-405-5
   });

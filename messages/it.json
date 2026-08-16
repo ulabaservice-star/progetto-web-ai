@@ -169,6 +169,20 @@
       "title": "Domande frequenti",
       "placeholder": "Le risposte alle domande dei tuoi clienti compariranno qui."
     },
+    "contact": {
+      "address": "Indirizzo",
+      "phone": "Telefono",
+      "whatsapp": "WhatsApp",
+      "email": "Email",
+      "social": "Social",
+      "mapLabel": "Mappa della zona"
+    },
+    "footer": {
+      "contacts": "Contatti",
+      "hours": "Orari",
+      "nav": "Naviga",
+      "credit": "Sito realizzato con cura."
+    },
     "badge": "Fatto con Belora"
   },
   "generate": {

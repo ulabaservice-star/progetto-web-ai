@@ -104,6 +104,10 @@ describe('T-237 AC-237-3 — tutte le offerte e tutte le chiavi orario rese, coi
   it('orari con piu di una chiave: ogni giorno reso col proprio orario, nessuno duplicato ne omesso', async () => {
     // PIU DI UNA chiave, valori DISCORDANTI, e la trappola del prefisso: 'sab' e' prefisso di
     // 'sabato' — un confronto lasco fonderebbe le due voci.
+    // MIGRATO DV2-403 (body-sections-b): Orari.tsx e' il renderer unico delle 12 varianti CD; le
+    // GARANZIE AC-237-3 restano IDENTICHE (tutte le chiavi rese coi propri valori, 'sab'/'sabato'
+    // distinte) ma i SELETTORI sono v2: `.site-hours-v2__row` / `.site-hours-v2__value`. La chiave-giorno
+    // resta in `data-hours-key`.
     const hours = { 'lun-ven': '09:00-19:00', sab: '09:00-13:00', sabato: 'Chiuso' };
     const block: SiteBlock = {
       id: 'orari',
@@ -114,12 +118,12 @@ describe('T-237 AC-237-3 — tutte le offerte e tutte le chiavi orario rese, coi
     };
     const container = render(await Orari({ block, locale: 'it' })).container;
 
-    const rows = [...container.querySelectorAll('.site-hours__row')];
+    const rows = [...container.querySelectorAll('.site-hours-v2__row')];
     // Tutte e tre le chiavi rese, una riga per chiave: nessuna omessa, nessuna duplicata.
     const rendered = Object.fromEntries(
       rows.map((row) => [
         row.getAttribute('data-hours-key'),
-        row.querySelector('.site-hours__value')?.textContent,
+        row.querySelector('.site-hours-v2__value')?.textContent,
       ]),
     );
     expect(rendered).toEqual({
@@ -129,10 +133,10 @@ describe('T-237 AC-237-3 — tutte le offerte e tutte le chiavi orario rese, coi
     }); // covers: AC-237-3
     expect(rows).toHaveLength(3); // covers: AC-237-3
     // 'sab' e 'sabato' sono due voci DISTINTE, entrambe presenti coi propri valori.
-    expect(container.querySelector('[data-hours-key="sab"] .site-hours__value')?.textContent).toBe(
+    expect(container.querySelector('[data-hours-key="sab"] .site-hours-v2__value')?.textContent).toBe(
       '09:00-13:00',
     ); // covers: AC-237-3
-    expect(container.querySelector('[data-hours-key="sabato"] .site-hours__value')?.textContent).toBe(
+    expect(container.querySelector('[data-hours-key="sabato"] .site-hours-v2__value')?.textContent).toBe(
       'Chiuso',
     ); // covers: AC-237-3
   });

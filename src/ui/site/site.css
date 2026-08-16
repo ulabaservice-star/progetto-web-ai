@@ -462,7 +462,8 @@ blockquote {
 .site-offerings__price,
 .site-menu-v2__price,
 .site-hours__day,
-.site-hours__value {
+.site-hours__value,
+.site-hours-v2__value {
   font-variant-numeric: var(--site-numeric-figure);
 }
 
@@ -588,7 +589,34 @@ blockquote::after {
    incolonnato dal proprio BodyContainer centrato (body-kit.tsx). Nessun colore qui: solo geometria. */
 .site-about-v2,
 .site-reviews-v2,
-.site-faq-v2 {
+.site-faq-v2,
+.site-hours-v2,
+.site-contact-v2 {
+  width: 100vw;
+  max-width: 100vw;
+  margin-inline: calc(50% - 50vw);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   DV2-403 (macrotask body-sections-b) — IL GIORNO CORRENTE degli orari. L'isola client OrariToday
+   (blocks/OrariToday.tsx) marca DOPO il mount la riga di oggi con data-today="true" (il server-render non
+   la porta: documento deterministico, AC-DV2-403-2). Il marcatore e' STRUTTURA-AGNOSTICO (vale sia sulle
+   righe leader sia sulle card-giorno): un filo in accento a sinistra + un velo tenue dell'accent. Nessun
+   colore letterale, nessun testo (l'evidenza e' visiva; l'a11y arriva da aria-current, posto dall'isola). */
+.site-hours-v2__row[data-today='true'] {
+  box-shadow: inset 3px 0 0 var(--site-color-accent);
+  background: color-mix(in srgb, var(--site-color-accent) 7%, transparent);
+  border-radius: var(--site-radius-sm);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   DV2-404 (macrotask body-sections-b) — LA CHROME (header/footer) EDGE-TO-EDGE. SiteView rende
+   SiteHeader/SiteFooter ATTORNO alle pagine (DS-V2-D11 #4): la testata e il pie' coprono tutta la
+   larghezza del viewport (bande piene), mentre il contenuto interno resta incolonnato dal proprio
+   BodyContainer centrato. Come hero/menu/corpo, nessun colore qui: solo geometria. */
+.site-header-v2,
+.site-footer-v2 {
+  display: block;
   width: 100vw;
   max-width: 100vw;
   margin-inline: calc(50% - 50vw);

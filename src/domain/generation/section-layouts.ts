@@ -337,7 +337,7 @@ export function menuLayoutFor(id: string): SiteMenuLayout | undefined {
 // la greedy vuole >=5/asse — qui abbondano). L'ampiezza cresce coi sotto-macrotask.
 
 /** Le sezioni di CORPO che portano varianti CD (distinte dalla union `SiteSection` v1.1 di sopra). */
-type BodySectionKind = 'chi-siamo' | 'recensioni' | 'faq';
+type BodySectionKind = 'chi-siamo' | 'recensioni' | 'faq' | 'orari' | 'contatti';
 
 /**
  * L'ASSE VISIBILE della variante di CHI-SIAMO: la STRUTTURA dell'impaginato del racconto (NON il
@@ -408,7 +408,51 @@ type FaqVariant =
   | 'minimal'
   | 'carta';
 
-type BodyVariant = StoryVariant | ReviewsVariant | FaqVariant;
+/**
+ * L'ASSE VISIBILE della variante di ORARI (DV2-403, body-sections-b): la STRUTTURA dell'impaginato della
+ * settimana (tabella su card, griglia di card-giorno, banda scura, cartello centrato, due colonne, nastro
+ * a fascia, righe di registro, orario gigante di punta, con foto della sala, card per fasce, timeline
+ * verticale, manifesto). Tradotta dai nomi di Claude Design (components/orari/Orari.jsx). UNO per voce
+ * nella sezione. Il GIORNO CORRENTE non e' un asse: e' un effetto CLIENT dell'isola (AC-DV2-403-2), fuori
+ * dal documento congelato.
+ */
+type OrariVariant =
+  | 'tabella'
+  | 'card-giorni'
+  | 'banda-scura'
+  | 'centrale'
+  | 'doppia-colonna'
+  | 'nastro'
+  | 'registro'
+  | 'insegna'
+  | 'con-foto'
+  | 'settimana'
+  | 'verticale'
+  | 'manifesto';
+
+/**
+ * L'ASSE VISIBILE della variante di CONTATTI (DV2-403, body-sections-b): la STRUTTURA dell'impaginato dei
+ * recapiti + mappa (righe etichettate con mappa a fianco, mappa piena con carta, tre carte, pannello
+ * scuro, griglia centrale, biglietto da visita, mappa a sinistra, barra scura, tipografico con indirizzo
+ * gigante, tabellone a box, invito WhatsApp, quartiere con mappa grande). Tradotta dai nomi di Claude
+ * Design (components/contatti/Contatti.jsx). La MAPPA e' sempre un PhotoPlaceholder / SVG di catalogo, mai
+ * una risorsa esterna (AC-DV2-403-3).
+ */
+type ContattiVariant =
+  | 'mappa'
+  | 'mappa-piena'
+  | 'tre-carte'
+  | 'pannello-scuro'
+  | 'centrale'
+  | 'biglietto'
+  | 'mappa-sinistra'
+  | 'barra'
+  | 'tipografico'
+  | 'tabellone'
+  | 'invito'
+  | 'quartiere';
+
+type BodyVariant = StoryVariant | ReviewsVariant | FaqVariant | OrariVariant | ContattiVariant;
 
 /** UNA VARIANTE DI CORPO. Tipo TOTALE sulle chiavi: una voce cui manchi un campo non compila. */
 export type SiteBodyLayout = {
@@ -464,6 +508,36 @@ export const BODY_LAYOUTS: readonly SiteBodyLayout[] = [
   { id: 'faq-schede@1', scope: 'universale', section: 'faq', variant: 'schede' },
   { id: 'faq-minimal@1', scope: 'universale', section: 'faq', variant: 'minimal' },
   { id: 'faq-carta@1', scope: 'ristorazione', section: 'faq', variant: 'carta' },
+  // ORARI (components/orari, DV2-403 body-sections-b) — 12 impaginati della settimana. Il render legge il
+  // record `data.hours` (giorno -> fascia): il GIORNO CORRENTE e' un effetto CLIENT dell'isola, mai nel
+  // documento congelato (determinismo, AC-DV2-403-2).
+  { id: 'orari-tabella@1', scope: 'universale', section: 'orari', variant: 'tabella' },
+  { id: 'orari-card-giorni@1', scope: 'universale', section: 'orari', variant: 'card-giorni' },
+  { id: 'orari-banda-scura@1', scope: 'universale', section: 'orari', variant: 'banda-scura' },
+  { id: 'orari-centrale@1', scope: 'universale', section: 'orari', variant: 'centrale' },
+  { id: 'orari-doppia-colonna@1', scope: 'universale', section: 'orari', variant: 'doppia-colonna' },
+  { id: 'orari-nastro@1', scope: 'universale', section: 'orari', variant: 'nastro' },
+  { id: 'orari-registro@1', scope: 'universale', section: 'orari', variant: 'registro' },
+  { id: 'orari-insegna@1', scope: 'universale', section: 'orari', variant: 'insegna' },
+  { id: 'orari-con-foto@1', scope: 'universale', section: 'orari', variant: 'con-foto' },
+  { id: 'orari-settimana@1', scope: 'universale', section: 'orari', variant: 'settimana' },
+  { id: 'orari-verticale@1', scope: 'universale', section: 'orari', variant: 'verticale' },
+  { id: 'orari-manifesto@1', scope: 'universale', section: 'orari', variant: 'manifesto' },
+  // CONTATTI (components/contatti, DV2-403 body-sections-b) — 12 impaginati dei recapiti + mappa. La MAPPA
+  // e' un PhotoPlaceholder / SVG di catalogo (mai una risorsa esterna, AC-DV2-403-3); gli href nascono dai
+  // costruttori validati (safeTel/Mailto/Https/Whatsapp), mai dal testo libero.
+  { id: 'contatti-mappa@1', scope: 'universale', section: 'contatti', variant: 'mappa' },
+  { id: 'contatti-mappa-piena@1', scope: 'universale', section: 'contatti', variant: 'mappa-piena' },
+  { id: 'contatti-tre-carte@1', scope: 'universale', section: 'contatti', variant: 'tre-carte' },
+  { id: 'contatti-pannello-scuro@1', scope: 'universale', section: 'contatti', variant: 'pannello-scuro' },
+  { id: 'contatti-centrale@1', scope: 'universale', section: 'contatti', variant: 'centrale' },
+  { id: 'contatti-biglietto@1', scope: 'universale', section: 'contatti', variant: 'biglietto' },
+  { id: 'contatti-mappa-sinistra@1', scope: 'universale', section: 'contatti', variant: 'mappa-sinistra' },
+  { id: 'contatti-barra@1', scope: 'universale', section: 'contatti', variant: 'barra' },
+  { id: 'contatti-tipografico@1', scope: 'universale', section: 'contatti', variant: 'tipografico' },
+  { id: 'contatti-tabellone@1', scope: 'universale', section: 'contatti', variant: 'tabellone' },
+  { id: 'contatti-invito@1', scope: 'universale', section: 'contatti', variant: 'invito' },
+  { id: 'contatti-quartiere@1', scope: 'universale', section: 'contatti', variant: 'quartiere' },
 ];
 
 /**
@@ -474,4 +548,80 @@ export const BODY_LAYOUTS: readonly SiteBodyLayout[] = [
  */
 export function bodyLayoutFor(id: string): SiteBodyLayout | undefined {
   return BODY_LAYOUTS.find((layout) => layout.id === id);
+}
+
+// ── CHROME: header + footer (DV2-404, body-sections-b) ─────────────────────────────────────────────
+//
+// PERCHE' UN CATALOGO DEDICATO E NON BODY_LAYOUTS (DS-V2-D11 #4): header e footer NON sono sezioni del
+// documento congelato — sono la CHROME del SiteView, resa ATTORNO alle pagine, coi contenuti DERIVATI
+// dagli attributi-sito (business_name dell'hero, nav dalle pagine, recapiti sintetici), mai da slot LLM.
+// Non hanno un `block.section_layout_id` (non sono blocchi) e non devono essere risolvibili da
+// `bodyLayoutFor` (un blocco non deve poter chiedere `section_layout_id: 'header-...'`). Tengono percio' un
+// tipo e un lookup PROPRI, come MENU_LAYOUTS tiene i suoi.
+//
+// SELEZIONE FUORI SCOPE (L-COL-006, DS-V2-D9): gli assi di varieta' v2 sono {theme, hero, menu, section,
+// recipe} — header/footer NON ne fanno parte. Il catalogo porta >=2 varianti per slot (AC-DV2-401-1) e il
+// renderer le supporta tutte via id; in body-sections-b la chrome rende la variante di DEFAULT (nessun
+// asse di documento la congela). L'ampiezza qui e' materiale per un'eventuale selezione futura, mai un
+// campo orfano nel documento.
+
+/** Lo SLOT di chrome a cui una variante appartiene: la testata o il pie' di pagina. Union CHIUSA. */
+type ChromeSlot = 'header' | 'footer';
+
+/**
+ * L'ASSE VISIBILE della variante di HEADER: la STRUTTURA della testata (classica con nav+CTA, nome
+ * centrato coi lati, scura, minimale, blocco-bandiera in accento, nome impilato sopra la nav). Tradotta
+ * dai nomi di Claude Design (components/chrome/Header.jsx). UNO per voce.
+ */
+type HeaderVariant = 'classico' | 'centrato' | 'scuro' | 'minimale' | 'bandiera' | 'impilato';
+
+/**
+ * L'ASSE VISIBILE della variante di FOOTER: la STRUTTURA del pie' (classico scuro a 4 colonne, chiaro su
+ * fondo alternato, centrato in pila, nome massiccio gigante, minimale a una riga, orari in evidenza a
+ * fianco). Tradotta dai nomi di Claude Design (components/chrome/Footer.jsx). UNO per voce.
+ */
+type FooterVariant = 'classico' | 'chiaro' | 'centrato' | 'massiccio' | 'minimale' | 'orari-evidenza';
+
+/** UNA VARIANTE DI CHROME. Tipo TOTALE sulle chiavi: una voce cui manchi un campo non compila. */
+export type SiteChromeLayout = {
+  /** Identificatore STABILE e VERSIONATO nella forma '<slot>-<kebab>@N'. */
+  readonly id: string;
+  /** L'idoneita' di settore: universale (ogni settore) o overlay di un vertical. */
+  readonly scope: CatalogScope;
+  /** Lo slot di chrome (header/footer) a cui la variante appartiene. */
+  readonly slot: ChromeSlot;
+  /** La STRUTTURA della testata/pie' (asse VISIBILE), letta dal renderer e dal test. */
+  readonly variant: HeaderVariant | FooterVariant;
+};
+
+/**
+ * LE VARIANTI DI CHROME offerte: >=2 header e >=2 footer, ognuna con una STRUTTURA davvero diversa (AC-
+ * DV2-401-1/3). Id versionati '<slot>-<kebab>@N', scope universale (una testata/pie' vale per ogni
+ * settore). Il render (SiteHeader/SiteFooter) le supporta tutte via id; la scelta in body-sections-b e' la
+ * prima voce di ciascuno slot (selezione fuori scope, DS-V2-D9).
+ */
+export const CHROME_LAYOUTS: readonly SiteChromeLayout[] = [
+  // HEADER (components/chrome, h-*) — 6 testate strutturalmente diverse.
+  { id: 'header-classico@1', scope: 'universale', slot: 'header', variant: 'classico' },
+  { id: 'header-centrato@1', scope: 'universale', slot: 'header', variant: 'centrato' },
+  { id: 'header-scuro@1', scope: 'universale', slot: 'header', variant: 'scuro' },
+  { id: 'header-minimale@1', scope: 'universale', slot: 'header', variant: 'minimale' },
+  { id: 'header-bandiera@1', scope: 'universale', slot: 'header', variant: 'bandiera' },
+  { id: 'header-impilato@1', scope: 'universale', slot: 'header', variant: 'impilato' },
+  // FOOTER (components/chrome, f-*) — 6 pie' di pagina strutturalmente diversi.
+  { id: 'footer-classico@1', scope: 'universale', slot: 'footer', variant: 'classico' },
+  { id: 'footer-chiaro@1', scope: 'universale', slot: 'footer', variant: 'chiaro' },
+  { id: 'footer-centrato@1', scope: 'universale', slot: 'footer', variant: 'centrato' },
+  { id: 'footer-massiccio@1', scope: 'universale', slot: 'footer', variant: 'massiccio' },
+  { id: 'footer-minimale@1', scope: 'universale', slot: 'footer', variant: 'minimale' },
+  { id: 'footer-orari-evidenza@1', scope: 'universale', slot: 'footer', variant: 'orari-evidenza' },
+];
+
+/**
+ * La variante di chrome con questo id versionato, o `undefined`. Stesso contratto di `bodyLayoutFor` /
+ * `menuLayoutFor`: UGUAGLIANZA ESATTA su ARRAY (mai un oggetto indicizzato per id → '__proto__' /
+ * 'constructor' danno `undefined`), mai per prefisso ('header' non risolve, ne' 'header-classico' senza @N).
+ */
+export function chromeLayoutFor(id: string): SiteChromeLayout | undefined {
+  return CHROME_LAYOUTS.find((layout) => layout.id === id);
 }

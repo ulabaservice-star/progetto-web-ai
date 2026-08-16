@@ -77,16 +77,20 @@ describe('T-237 AC-237-1 — nessun href fuori allowlist, nessun link da un valo
       expect(href.toLowerCase()).not.toContain('javascript:'); // covers: AC-237-1
     }
 
+    // MIGRATO DV2-403 (body-sections-b): Contatti.tsx e' il renderer unico delle 12 varianti CD; le
+    // GARANZIE AC-237-1 restano IDENTICHE (href solo da costruttori validati) ma i SELETTORI sono v2 —
+    // i canali sono `[data-contact-field="<kind>"]`, i social `.site-contact-v2__social` (chip: <a> se
+    // valido, altrimenti <span>).
     // I tre canali con valore NON valido non rendono alcun link (restano come solo testo).
-    expect(container.querySelector('.site-contact__phone a')).toBeNull(); // covers: AC-237-1
-    expect(container.querySelector('.site-contact__email a')).toBeNull(); // covers: AC-237-1
-    expect(container.querySelector('.site-contact__whatsapp a')).toBeNull(); // covers: AC-237-1
+    expect(container.querySelector('[data-contact-field="phone"] a')).toBeNull(); // covers: AC-237-1
+    expect(container.querySelector('[data-contact-field="email"] a')).toBeNull(); // covers: AC-237-1
+    expect(container.querySelector('[data-contact-field="whatsapp"] a')).toBeNull(); // covers: AC-237-1
 
     // I due social ostili (javascript: e http:) non sono link; i due https lo sono: quattro
     // voci, due link. Rilassare safeHttpsHref ad accettare anche http: farebbe salire i link a
     // tre — e l'href 'http:' cadrebbe pure fuori dall'allowlist del ciclo qui sopra.
-    expect(container.querySelectorAll('.site-contact__social')).toHaveLength(4); // covers: AC-237-1
-    expect(container.querySelectorAll('.site-contact__social a')).toHaveLength(2); // covers: AC-237-1
+    expect(container.querySelectorAll('.site-contact-v2__social')).toHaveLength(4); // covers: AC-237-1
+    expect(container.querySelectorAll('a.site-contact-v2__social')).toHaveLength(2); // covers: AC-237-1
   });
 
   it('e FALSIFICABILE: i valori validi PRODUCONO il link con lo schema atteso', async () => {
@@ -105,16 +109,16 @@ describe('T-237 AC-237-1 — nessun href fuori allowlist, nessun link da un valo
     };
     const container = render(await Contatti({ block, locale: 'it' })).container;
 
-    expect(container.querySelector('.site-contact__phone a')?.getAttribute('href')).toBe(
+    expect(container.querySelector('[data-contact-field="phone"] a')?.getAttribute('href')).toBe(
       'tel:+390551234567',
     ); // covers: AC-237-1
-    expect(container.querySelector('.site-contact__email a')?.getAttribute('href')).toBe(
+    expect(container.querySelector('[data-contact-field="email"] a')?.getAttribute('href')).toBe(
       'mailto:info@belora.it',
     ); // covers: AC-237-1
-    expect(container.querySelector('.site-contact__whatsapp a')?.getAttribute('href')).toBe(
+    expect(container.querySelector('[data-contact-field="whatsapp"] a')?.getAttribute('href')).toBe(
       'https://wa.me/393201112223',
     ); // covers: AC-237-1
-    const socialHrefs = [...container.querySelectorAll('.site-contact__social a')].map((a) =>
+    const socialHrefs = [...container.querySelectorAll('a.site-contact-v2__social')].map((a) =>
       a.getAttribute('href'),
     );
     expect(socialHrefs).toEqual([

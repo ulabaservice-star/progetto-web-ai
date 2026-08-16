@@ -22,6 +22,7 @@
 // --site-space-*, --site-radius-*, --site-color-*).
 import './site.css';
 import type { ReactElement } from 'react';
+import { getTranslations } from 'next-intl/server';
 import type { SiteDocument, SitePage } from '@/domain/generation/document';
 import type { EffectLevel } from '@/domain/generation/effects';
 import type { SiteTheme } from '@/domain/generation/themes';
@@ -29,6 +30,16 @@ import { siteThemeStyle } from '@/ui/site/theme-style';
 import { SITE_FONT_VARIABLE_CLASSNAME } from '@/ui/site/site-fonts';
 import { SiteMotion } from '@/ui/site/SiteMotion';
 import { renderBlock } from '@/ui/site/registry';
+import { deriveChromeData } from '@/ui/site/chrome/derive';
+import { SiteHeader, type ChromeCta } from '@/ui/site/chrome/SiteHeader';
+import { SiteFooter } from '@/ui/site/chrome/SiteFooter';
+
+// DV2-404 (macrotask body-sections-b) — LE VARIANTI DI CHROME DI DEFAULT. header/footer sono chrome del
+// SiteView (DS-V2-D11 #4) e la loro SELEZIONE e' fuori scope in body-sections-b (DS-V2-D9: header/footer
+// non sono assi di varieta'): si rende la prima variante di catalogo. Il renderer supporta comunque tutte
+// le varianti via id, materiale per un'eventuale selezione futura, senza un campo orfano nel documento.
+const HEADER_LAYOUT_ID = 'header-classico@1';
+const FOOTER_LAYOUT_ID = 'footer-classico@1';
 
 // DE-207 (macrotask design-select) — LA SELEZIONE DESIGN CONGELATA nel documento (DS-D4): i quattro
 // id versionati che il render proietta ALLA RADICE come data-attribute. E' un sottoinsieme del
@@ -71,6 +82,9 @@ export async function SitePageView({
   return (
     <div
       className={`site-page ${SITE_FONT_VARIABLE_CLASSNAME}`}
+      // DV2-404 (body-sections-b) — l'ANCORA della navigazione della chrome: la nav del SiteHeader/Footer
+      // punta a `#<slug>`, quindi la pagina porta `id` = il proprio slug (univoco nel documento). Additivo.
+      id={page.slug}
       data-site-page={page.slug}
       style={siteThemeStyle(theme)}
       // DE-207 — i ganci d'attributo della selezione congelata. Valore `undefined` -> React omette
@@ -146,6 +160,24 @@ export async function SiteView({
     siteDocument.pages.map((page) => SitePageView({ page, theme, locale, editable, design })),
   );
 
+  // DV2-404 (body-sections-b) — LA CHROME (header/footer), resa ATTORNO alle pagine (DS-V2-D11 #4). I
+  // contenuti sono DERIVATI dal documento (deriveChromeData), MAI slot LLM; le etichette UI vengono dal
+  // catalogo i18n (namespace 'site', P2-D10). La CTA della testata usa un href SICURO gia' derivato (deep
+  // link WhatsApp validato o anchor alla pagina contatti); la sua etichetta e' i18n (l'azione WhatsApp o
+  // la voce di nav 'Contatti'). null = nessuna CTA (nessun canale valido).
+  const t = await getTranslations({ locale, namespace: 'site' });
+  const chrome = deriveChromeData(siteDocument);
+  const cta: ChromeCta | null =
+    chrome.ctaHref !== null
+      ? { label: chrome.whatsappHref !== null ? t('actions.whatsapp') : t('nav.contact'), href: chrome.ctaHref }
+      : null;
+  const footerLabels = {
+    contacts: t('footer.contacts'),
+    hours: t('footer.hours'),
+    nav: t('footer.nav'),
+    credit: t('footer.credit'),
+  };
+
   return (
     <div
       className={`site-view ${SITE_FONT_VARIABLE_CLASSNAME}`}
@@ -164,9 +196,14 @@ export async function SiteView({
           aggancia il compound con .site-motion-ready. Non sta in SitePageView perche' quella e' resa
           anche standalone (la pagina del draft dell'editor) e ne nascerebbe un'isola per pagina. */}
       <SiteMotion level={motionLevel} blocks={blockCount} />
+      {/* DV2-404 — la CHROME attorno alle pagine: header in testa, footer in coda. Sono la testata e il
+          pie' del sito, fuori dal documento congelato (DS-V2-D11 #4); il badge di pubblicazione (P4-D5)
+          resta un fratello di <main>, non entra qui. */}
+      <SiteHeader data={chrome} layoutId={HEADER_LAYOUT_ID} cta={cta} />
       {pages.map((element, index) => (
         <div key={index}>{element}</div>
       ))}
+      <SiteFooter data={chrome} layoutId={FOOTER_LAYOUT_ID} labels={footerLabels} />
     </div>
   );
 }
