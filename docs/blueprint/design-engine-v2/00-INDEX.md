@@ -129,6 +129,17 @@ variety-select `DV2-5xx`, e2e `DV2-6xx`. ID stabili, mai riusati.
   **Copertura calibrata (L-COL-006):** DS-V2-D9 chiede «tutte» le varianti CD; il catalogo del corpo ne porta
   ~20/tipo. La BUILD traduce un insieme robusto e strutturalmente diverso per tipo (il gate visivo giudica il
   wow, non il conteggio); l'ampiezza effettiva è dichiarata nella copertura del macrotask.
+  **Attuazione in `body-sections-b` (`d405eaa`, 2026-08-16) — due precisazioni al #4 e al #3:**
+  (a) **#4 header/footer — la variante NON passa da `section_layout` né da un campo-documento.** Un asse-documento
+  `header_layout_id`/`footer_layout_id` sarebbe un ORFANO: DS-V2-D9 esclude header/footer dagli assi di varietà, quindi
+  `variety-select` non lo congelerebbe mai. Attuazione: catalogo DEDICATO `CHROME_LAYOUTS` (`SiteChromeLayout`+`chromeLayoutFor`,
+  6 header + 6 footer; NON in `BODY_LAYOUTS` — un blocco non deve poter chiedere `section_layout_id:'header-…'`); il `SiteView`
+  rende la variante DEFAULT; i contenuti vengono da `deriveChromeData` (funzione PURA in `src/ui/site/chrome/`: nome dall'hero,
+  nav dalle pagine `#slug`+`id=slug`, recapiti/orari sintetici — MAI slot LLM); credito NEUTRO **senza `new Date`** (il Footer
+  CD usava `getFullYear()`, rimosso: romperebbe il determinismo). Il renderer supporta comunque tutte le 6+6 via id (materiale
+  per una futura selezione, senza campo orfano). (b) **#3 vale SOLO per recensioni/faq: orari/contatti restano SOLO dal Brief**
+  (già generabili da `generatable.ts`) — niente scheletro di presentazione anti-vuoto per loro (decisione utente al gate di
+  body-b). Il **giorno-corrente** degli orari è un effetto CLIENT dell'isola `OrariToday` (`new Date` solo lì; doc byte-identico).
 
 ## Contratto di altitudine (architecture)
 
