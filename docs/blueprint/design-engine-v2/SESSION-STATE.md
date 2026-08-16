@@ -9,8 +9,8 @@
 |---|---|
 | **Progetto** | Belora/Ulaba |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase) |
-| **Ultimo aggiornamento** | 2026-08-15 (**`hero` COSTRUITO — checkpoint VERDE 4/4 + merge su `main`** (`14b27f1`): DV2-201 hero-layouts.ts +20 layout CD (`hero-<kebab>@1`, media placement + `title_treatment`, 6 legacy invariati); DV2-202 Hero.tsx renderer unico delle 20 varianti CD + wiring `design→blocco` (types/registry/SiteView) + CTA i18n `site.hero.*` + edge-to-edge; **M5 preservato** (HeroPhoto: foto caricata `<img>` o PhotoPlaceholder, etichetta soppressa nei full-bleed). Checkpoint decomposto: C1 igiene VERDE (**R-04 re-baseline legittimo** — 20 varianti + prosa docs), C2 semgrep 0 + gitleaks 0 sul diff (`main..HEAD`; i 3 CRITICAL erano FP gitignorati), C3 1616/1616, C4 trace+covers; mutazioni 2/2 uccise; `next build` 0; **e2e Chromium 30/30** (spec v1/v1.1 migrati ai selettori `site-hero-v2` + AC-DE-401-2 su posizione-foto); **gate visivo umano APPROVATO** ("meglio di Wix"). **Prossimo: BUILD di `menu` o `body-sections`** (dip solo `foundation`)) |
-| **Sessione corrente** | 2026-08-15 — BUILD `hero` COMPLETO E MERGIATO. Workflow builder+verifier (verifier tornati garbage → verifica in foreground). 4 decisioni-scope prese con l'utente (wiring minimo, CTA i18n, edge-to-edge, M5 preservato). Migrate onestamente 5 superfici v1/v1.1 (2 unit-biiezione + AC-416-5 + 3 e2e). Prossimo: aprire `prompts/session-start.md`, scegliere `menu` **o** `body-sections` (indipendenti, entrambi toccano `site.css` → uno alla volta) |
+| **Ultimo aggiornamento** | 2026-08-16 (**`menu` COSTRUITO — checkpoint VERDE 4/4 + merge su `main`** (`df642ef`, deploy ulaba.net): DV2-301 section-layouts.ts **tipo dedicato `SiteMenuLayout` + `MENU_LAYOUTS` (20 id `menu-<kebab>@1`) + `menuLayoutFor`** (2 assi VISIBILI `arrangement`/`price`, 2 coppie-prefisso, proto-safe; `SECTION_LAYOUTS` v1.1 INVARIATO → v11 test verde); DV2-302 `Offerte.tsx` renderer unico 20 varianti CD (card-carta su `surface-dark`, leader-dots, prezzi `tabular`, `data-menu-layout`, classi uniformi `site-menu-v2__*`) + **wiring `menu_layout_id`** (document schema opzionale-senza-default → SiteView/`SiteDesignSelection` → registry.renderBlock → `SiteBlockProps.design` → Offerte) + **M5 preservato** (`block.images` via `SiteImage`); DV2-303 `design-matrix.ts` **`menu_layout_id` asse per-vertical INDIPENDENTE** (`pickMenuLayout` su `flavor`, non `heroIndex`) → chiude il buco v1.1. Checkpoint decomposto: C1 igiene VERDE (**R-04 re-baseline 174→210**, poi fix estetici → delta new=0), C2 semgrep 0 + gitleaks gitignorati + rls/osv invariati, C3 **1635/1635**, C4 covers; mutazioni 2/2 uccise; `next build` 0; **e2e Chromium 30/30**; **gate visivo umano APPROVATO** dopo rifinitura (lavagna/serale centrate, degustazione numerata, minimal full-width). **Prossimo: BUILD di `body-sections`** (ultimo del corpo, dip `foundation`)) |
+| **Sessione corrente** | 2026-08-16 — BUILD `menu` COMPLETO E MERGIATO (deploy). Metodo FOREGROUND (io scrivo test-first + verifico; niente workflow subagenti — lezione hero). Migrate onestamente 2 superfici v1 (`site-blocks-data` selettori v1→v2, `site-effects-css` regola L2). **Gate visivo: 1° giro NON passato** (utente: "testi attaccati ai bordi + problemi visivi") → **diagnosi: artefatto galleria jsdom** (scarta i `padding: clamp(...)`) → rigenerata con `renderToStaticMarkup` (fedele a /s/) → padding OK; poi rifinite le 4 in-linea → **gate APPROVATO**. Prossimo: aprire `prompts/session-start.md`, macrotask `body-sections` |
 
 ---
 
@@ -22,22 +22,22 @@
 |---|---|---|---|
 | `foundation` | **done** | **VERDE 4/4** (`70c756a`) | 4 task DV2-101..104: themes.ts=23 palette CD (valori esatti, `color-mix`) + `THEME_ID_ALIASES`+`themeFor` proto-safe (id storici risolvibili); theme-style INVARIATO (già proietta); site.css migrato ai NOMI CD (valori preservati, 0 regressioni); primitivi a token, escaping, PhotoPlaceholder box "FOTO·label". **3 test v1.1 di biiezione ritirati** (invarianti migrate a design-themes-v2). **Fix e2e-scoperto: 6 punti render/serve THEMES.find→themeFor** (l'alias serve end-to-end o /s/ dà 404 sui theme_id storici). Merge su `main` su tuo via (deploy). Dip: — |
 | `hero` | **done** | **VERDE 4/4** (`14b27f1`) | DV2-201/202: hero-layouts.ts **+20 layout CD** (`hero-<kebab>@1`, `media` placement + `title_treatment`, 6 legacy invariati, lookup esatto/proto-safe); Hero.tsx renderer unico 20 varianti CD + `data-hero-layout`/landmark + slot in `SiteText` + CTA i18n statiche + PhotoPlaceholder; **wiring minimo design→blocco** (types/registry/SiteView) + **edge-to-edge** (site.css) + i18n `site.hero.*`; **M5 preservato** (`HeroPhoto`: foto caricata `<img>` o placeholder, etichetta soppressa nei full-bleed). Emendamenti approvati dall'utente (wiring/CTA/edge/M5 anticipati qui, parte da variety-select). Dip: `foundation` |
-| `menu` | **todo** | — | 3 task (DV2-301…303): section-layouts menu (≥4 id CD); Offerte.tsx (card-carta su surface-dark + leader-dots + prezzi tabular, data-menu-layout); aggancio `vertical`→menu (menu_layout_id asse per-vertical indipendente, chiude il buco v1.1). Dip: `foundation` |
+| `menu` | **done** | **VERDE 4/4** (`df642ef`) | DV2-301/302/303: **tipo dedicato `SiteMenuLayout` + `MENU_LAYOUTS` (20)** + `menuLayoutFor` (assi `arrangement`/`price`, `SECTION_LAYOUTS` INVARIATO); `Offerte.tsx` renderer unico 20 varianti CD (card-carta/leader-dots/tabular/`data-menu-layout`, classi `site-menu-v2__*`) + **wiring `menu_layout_id`** (schema doc + SiteView + registry + `SiteBlockProps.design`) + **M5** (`block.images` via SiteImage); `design-matrix` **asse `menu_layout_id` INDIPENDENTE** (`pickMenuLayout` su `flavor`). Rifinitura visiva post-gate (in-linea centrate/numerate/full-width). Migrati 2 test v1 (`site-blocks-data`, `site-effects-css`). Dip: `foundation` |
 | `body-sections` | **todo** | — | 4 task (DV2-401…404): section-layouts corpo (chi-siamo/orari/contatti/recensioni/faq/header/footer, ≥2 varianti/tipo); blocchi **ESISTENTI** chi-siamo+recensioni+faq ri-stilati (recensioni/faq con **scheletro placeholder**, copy UI fissa, no invenzione + composizione mockup li emette); orari (giorno-corrente client) + contatti (SVG catalogo, no risorsa esterna); header+footer. **Spariscono i vuoti.** Split in 2 sotto-macrotask ammesso se troppo grande. Dip: `foundation` |
 | `variety-select` | **todo** | — | 4 task (DV2-501…504): riuso aggancio varietà (variant-document congela tutti gli assi + inoltro design+vertical ai blocchi, da `hero-menu-wow` `fff6904`); **`recipe_id` asse della matrice (DS-V2-D8)**; greedy multi-asse farthest-first (esclusione dura hero+theme, **recipe inclusa**, seed mulberry32); requisito materiale ≥5 hero + ≥5 theme + ≥2 recipe/vertical o `selectDesign` fallisce forte. Dip: `hero`, `menu`, `body-sections` |
 | `e2e-visual-v2` | **todo** | — | 2 task (DV2-601…602): e2e-nucleo GATE (5 varianti reali di un seed divergono su hero VISIBILE + corpo computed + wow + canary rosso); anti-injection sui nuovi blocchi ricchi (doc ostile su /s/ + canary). Harness P4. **ULTIMO nodo del DAG.** Dip: `variety-select` |
 
 ## 2. Macrotask corrente
 
-- **`hero` è DONE** (checkpoint 4/4, mergiato `14b27f1`, gate visivo approvato). **SELEZIONATO per la PROSSIMA
-  sessione: `menu`** (DV2-301…303). Scelta motivata: il menù è il 2° blocco più identitario dopo l'hero (alta
-  visibilità "wow"), è contenuto (3 task), e CHIUDE il buco del selettore v1.1 (`menu-card-carta@1` mai raggiunto).
-  DV2-301 section-layouts menu (≥4 id CD); DV2-302 `Offerte.tsx` card-carta su `surface-dark` + leader-dots +
-  prezzi tabular + `data-menu-layout`; DV2-303 aggancio `vertical`→`menu_layout_id` (asse per-vertical indipendente).
-  Dip: solo `foundation` (verde). **⚠️ `Offerte.tsx` rende `block.images` via `SiteSection`→`SiteImage` → applicare
-  la LEZIONE M5 (riusare `HeroPhoto`/SiteImage, NON sostituire con PhotoPlaceholder-only).** Riusabili da hero:
-  `HeroPhoto` (con prop `background`) e il pattern `LAYOUT_TO_VARIANT`. `body-sections` (DV2-401…404) resta il
-  macrotask del corpo DOPO `menu` (entrambi toccano `site.css` → uno alla volta).
+- **`menu` è DONE** (checkpoint 4/4, mergiato `df642ef`, gate visivo approvato, deploy ulaba.net). **SELEZIONATO
+  per la PROSSIMA sessione: `body-sections`** (DV2-401…404) — l'ULTIMO macrotask del corpo, dip solo `foundation`
+  (verde). 4 task: section-layouts corpo (chi-siamo/orari/contatti/recensioni/faq/header/footer, ≥2 varianti/tipo);
+  blocchi ESISTENTI chi-siamo+recensioni+faq ri-stilati (recensioni/faq con **scheletro placeholder** copy UI fissa,
+  NO invenzione); orari (giorno-corrente client → `matchMedia`/isola client) + contatti (SVG catalogo); header+footer.
+  **Spariscono i vuoti.** Split in 2 sotto-macrotask ammesso se troppo grande. **⚠️ Applicare M5** (blocchi che
+  rendono `block.images` → SiteImage). Catalogo CD via DesignSync: `components/story|orari|contatti|recensioni|faq|chrome`
+  (~20 varianti/tipo, molte). **Riusabili da `menu`:** pattern renderer-unico + `MENU_LAYOUT_TO_VARIANT` + wiring
+  `design→blocco` (estendere `SiteBlockProps.design` con l'asse del corpo, come `menu_layout_id`). Poi `variety-select`.
 - **Ordine (DAG):** `foundation → {hero, menu, body-sections} → variety-select → e2e-visual-v2`. I tre
   macrotask del corpo dipendono solo da `foundation` e sono indipendenti fra loro; `hero`, `menu`,
   `body-sections` toccano `site.css` → **un macrotask alla volta** per evitare conflitti.
@@ -49,9 +49,9 @@
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `hero` costruito su `trueline/build/hero` (da `main` pulito), poi **mergiato su `main`**. Prossimo: aprire `trueline/build/menu` (o `trueline/build/body-sections`) da `main` pulito. Mai lavorare su `main` |
-| Ultimo commit | `14b27f1` feat(design-engine-v2): hero — 20 varianti Claude Design + wiring design→blocco + M5 (DV2-201/202) [checkpoint VERDE 4/4]. Preceduto dai commit di foundation (`70c756a` &c.) |
-| Stato merge su `main` | **`hero` MERGIATO su `main`** su via umana esplicita (deploy-coupling coupled → deploy su ulaba.net). Verifica locale COMPLETA prima del merge: vitest 1616/1616, `next build` 0, **e2e Chromium 30/30**, checkpoint decomposto 4/4, mutazioni 2/2, gitleaks `main..HEAD` 0. I prossimi macrotask restano human-gated anche sul verde |
+| Branch di lavoro | `menu` costruito su `trueline/build/menu` (da `main` pulito), poi **mergiato su `main`** (ff). Prossimo: aprire `trueline/build/body-sections` da `main` pulito. Mai lavorare su `main` |
+| Ultimo commit | `df642ef` feat(design-engine-v2): menu — 20 varianti Claude Design + asse menu_layout_id + wiring (DV2-301/302/303) [checkpoint VERDE 4/4]. Preceduto da `hero` (`14b27f1`) e `foundation` (`70c756a`) |
+| Stato merge su `main` | **`menu` MERGIATO su `main`** su via umana esplicita (deploy-coupling coupled → deploy su ulaba.net). Verifica locale COMPLETA prima del merge: vitest 1635/1635, `next build` 0, **e2e Chromium 30/30**, checkpoint decomposto 4/4, mutazioni 2/2, semgrep 0, gitleaks solo gitignorati. **Fatta 2 volte** (prima e dopo la rifinitura visiva post-gate). I prossimi macrotask restano human-gated anche sul verde |
 | Deploy-coupling | **`coupled`** — Vercel connesso al repo (`ulabaservice-star/progetto-web-ai`): **push su `main` = deploy in produzione** su `ulaba.net`. Verificare **in locale** (vitest, e2e Chromium, computed-style, `next build`) prima di ogni merge |
 
 ## 4. Baseline & budget
@@ -69,6 +69,18 @@
   al confine dei macrotask (R-04, impronte sensibili alla POSIZIONE: i record-dato dei temi/cataloghi
   ri-fingerprintano impronte pre-esistenti; sono FP legittimi, mai gonfiare policy). `e2e/` escluso da
   jscpd. Ri-attribuire **prima** di ri-catturare.
+- **`menu` (confine, VERDE `df642ef`)**: baseline igiene **RI-CATTURATA 174→210** (`baseline.mjs capture . --hygiene`):
+  R-04 legittimo — le 20 varianti CD di `Offerte.tsx` (componenti-slot ripetuti) + prosa dei docs blueprint → 40 dup
+  "nuove" vs baseline hero, ri-attribuite (menu + docs) e ri-catturate. **Dopo i fix estetici post-gate** (le 4 in-linea
+  rifinite) → `delta --hygiene` **new=0** (i cloni sono SCESI a 193 ⊆ 210, nessuna re-cattura necessaria). Baseline
+  sicurezza **invariata** — semgrep **0** (`src/`, 12 regole/166 file), gitleaks solo gitignorati (`.next/`,`.env.local`,
+  `siti css/`, contro-provati con `git check-ignore`), osv/rls senza migrazioni/dip nuove. knip 0, madge 0, arch (suite).
+  **0 retry**. Batteria mutazione 2/2 uccise (Offerte leader-dots→AC-302-1 rosso; `pickMenuLayout` flavor→heroIndex→AC-303-1
+  rosso; backup+sha256). **GOTCHA GATE VISIVO: la galleria jsdom SCARTA i `padding: clamp(...)`** (testi "attaccati ai
+  bordi" = falso allarme) → generare con **`renderToStaticMarkup` (react-dom/server, `@vitest-environment node`)**, non
+  `render`/jsdom. **Checkpoint monolitico `run_checkpoint.mjs` gira sulla reference-app della SKILL, non sul repo** →
+  driver decomposto O oracoli diretti (semgrep docker su `$(pwd -W)/src`, `run_gitleaks.mjs`/`run_dupcheck.mjs <repo>`,
+  `baseline.mjs delta/capture . --hygiene`).
 - **`hero` (confine, VERDE `14b27f1`)**: baseline igiene **RI-CATTURATA** (`baseline.mjs capture . --hygiene`):
   R-04 legittimo — le 20 varianti CD (struttura condivisa dei componenti-slot + text-stack) + prosa dei docs
   blueprint → ~22 dup "nuove" vs baseline v1.1, ri-attribuite e assorbite (**178 dup totali baselinati**).
@@ -92,6 +104,32 @@
 
 ## 5. Carry-over / note ereditate
 
+- **🔴 LEZIONE menu — IL GATE VISIVO SI FA CON `renderToStaticMarkup`, MAI CON jsdom.** La galleria di anteprima
+  generata con `render` (testing-library, jsdom) **SCARTA i `padding: clamp(...)`** (e ogni valore CSS con virgole)
+  dagli stili inline → i testi sembrano "attaccati ai bordi" e le card compresse (FALSO ALLARME che ha fatto fallire
+  il 1° gate). Rimedio: generatore con `import { renderToStaticMarkup } from 'react-dom/server'` + `// @vitest-environment
+  node` + `renderToStaticMarkup(await Offerte({...}))` → i clamp sono PRESERVATI, la resa è fedele a `/s/` (Next SSR).
+  **Per body-sections: la galleria del gate DEVE usare renderToStaticMarkup.** (Contro-prova: `grep -c 'clamp(' gallery.html`
+  — se 0, la galleria è rotta.)
+- **LEZIONE menu — WIRING `<asse>_layout_id` design→blocco (pattern da riusare per body-sections).** Il menu ha esteso
+  il canale design→blocco per un nuovo asse: (1) `SiteDocumentSchema` +campo `VersionedIdSchema.optional()` **senza
+  default** (un default globale sarebbe di settore); (2) `SiteView` `SiteDesignSelection` Pick +campo, estrazione da
+  `siteDocument`, proiezione `data-<asse>-layout` alla radice; (3) `registry.renderBlock` 4° arg tipo `{hero_layout_id?,
+  <asse>_layout_id?}`; (4) `SiteBlockProps.design` +campo; (5) il blocco legge `design?.<asse>_layout_id ?? FALLBACK`.
+  Il congelamento PIENO in generazione resta a `variety-select`. **Renderer unico:** record `LAYOUT_TO_VARIANT` id→variante
+  + `Object.hasOwn` proto-safe + `FALLBACK_VARIANT`; **classi uniformi** (`site-<blocco>-v2__name/__price/__item` + `data-*`)
+  su TUTTE le varianti così i selettori/AC reggono anche sul fallback e su qualunque variante.
+- **LEZIONE menu — CATALOGO: tipo DEDICATO, non gonfiare `SECTION_LAYOUTS`.** Il menu ha un tipo `SiteMenuLayout` +
+  array `MENU_LAYOUTS` + `menuLayoutFor` SEPARATI (non 20 voci in `SECTION_LAYOUTS`): l'invariante v1.1 DE11-202 ("ogni
+  sezione ≥2 varianti ha `kind` distinti", 7 kind chiusi) si sarebbe rotta con 20 voci. Per body-sections valutare se
+  ri-stilare i tipi ESISTENTI di `SECTION_LAYOUTS` (chi-siamo/orari/contatti hanno già ≥2 kind) o tipi dedicati.
+- **LEZIONE menu — MIGRAZIONE ONESTA test v1→v2.** Riscrivere un blocco (Offerte) cambia i selettori: `site-blocks-data`
+  (AC-237-*) migrato ai selettori v2 preservando le garanzie (voci rese, etichetta i18n per-vertical, layout logico
+  `data-offerings-layout` ortogonale a `data-menu-layout`); `site-effects-css` (hover L2) ri-puntato a `.site-menu-v2__item`.
+  **`resolveOfferings` (T-210) RESTA** la sede vertical→variante-logica (etichetta+show_price), ortogonale alla variante VISIVA.
+- **LEZIONE menu — asse INDIPENDENTE dall'indice hero.** `pickMenuLayout(menuLayouts, flavor)` (contatore globale), NON
+  `heroIndex` (che ancorava `pickSectionLayout` v1.1 → `menu-card-carta` mai selezionato). Prova: esiste un hero con ≥2
+  menu distinti nel pool.
 - **LEZIONE hero — SUBAGENTI INAFFIDABILI QUI, VERIFICA IN FOREGROUND**: nel workflow di build i **verifier
   BLIND hanno restituito garbage** (oggetto stub che soddisfa lo schema, `file:"a.ts"`) e il **fixer M5 si è
   stallato** (watchdog 600s, cugino del `0xC0000142`) lasciando lavoro parziale (finito a mano). Per cambiamenti
@@ -191,6 +229,21 @@
 
 ## 6. Copertura dichiarata
 
+- **`menu` (DV2-301..303) — tutti gli AC coperti e verdi + GATE VISIVO ESEGUITO E APPROVATO.** Target_tests:
+  `design-section-layouts-menu-v2` (AC-301-1\2\3: ≥4 (20) id versionati, arrangement+price non vuoti, lookup esatto\
+  proto-safe, 2 coppie-prefisso, firma `arrangement|price` UNICA per voce — distinzione VISIBILE non nominale);
+  `site-menu-v2` (AC-302-1\2\3\4: leader-dots TRA nome e prezzo + `data-menu-layout`, card-carta su `surface-dark` senza
+  letterali, prezzi `.site-menu-v2__price` tabular da site.css, anti-injection); `design-matrix-menu-v2` (AC-303-1\2\3:
+  ≥2 menu_layout_id distinti + INDIPENDENZA da heroIndex, id di catalogo, determinismo ri-enumerando). Migrati
+  `site-blocks-data`/`site-effects-css` (v1→v2). **Mutazioni 2/2 uccise** (leader-dots→AC-302-1; asse→heroIndex→AC-303-1).
+  e2e 30/30, next build 0, suite 1635/1635. **Gate visivo: galleria `renderToStaticMarkup` (20 varianti × 2 temi),
+  1° giro NON passato (artefatto jsdom clamp), rifinite 4 in-linea, 2° giro APPROVATO.**
+- **NON coperto / dichiarato (L-COL-006, menu):** (a) il **congelamento** di `menu_layout_id` in generazione (i 5 mockup
+  che pescano menu diversi) è di **variety-select** (DV2-501/greedy) — qui c'è il WIRING, non la selezione: a runtime su
+  /s/ senza congelamento Offerte cade sul fallback `menu-griglia@1`. (b) Il **menu per vertical non-ristorazione** usa le
+  sole varianti `universale` (le generiche) — non testato a fondo (il blueprint è ristorazione). (c) La **bellezza** non è
+  oracolabile (gate umano fatto). (d) **Foto reali** fuori scope (P4-D7/F): il menu è tipografico, la banda M5 rende solo
+  gli slot `uploaded`.
 - **`hero` (DV2-201..202) — tutti gli AC coperti e verdi + GATE VISIVO ESEGUITO.** Target_tests:
   `design-hero-layouts-v2` (AC-201-1/2/3: ≥8 (26) id versionati distinti, media+title_treatment non vuoti su tutti i
   20 CD, lookup esatto/proto-safe, asse VISIBILE media/title_treatment), `site-hero-v2` (AC-202-1/2/3/4:
