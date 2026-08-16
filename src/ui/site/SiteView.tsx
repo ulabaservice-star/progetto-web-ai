@@ -38,7 +38,7 @@ import { renderBlock } from '@/ui/site/registry';
 // consumarli via i selettori d'attributo.
 export type SiteDesignSelection = Pick<
   SiteDocument,
-  'hero_layout_id' | 'section_treatment_id' | 'effect_level' | 'ornament_id'
+  'hero_layout_id' | 'section_treatment_id' | 'effect_level' | 'ornament_id' | 'menu_layout_id'
 >;
 
 export async function SitePageView({
@@ -77,6 +77,7 @@ export async function SitePageView({
       // l'attributo, quindi l'ornamento assente (opzionale, DS-D5) non compare.
       data-hero-layout={design?.hero_layout_id}
       data-section-treatment={design?.section_treatment_id}
+      data-menu-layout={design?.menu_layout_id}
       data-ornament={design?.ornament_id}
       data-effects={design?.effect_level}
     >
@@ -122,6 +123,9 @@ export async function SiteView({
     section_treatment_id: siteDocument.section_treatment_id,
     effect_level: siteDocument.effect_level,
     ornament_id: siteDocument.ornament_id,
+    // DV2-302 (menu) — l'asse MENU congelato scende fino a Offerte (che ne sceglie la variante). Puo'
+    // restare `undefined` (senza default nel gate): allora Offerte cade sul proprio fallback.
+    menu_layout_id: siteDocument.menu_layout_id,
   };
 
   // DE-302 — IL LIVELLO EFFETTIVO del movimento, deciso QUI e in un solo posto. In modalita EDITABLE
@@ -151,6 +155,7 @@ export async function SiteView({
       // omesso (ornamento opzionale, DS-D5).
       data-hero-layout={design.hero_layout_id}
       data-section-treatment={design.section_treatment_id}
+      data-menu-layout={design.menu_layout_id}
       data-ornament={design.ornament_id}
       data-effects={design.effect_level}
     >

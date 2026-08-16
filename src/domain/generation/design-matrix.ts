@@ -65,8 +65,13 @@ import {
   sectionLayoutFor,
   RIBBONS,
   ribbonFor,
+  // DV2-303 (macrotask menu, design-engine-v2) — l'asse MENU: il catalogo (per popolare per-vertical)
+  // e il lookup esatto (per validare in `isAllowed`, proto-safe).
+  MENU_LAYOUTS,
+  menuLayoutFor,
   type SiteSectionLayout,
   type SiteRibbon,
+  type SiteMenuLayout,
 } from '@/domain/generation/section-layouts';
 import { ILLUSTRATIONS, illustrationFor } from '@/domain/generation/illustrations';
 import type { CatalogScope } from '@/domain/generation/design-catalog';
@@ -99,6 +104,12 @@ export type Combo = {
   readonly section_layout_id?: string;
   readonly ribbon_id?: string;
   readonly illustration_id?: string;
+  // DV2-303 (macrotask menu) — l'ASSE MENU (design-engine-v2), OPZIONALE e ADDITIVO come gli altri di
+  // v1.1: una Combo senza di esso resta valida (i test v1/v1.1 non regrediscono) e `isAllowed` non la
+  // penalizza. Se presente, deve risolvere nel catalogo `MENU_LAYOUTS` (lookup esatto, proto-safe). E'
+  // un asse INDIPENDENTE (non derivato dall'indice hero, cfr. `pickMenuLayout`): chiude il buco di v1.1
+  // dove `menu-card-carta` non era mai selezionato perche' ancorato a `heroIndex % len`.
+  readonly menu_layout_id?: string;
 };
 
 /** I livelli di effetto in ordine crescente di movimento, DERIVATI dal catalogo (L0..L4). */
@@ -178,6 +189,11 @@ export function isAllowed(combo: Combo): boolean {
   }
   if (combo.ribbon_id !== undefined && ribbonFor(combo.ribbon_id) === undefined) return false;
   if (combo.illustration_id !== undefined && illustrationFor(combo.illustration_id) === undefined) {
+    return false;
+  }
+  // DV2-303 — l'asse MENU, se presente, deve risolvere nel catalogo (lookup esatto, proto-safe): un id
+  // fantasma, un prefisso-senza-@N o una chiave ereditata da Object.prototype fanno cadere la combo.
+  if (combo.menu_layout_id !== undefined && menuLayoutFor(combo.menu_layout_id) === undefined) {
     return false;
   }
 
@@ -263,6 +279,21 @@ function pickSectionLayout(layouts: readonly SiteSectionLayout[], heroIndex: num
 }
 
 /**
+ * DV2-303 (macrotask menu) — la variante di MENU per una combinazione, ruotata sul contatore GLOBALE
+ * `flavor` (come `pickH1Treatment`/`pickRibbon`), NON sull'indice dell'hero. E' la differenza che
+ * chiude il buco di v1.1: `pickSectionLayout` ancorava il layout del corpo a `heroIndex % len`, cosi'
+ * tutte le combo di uno stesso hero portavano lo STESSO layout e `menu-card-carta` (unico menu del
+ * corpo) non era mai raggiunto. Qui l'asse e' INDIPENDENTE: combo di uno stesso hero ma flavor diversi
+ * (theme/treatment diversi) ricevono menu DIVERSI, e ruotando su `flavor` l'insieme copre TUTTO il
+ * catalogo disponibile per il settore (>=2 id distinti, AC-DV2-303-1). `undefined` solo se il catalogo
+ * filtrato fosse vuoto (non accade: le disposizioni generiche sono 'universale', sempre disponibili).
+ */
+function pickMenuLayout(menuLayouts: readonly SiteMenuLayout[], index: number): string | undefined {
+  if (menuLayouts.length === 0) return undefined;
+  return menuLayouts[index % menuLayouts.length].id;
+}
+
+/**
  * Enumera SOLO le combinazioni AMMESSE per un vertical. Prodotto deterministico dei tre assi
  * PRIMARI di varieta' (tema × hero × trattamento — struttura + tipografia/colore, cfr.
  * ristorazione.md §Parte 3), con gli assi DECORATIVI/DEL CORPO POPOLATI sopra: `effect_level`,
@@ -293,6 +324,10 @@ export function allowedCombinations(vertical: Vertical): readonly Combo[] {
   // altrove). Le illustrazioni non hanno scope (sono trasversali, DE11-104) → si attingono direttamente.
   const sectionLayouts = availableByScope(SECTION_LAYOUTS, vertical);
   const ribbons = availableByScope(RIBBONS, vertical);
+  // DV2-303 — il catalogo del MENU filtrato per settore: la ristorazione vede tutte e 20 le varianti
+  // (universali + overlay carta-ristorante), gli altri settori le sole disposizioni generiche
+  // ('universale'). Mai vuoto (le generiche ci sono sempre), cosi' ogni combo porta un menu valido.
+  const menuLayouts = availableByScope(MENU_LAYOUTS, vertical);
 
   const combos: Combo[] = [];
   let flavor = 0;
@@ -307,6 +342,9 @@ export function allowedCombinations(vertical: Vertical): readonly Combo[] {
         // accende SOLO sull'hero che ne ospita lo slot, cosi' R3 non scarta mai una combo popolata qui.
         const h1_treatment_id = pickH1Treatment(flavor);
         const section_layout_id = pickSectionLayout(sectionLayouts, heroIndex);
+        // DV2-303 — l'asse MENU ruota su `flavor` (INDIPENDENTE dall'indice hero): due combo di uno
+        // stesso hero ma flavor diverso ricevono menu diversi, e l'insieme copre tutto il catalogo.
+        const menu_layout_id = pickMenuLayout(menuLayouts, flavor);
         const ribbon_id = pickRibbon(ribbons, flavor);
         const illustration_id = heroHostsIllustration(hero)
           ? ILLUSTRATIONS[flavor % ILLUSTRATIONS.length].id
@@ -319,6 +357,7 @@ export function allowedCombinations(vertical: Vertical): readonly Combo[] {
           effect_level,
           h1_treatment_id,
           section_layout_id,
+          ...(menu_layout_id !== undefined ? { menu_layout_id } : {}),
           ...(ornament_id !== undefined ? { ornament_id } : {}),
           ...(ribbon_id !== undefined ? { ribbon_id } : {}),
           ...(illustration_id !== undefined ? { illustration_id } : {}),

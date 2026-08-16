@@ -85,7 +85,10 @@ describe('DE-301 gli hover L2 esistono e puntano a classi che i blocchi rendono'
 
     expect(siteCss()).toContain('.site-cta__button');
     expect(cta).toContain('site-cta__button');
-    expect(siteCss()).toContain('.site-offerings__item');
-    expect(offerte).toContain('site-offerings__item');
+    // MIGRAZIONE v1→v2 (DV2-302): la voce di offerta e' ora `.site-menu-v2__item` (il renderer unico
+    // del menu). L'hover L2 (sliding-fill) punta a quella classe e il blocco Offerte la rende — la
+    // regola non e' morta. Il bersaglio segue il blocco, non resta ancorato al nome v1.
+    expect(siteCss()).toContain('.site-menu-v2__item');
+    expect(offerte).toContain('site-menu-v2__item');
   });
 });

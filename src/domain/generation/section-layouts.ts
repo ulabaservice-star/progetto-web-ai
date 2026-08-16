@@ -167,3 +167,143 @@ export function sectionLayoutFor(id: string): SiteSectionLayout | undefined {
 export function ribbonFor(id: string): SiteRibbon | undefined {
   return RIBBONS.find((ribbon) => ribbon.id === id);
 }
+
+// ── DV2-301 (macrotask menu, design-engine-v2) — IL CATALOGO DELLE VARIANTI MENU ──────────────────
+//
+// Il menu e' la 2a sezione piu' identitaria della ristorazione. Claude Design (progetto c1dafc1f,
+// components/menu/MenuSection.jsx) ne porta VENTI varianti a parita' di slot (portata → voci
+// nome/descrizione/prezzo): carta di carta su fondo scuro, griglia di card, due colonne, lavagna,
+// registro a bande, tavolata a tabella, riquadri col prezzo a badge, e cosi' via. Le traduciamo qui in
+// un catalogo DOMINIO PURO di `menu_layout_id` versionati, che `Offerte.tsx` (DV2-302) rende come
+// renderer unico e la matrice (DV2-303) offre come ASSE per-vertical indipendente.
+//
+// PERCHE' UN CATALOGO E UN TIPO SEPARATI da `SECTION_LAYOUTS` (e non 20 nuove voci `section: 'menu'`):
+// il catalogo v1.1 `SECTION_LAYOUTS` porta l'invariante DE11-202 "ogni sezione con >=2 varianti ha
+// `kind` a due a due DISTINTI" (7 descrittori chiusi). Venti varianti di menu NON sono sette bordi
+// diversi: hanno il PROPRIO vocabolario visibile (disposizione delle voci + trattamento del prezzo).
+// Ammassarle in `SECTION_LAYOUTS` con lo stesso `kind: 'card-carta'` violerebbe quell'invariante (o
+// costringerebbe a 20 `kind` fittizi). Un tipo dedicato `SiteMenuLayout` tiene il menu ORTOGONALE:
+// `SECTION_LAYOUTS`/`menu-card-carta@1` restano invariati (il corpo v1.1 non regredisce), il menu v2
+// vive nel suo asse. Stessa disciplina degli altri cataloghi: id versionati 'nome@N', lookup per
+// UGUAGLIANZA ESATTA su array (proto-safe), scope universale/overlay.
+//
+// I DUE ASSI VISIBILI (AC-DV2-301-3, la distinzione NON e' cromatica come v1): `arrangement` = COME le
+// voci si dispongono (una carta unica, una griglia, due colonne, una tabella, bande orizzontali…) —
+// uno per variante, e' il tratto strutturale primario; `price` = COME il prezzo e' trattato
+// (leader-dots nome···prezzo, colonna allineata, sotto il nome, badge d'angolo, in linea). Due
+// varianti differiscono sempre sull'`arrangement`, e la maggior parte anche sul `price`: e' cio' che
+// `Offerte.tsx` consuma via `data-menu-layout` per impaginare DAVVERO in modo diverso, non ricolorare.
+//
+// LE COPPIE-PREFISSO REALI (prova del lookup ESATTO, come 'contatti-scheda'/'contatti-scheda-mappa'):
+// 'menu-carta@1' e' prefisso-NOME di 'menu-carta-foto@1' (la carta e la carta con foto in testa);
+// 'menu-colonne@1' di 'menu-colonne-scure@1' (le due colonne chiare e le colonne su fondo scuro). Un
+// match lasco (startsWith) confonderebbe l'una con l'altra: `menuLayoutFor` risolve per uguaglianza.
+//
+// LO SCOPE mescola universale e overlay: le disposizioni GENERICHE (griglia, due colonne, tabella,
+// riquadri, pannelli, minimal, indice, mercato, mosaico, centrale, contrasto) valgono per QUALSIASI
+// blocco offerte (anche corsi/servizi/catalogo di altri settori) e sono 'universale'; le varianti dal
+// sapore di CARTA-RISTORANTE (carta su scuro, colonne scure, lavagna, degustazione, libretto bifold,
+// serale, strisce, carta-foto, registro) sono overlay di 'ristorazione'. Cosi' `availableByScope`
+// (design-matrix) offre al menu ristorazione tutte e 20 le varianti, e agli altri settori le sole
+// generiche — materiale abbondante per la greedy (DS-V2-D2), mai una scatola vuota.
+
+/**
+ * LA DISPOSIZIONE delle voci del menu: il tratto STRUTTURALE primario che distingue una variante
+ * dall'altra (NON il colore). Uno per variante. Union CHIUSA: una disposizione non prevista non
+ * compila. Letto da `Offerte.tsx` (DV2-302) via il record variante e proiettato su `data-menu-layout`.
+ */
+type MenuArrangement =
+  | 'carta' // una carta unica "di carta" con tutte le portate
+  | 'griglia' // una griglia di card, una per portata
+  | 'due-colonne' // le portate scorrono su due colonne di testo
+  | 'colonne-scure' // colonne su fondo scuro, senza carta
+  | 'indice' // un indice laterale delle portate + le card a destra
+  | 'lavagna' // una lavagna incorniciata, voci corsive centrate
+  | 'registro' // righe piene con bande di portata (da registro)
+  | 'centrale' // colonna centrata stretta, prezzo sotto il nome
+  | 'pannelli' // pannelli con testata colorata per portata
+  | 'degustazione' // un percorso degustazione numerato in verticale
+  | 'bifold' // un libretto aperto: due pagine affiancate su scuro
+  | 'mosaico' // colonne a incastro (masonry) di card
+  | 'riquadri' // ogni voce in un box, prezzo a badge d'angolo
+  | 'foto-in-testa' // una carta con una foto panoramica in testa
+  | 'serale' // scuro, rado, maiuscoletto, da menu della sera
+  | 'tavolata' // una tabella con intestazioni Piatto/Descrizione/Prezzo
+  | 'mercato' // testata laterale + gruppi a destra
+  | 'minimal' // righe rade, descrizione in linea
+  | 'contrasto' // la prima portata in evidenza su un pannello scuro
+  | 'strisce'; // una banda piena, alternata, per portata
+
+/**
+ * IL TRATTAMENTO DEL PREZZO: il secondo asse VISIBILE, ortogonale alla disposizione. Due varianti con
+ * disposizione affine restano distinguibili se trattano il prezzo in modo diverso. Union CHIUSA.
+ *   - 'leader-dots': nome ····· prezzo, coi puntini di guida (il classico da carta stampata).
+ *   - 'colonna': il prezzo in una colonna allineata a destra (tabella/registro).
+ *   - 'sotto': il prezzo sotto il nome, centrato (la colonna stretta).
+ *   - 'badge': il prezzo in un'etichetta d'angolo del riquadro.
+ *   - 'in-linea': il prezzo accanto al nome, sulla stessa riga (serale/minimal/lavagna).
+ */
+export type MenuPriceTreatment = 'leader-dots' | 'colonna' | 'sotto' | 'badge' | 'in-linea';
+
+/** UNA VARIANTE DI MENU. Tipo TOTALE sulle chiavi: una voce cui manchi un campo non compila. */
+export type SiteMenuLayout = {
+  /** Identificatore STABILE e VERSIONATO nella forma 'menu-<kebab>@N' (vedi l'intestazione). */
+  readonly id: string;
+  /** L'idoneita' di settore: universale (ogni blocco offerte) o overlay 'ristorazione'. */
+  readonly scope: CatalogScope;
+  /** La DISPOSIZIONE delle voci (asse VISIBILE primario), letta dal renderer e dal test. */
+  readonly arrangement: MenuArrangement;
+  /** Il TRATTAMENTO del prezzo (asse VISIBILE secondario). */
+  readonly price: MenuPriceTreatment;
+};
+
+/**
+ * LE 20 VARIANTI DI MENU offerte, tradotte 1:1 da Claude Design (components/menu/MenuSection.jsx). Ogni
+ * `arrangement` compare UNA sola volta (venti disposizioni davvero diverse, non lo stesso menu
+ * ricolorato); il `price` ruota fra i cinque trattamenti. Include DI PROPOSITO le coppie-prefisso
+ * 'menu-carta@1'/'menu-carta-foto@1' e 'menu-colonne@1'/'menu-colonne-scure@1' (il NOME dell'una e'
+ * prefisso dell'altra) per provare il lookup ESATTO (AC-DV2-301-2). Lo scope mescola universale e
+ * overlay ristorazione (AC-DV2-303: il menu ristorazione le vede tutte).
+ */
+export const MENU_LAYOUTS: readonly SiteMenuLayout[] = [
+  { id: 'menu-carta@1', scope: 'ristorazione', arrangement: 'carta', price: 'leader-dots' },
+  { id: 'menu-griglia@1', scope: 'universale', arrangement: 'griglia', price: 'leader-dots' },
+  { id: 'menu-colonne@1', scope: 'universale', arrangement: 'due-colonne', price: 'leader-dots' },
+  {
+    id: 'menu-colonne-scure@1',
+    scope: 'ristorazione',
+    arrangement: 'colonne-scure',
+    price: 'leader-dots',
+  },
+  { id: 'menu-indice@1', scope: 'universale', arrangement: 'indice', price: 'leader-dots' },
+  { id: 'menu-lavagna@1', scope: 'ristorazione', arrangement: 'lavagna', price: 'in-linea' },
+  { id: 'menu-registro@1', scope: 'universale', arrangement: 'registro', price: 'colonna' },
+  { id: 'menu-centrale@1', scope: 'universale', arrangement: 'centrale', price: 'sotto' },
+  { id: 'menu-pannelli@1', scope: 'universale', arrangement: 'pannelli', price: 'leader-dots' },
+  {
+    id: 'menu-degustazione@1',
+    scope: 'ristorazione',
+    arrangement: 'degustazione',
+    price: 'in-linea',
+  },
+  { id: 'menu-bifold@1', scope: 'ristorazione', arrangement: 'bifold', price: 'leader-dots' },
+  { id: 'menu-mosaico@1', scope: 'universale', arrangement: 'mosaico', price: 'leader-dots' },
+  { id: 'menu-riquadri@1', scope: 'universale', arrangement: 'riquadri', price: 'badge' },
+  { id: 'menu-carta-foto@1', scope: 'ristorazione', arrangement: 'foto-in-testa', price: 'leader-dots' },
+  { id: 'menu-serale@1', scope: 'ristorazione', arrangement: 'serale', price: 'in-linea' },
+  { id: 'menu-tavolata@1', scope: 'universale', arrangement: 'tavolata', price: 'colonna' },
+  { id: 'menu-mercato@1', scope: 'universale', arrangement: 'mercato', price: 'leader-dots' },
+  { id: 'menu-minimal@1', scope: 'universale', arrangement: 'minimal', price: 'colonna' },
+  { id: 'menu-contrasto@1', scope: 'universale', arrangement: 'contrasto', price: 'leader-dots' },
+  { id: 'menu-strisce@1', scope: 'ristorazione', arrangement: 'strisce', price: 'leader-dots' },
+];
+
+/**
+ * La variante di menu con questo id versionato, o `undefined`. Stesso contratto di `sectionLayoutFor` /
+ * `heroLayoutFor` / `themeFor`: UGUAGLIANZA ESATTA e ricerca sull'ARRAY (mai un oggetto indicizzato per
+ * id → le chiavi '__proto__'/'constructor'/'toString' danno `undefined`, non un membro ereditato), mai
+ * per prefisso ('menu-carta' non risolve 'menu-carta@1' ne 'menu-carta-foto@1').
+ */
+export function menuLayoutFor(id: string): SiteMenuLayout | undefined {
+  return MENU_LAYOUTS.find((layout) => layout.id === id);
+}

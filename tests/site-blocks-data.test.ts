@@ -11,6 +11,15 @@ import esMessages from '../messages/es.json';
 // non da una stringa inline). I blocchi sono Server Component asincroni, invocati come funzione
 // e il risultato passato a `render`. Le etichette sono lette dal catalogo REALE via il mock di
 // next-intl/server (stessa tecnica dei test di T-231).
+//
+// MIGRAZIONE v1→v2 (DV2-302, macrotask menu): `Offerte.tsx` e' stato riscritto come renderer unico
+// delle 20 varianti di Claude Design. Le GARANZIE AC-237 restano IDENTICHE — tutte le voci rese coi
+// propri valori, etichetta i18n per-vertical, layout logico che segue il vertical — ma i SELETTORI
+// sono i nomi v2: `.site-menu-v2__name/__price/__item` per le voci, `.site-menu-v2__eyebrow` per
+// l'etichetta di variante, e `data-offerings-layout` (il layout LOGICO menu-sections/service-list,
+// ortogonale alla variante VISIVA `data-menu-layout`) ora vive sulla RADICE `.site-menu-v2`. Le voci
+// sono RAGGRUPPATE per portata (`section`): la fixture ha sezioni contigue, quindi l'ordine reso
+// coincide con l'ordine del brief.
 
 vi.mock('next-intl/server', () => ({
   getTranslations: async ({ locale, namespace }: { locale: string; namespace: string }) => {
@@ -67,7 +76,7 @@ describe('T-237 AC-237-3 — tutte le offerte e tutte le chiavi orario rese, coi
 
     // Ogni nome e' reso ESATTAMENTE una volta e nell'ordine del brief: nessuna voce omessa,
     // nessuna duplicata. Il confronto e' sull'intero elenco, non su una voce sola.
-    const names = [...container.querySelectorAll('.site-offerings__name')].map((n) => n.textContent);
+    const names = [...container.querySelectorAll('.site-menu-v2__name')].map((n) => n.textContent);
     expect(names).toEqual([
       'Bruschetta',
       'Bruschetta al tartufo',
@@ -82,14 +91,14 @@ describe('T-237 AC-237-3 — tutte le offerte e tutte le chiavi orario rese, coi
 
     // I prezzi presenti sono resi coi propri valori (ristorazione mostra il prezzo); la voce
     // senza prezzo (Tiramisu) non ne inventa uno: quattro prezzi per cinque voci.
-    const prices = [...container.querySelectorAll('.site-offerings__price')].map((p) => p.textContent);
+    const prices = [...container.querySelectorAll('.site-menu-v2__price')].map((p) => p.textContent);
     expect(prices).toEqual(['5,00 EUR', '12,00 EUR', '10,00 EUR', '2,00 EUR']); // covers: AC-237-3
 
     // Le due voci nella stessa sezione la portano entrambe; la voce senza sezione non la finge.
     const sectioned = [...container.querySelectorAll('[data-offering-section="Antipasti"]')];
     expect(sectioned).toHaveLength(2); // covers: AC-237-3
     expect(container.querySelector('[data-offering-section="Primi"]')).not.toBeNull(); // covers: AC-237-3
-    expect(container.querySelectorAll('.site-offerings__item')).toHaveLength(5); // covers: AC-237-3
+    expect(container.querySelectorAll('.site-menu-v2__item')).toHaveLength(5); // covers: AC-237-3
   });
 
   it('orari con piu di una chiave: ogni giorno reso col proprio orario, nessuno duplicato ne omesso', async () => {
@@ -136,13 +145,13 @@ describe('T-237 AC-237-5 — la variante offerte segue il vertical, etichetta da
     const saloneBlock = offerteBlock('salone_studio', OFFERINGS);
 
     const rist = render(await Offerte({ block: ristBlock, locale: 'it' })).container;
-    const ristLabel = rist.querySelector('.site-offerings__variant')?.textContent;
-    const ristLayout = rist.querySelector('.site-offerings__items')?.getAttribute('data-offerings-layout');
+    const ristLabel = rist.querySelector('.site-menu-v2__eyebrow')?.textContent;
+    const ristLayout = rist.querySelector('.site-menu-v2')?.getAttribute('data-offerings-layout');
     cleanup();
     const salone = render(await Offerte({ block: saloneBlock, locale: 'it' })).container;
-    const saloneLabel = salone.querySelector('.site-offerings__variant')?.textContent;
+    const saloneLabel = salone.querySelector('.site-menu-v2__eyebrow')?.textContent;
     const saloneLayout = salone
-      .querySelector('.site-offerings__items')
+      .querySelector('.site-menu-v2')
       ?.getAttribute('data-offerings-layout');
 
     // L'etichetta DIFFERISCE fra i due vertical e proviene dal catalogo i18n (T-210: menu vs servizi).
@@ -159,10 +168,10 @@ describe('T-237 AC-237-5 — la variante offerte segue il vertical, etichetta da
   it('l etichetta della variante e locale-driven dal catalogo, non una stringa inline (it vs es)', async () => {
     const block = offerteBlock('ristorazione', OFFERINGS);
     const itContainer = render(await Offerte({ block, locale: 'it' })).container;
-    const itLabel = itContainer.querySelector('.site-offerings__variant')?.textContent;
+    const itLabel = itContainer.querySelector('.site-menu-v2__eyebrow')?.textContent;
     cleanup();
     const esContainer = render(await Offerte({ block, locale: 'es' })).container;
-    const esLabel = esContainer.querySelector('.site-offerings__variant')?.textContent;
+    const esLabel = esContainer.querySelector('.site-menu-v2__eyebrow')?.textContent;
 
     expect(itLabel).toBe(itMessages.site.offerings.menu); // covers: AC-237-5
     expect(esLabel).toBe(esMessages.site.offerings.menu); // covers: AC-237-5

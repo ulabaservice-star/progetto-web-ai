@@ -339,12 +339,12 @@
 /* L2 HOVER (sliding-fill) — una barretta in accento scorre lungo il bordo interno della voce di
    offerta. Anima scaleX, non la larghezza: nessun ricalcolo di layout. Lo stato di riposo e'
    scaleX(0), quindi senza puntatore la voce e' quella di sempre. */
-[data-effects='L2'] .site-offerings__item {
+[data-effects='L2'] .site-menu-v2__item {
   position: relative;
   overflow: hidden;
 }
 
-[data-effects='L2'] .site-offerings__item::before {
+[data-effects='L2'] .site-menu-v2__item::before {
   content: '';
   position: absolute;
   top: 0;
@@ -357,7 +357,7 @@
   transition: transform 240ms ease;
 }
 
-[data-effects='L2'] .site-offerings__item:hover::before {
+[data-effects='L2'] .site-menu-v2__item:hover::before {
   transform: scaleX(1);
 }
 
@@ -389,7 +389,7 @@
      dall'utente) ma diventa istantaneo. */
   .site-hero__title,
   .site-cta__button,
-  .site-offerings__item::before {
+  .site-menu-v2__item::before {
     transition: none !important;
     animation: none !important;
   }
@@ -456,8 +456,11 @@ blockquote {
 }
 
 /* CIFRE TABULARI — orari e prezzi con cifre a larghezza FISSA, cosi' si incolonnano: il commutatore
-   --site-numeric-figure vale 'tabular-nums' o 'normal' dal flag tabular_nums del tema (DE11-101). */
+   --site-numeric-figure vale 'tabular-nums' o 'normal' dal flag tabular_nums del tema (DE11-101).
+   DV2-302 (menu v2): `.site-menu-v2__price` porta la stessa regola — i prezzi della colonna prezzi
+   sono tabulari e allineati (AC-DV2-302-3), stilati QUI dal foglio, non inline nel blocco. */
 .site-offerings__price,
+.site-menu-v2__price,
 .site-hours__day,
 .site-hours__value {
   font-variant-numeric: var(--site-numeric-figure);
@@ -556,4 +559,22 @@ blockquote::after {
   width: 100vw;
   max-width: 100vw;
   margin-inline: calc(50% - 50vw);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   DV2-302 (macrotask menu) — IL MENU v2 EDGE-TO-EDGE. Come l'hero, il renderer (blocks/Offerte.tsx)
+   rende la sua radice <section class="site-menu-v2">: le varianti Claude Design a fondo pieno (la carta
+   su scuro, le colonne scure, il serale, le strisce) vogliono coprire tutta la larghezza del viewport,
+   non la colonna .site-page (min(72rem, 100%)). Questa regola la fa uscire dalla colonna; il contenuto
+   INTERNO di ogni variante resta incolonnato dal proprio container centrato. Nessun colore: geometria.
+   La banda foto M5 (le sole immagini CARICATE) sta in testa alla sezione, a piena larghezza. */
+.site-menu-v2 {
+  width: 100vw;
+  max-width: 100vw;
+  margin-inline: calc(50% - 50vw);
+}
+
+.site-menu-v2__photos {
+  display: grid;
+  gap: var(--site-space-sm);
 }

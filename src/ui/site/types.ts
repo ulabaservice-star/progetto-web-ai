@@ -35,10 +35,14 @@ export type SiteBlockProps = {
    * non la passa (`renderBlock` senza il 4o argomento) rende l'hero col suo fallback di default.
    *
    * E' un oggetto ristretto (non `SiteDesignSelection` di SiteView) per NON creare un ciclo di
-   * import fra questo modulo e il renderer: qui vive il solo campo che i blocchi consumano.
+   * import fra questo modulo e il renderer: qui vivono i soli campi che i blocchi consumano —
+   * `hero_layout_id` per Hero (DV2-202) e `menu_layout_id` per Offerte (DV2-302). Additivi e
+   * OPZIONALI: un blocco che non li legge resta identico, un chiamante che non li passa rende il
+   * blocco col suo fallback di default.
    */
   readonly design?: {
     readonly hero_layout_id?: string;
+    readonly menu_layout_id?: string;
   };
 };
 

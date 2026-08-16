@@ -455,6 +455,12 @@ export const SiteDocumentSchema = z
     ornament_id: VersionedIdSchema.optional(),
     ribbon_id: VersionedIdSchema.optional(),
     illustration_id: VersionedIdSchema.optional(),
+    // DV2-302 (macrotask menu, design-engine-v2): l'ASSE MENU congelato. Id VERSIONATO opzionale e
+    // FORMA-check come gli altri (niente confronto col catalogo MENU_LAYOUTS — altitudine di un altro
+    // strato), SENZA default nel gate: un default globale sarebbe di settore (le carte-ristorante sono
+    // overlay), e il renderer `Offerte` ha gia' il suo fallback. Il congelamento PIENO lo scrive
+    // variety-select; qui il documento lo ACCETTA cosi' che l'Offerte variato si renda su /s/.
+    menu_layout_id: VersionedIdSchema.optional(),
     pages: z.array(PageSchema).min(1).max(DOCUMENT_LIMITS.max_pages),
   })
   .strict()
