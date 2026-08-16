@@ -71,6 +71,16 @@
   al confine dei macrotask (R-04, impronte sensibili alla POSIZIONE: i record-dato dei temi/cataloghi
   ri-fingerprintano impronte pre-esistenti; sono FP legittimi, mai gonfiare policy). `e2e/` escluso da
   jscpd. Ri-attribuire **prima** di ri-catturare.
+- **`body-sections-a` (confine, VERDE `77ccb12`)**: baseline igiene **RI-CATTURATA 210→179** (`baseline.mjs capture
+  "$(pwd -W)" --hygiene`): i blocchi del corpo v1 riscritti hanno rimosso ~44 dup v1 e introdotto **13 dup NUOVE** — tutte
+  LOW nei renderer `ChiSiamo`/`Recensioni`/`Faq` (componenti-slot ripetuti delle varianti CD) + 1 doc, **FP legittimi come
+  `Offerte`** → ri-catturate (delta post = new 0). Baseline **sicurezza INVARIATA**: **semgrep 0** (`src/`, ruleset trueline
+  via `run_semgrep.mjs "$(pwd -W)"`), gitleaks 3 CRITICAL SOLO su gitignorati (`.env.local`/`siti css/`, contro-provati
+  `git check-ignore`), osv 2 MEDIUM su dip PRE-esistenti (nanoid/postcss, **package-lock non toccato**), rls 1 FP noto
+  (anon-policy) — nessuna migrazione/dip/segreto nuovi. knip 0, tsc/eslint 0. **0 retry.** Batteria mutazione 2/2 uccise
+  (ChiSiamo `data-section-layout` fisso → provenienza ROSSA; `presentation` senza faq → presentation+chooser ROSSI),
+  ripristino backup+sha256. **GOTCHA oracoli (vedi §5):** `baseline.mjs delta` di default carica `.trueline/baseline.json`
+  (sicurezza), non `hygiene-baseline.json` → passare `--baseline` esplicito.
 - **`menu` (confine, VERDE `df642ef`)**: baseline igiene **RI-CATTURATA 174→210** (`baseline.mjs capture . --hygiene`):
   R-04 legittimo — le 20 varianti CD di `Offerte.tsx` (componenti-slot ripetuti) + prosa dei docs blueprint → 40 dup
   "nuove" vs baseline hero, ri-attribuite (menu + docs) e ri-catturate. **Dopo i fix estetici post-gate** (le 4 in-linea
@@ -256,6 +266,22 @@
 
 ## 6. Copertura dichiarata
 
+- **`body-sections-a` (DV2-401/402/403 parte-a) — tutti gli AC coperti e verdi + GATE VISIVO ESEGUITO E APPROVATO.**
+  Target_tests: `site-document-block-layout-v2` (wiring per-blocco: accetta/preserva `section_layout_id` versionato, no
+  default per-blocco, rifiuta forma errata, strict intatto); `design-section-layouts-body-v2` (AC-401-1/2/3: ≥2 varianti/
+  sezione, id versionati unici, lookup esatto proto-safe, firma `section|variant` UNICA = distinzione VISIBILE);
+  `site-body-about-reviews-faq-v2` (AC-402-1/2/4: `data-section-layout` congelato + slot resi, provenienza, scheletro copy
+  UI fissa senza dati finti, dual-mode faq, anti-injection escaping, nessun colore letterale); `presentation-sections-v2`
+  (AC-402-3: composizione emette recensioni/faq, idempotente, immutabile, re-gate, guard tetto/home-vuota). Migrati
+  `site-blocks-data` (selettori v2) + `generation-chooser` (T-232). **Mutazioni 2/2 uccise.** e2e Chromium 30/30, next
+  build 0, suite 1669. **Gate visivo: galleria `renderToStaticMarkup` (32 varianti × tema trattoria-rustica), APPROVATO al 1° giro.**
+- **NON coperto / dichiarato (L-COL-006, body-a):** (a) il **congelamento** dei `section_layout_id` per-blocco in
+  generazione (i 5 mockup che pescano layout di corpo diversi) è di **variety-select** (DV2-503 greedy) — qui c'è il WIRING
+  + la composizione di presentazione, non la selezione: su /s/ senza congelamento i blocchi del corpo cadono sul fallback.
+  (b) **orari/contatti/header/footer** sono di **body-sections-b**. (c) `withPresentationSections` è agganciato in
+  `resolveVariantHome` (card/mockup della home) — l'estensione al documento pubblicato multi-page/pagine interne è dichiarata
+  per variety-select/verifica successiva (recensioni non ha comunque pagina propria). (d) La **bellezza** non è oracolabile
+  (gate umano fatto). (e) **Foto reali** fuori scope (P4-D7/F): i blocchi rendono `PhotoPlaceholder`/`BodyPhoto` M5.
 - **`menu` (DV2-301..303) — tutti gli AC coperti e verdi + GATE VISIVO ESEGUITO E APPROVATO.** Target_tests:
   `design-section-layouts-menu-v2` (AC-301-1\2\3: ≥4 (20) id versionati, arrangement+price non vuoti, lookup esatto\
   proto-safe, 2 coppie-prefisso, firma `arrangement|price` UNICA per voce — distinzione VISIBILE non nominale);
