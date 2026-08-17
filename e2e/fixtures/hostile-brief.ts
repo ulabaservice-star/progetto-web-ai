@@ -144,6 +144,66 @@ export function buildHostileDocument(): SiteDocument {
 }
 
 /**
+ * Promuove il PRIMO slot immagine del PRIMO blocco che ne ha uno a `uploaded` (asset_id), RI-ATTRAVERSA
+ * parseDocument (A05:2025) e verifica che l'hero uploaded sia ESATTAMENTE assetId. Condiviso dalle fixture
+ * di documento pubblicato ostile (T-417 `buildPublishedHostileDocument` e DV2-602 `buildRichHostileDocument`).
+ * Lo slot COSTRUITO da noi ha due chiavi, nessuno spread di input non fidato (P2-D12): l'unione non ha alcun
+ * campo url/src/href; l'src lo costruira' SiteImage da assetPublicUrl(asset_id). Lancia se non c'e' uno slot
+ * da promuovere, se il gate rifiuta la mutazione, o se l'hero non risulta uploaded su assetId.
+ */
+function withHeroUploaded(base: SiteDocument, assetId: string): SiteDocument {
+  const uploaded: ImageSlot = { source: 'uploaded', asset_id: assetId };
+  let promoted = false;
+  const pages = base.pages.map((page) => {
+    if (promoted) return page;
+    let pageChanged = false;
+    const blocks = page.blocks.map((block) => {
+      if (promoted || block.images.length === 0) return block;
+      promoted = true;
+      pageChanged = true;
+      const images = block.images.map((image, index) => (index === 0 ? uploaded : image));
+      return { ...block, images };
+    });
+    return pageChanged ? { ...page, blocks } : page;
+  });
+  if (!promoted) {
+    throw new Error('fixture ostile: nessuno slot immagine da promuovere a uploaded (hero atteso)');
+  }
+  const parsed = parseDocument({ ...base, pages });
+  if (!parsed.ok) {
+    throw new Error('fixture ostile: il documento con hero uploaded non ha superato parseDocument');
+  }
+  const document = parsed.document;
+  const info = extractBusinessInfo(document);
+  if (info.heroAssetId !== assetId) {
+    throw new Error(`fixture ostile: heroAssetId (${String(info.heroAssetId)}) != assetId (${assetId})`);
+  }
+  return document;
+}
+
+/**
+ * GUARDRAIL: tutti e sei i payload di HOSTILE_PAYLOADS restano TESTO nel documento (nessuno scartato a
+ * monte). Si confrontano i VALORI STRINGA GREZZI (foglie), non JSON.stringify: due payload portano `"`
+ * (l'onerror e il srcdoc), che la serializzazione JSON escaperebbe mancando il match — mentre nel DOM reso
+ * e nel testo del brief il carattere resta grezzo (cosi' lo spec li cerca in document.body.textContent).
+ */
+function assertHostilePayloadsPresent(document: SiteDocument): void {
+  const leaves: string[] = [];
+  const collect = (value: unknown): void => {
+    if (typeof value === 'string') leaves.push(value);
+    else if (Array.isArray(value)) value.forEach(collect);
+    else if (value !== null && typeof value === 'object') Object.values(value).forEach(collect);
+  };
+  collect(document);
+  const joined = leaves.join('\n');
+  for (const payload of Object.values(HOSTILE_PAYLOADS)) {
+    if (!joined.includes(payload)) {
+      throw new Error('fixture ostile: un payload di HOSTILE_PAYLOADS non e nel documento come testo');
+    }
+  }
+}
+
+/**
  * T-417 (macrotask e2e-public, P4) — IL DOCUMENTO PUBBLICATO OSTILE per la rotta /s/<slug>. Estende
  * buildHostileDocument con le DUE superfici nuove del serving pubblico:
  *  a. un `business_name` che porta anche il breakout del JSON-LD (HOSTILE_BUSINESS_NAME + ' ' +
@@ -168,61 +228,10 @@ export function buildPublishedHostileDocument(assetId: string): SiteDocument {
   if (resolved === null) {
     throw new Error('fixture pubblicata ostile: il documento home non ha superato parseDocument');
   }
-  const base = resolved.document;
-
-  // Lo slot COSTRUITO da noi: due chiavi, nessuno spread di input non fidato (P2-D12: l'unione non
-  // ha alcun campo url/src/href; l'src lo costruira' SiteImage da assetPublicUrl(asset_id)).
-  const uploaded: ImageSlot = { source: 'uploaded', asset_id: assetId };
-
-  // Promozione nel PRIMO slot immagine del PRIMO blocco (in ordine di documento) che ne ha almeno
-  // uno: la home ha una sola pagina (resolveVariantHome) e l'hero e' il solo blocco con un'immagine.
-  let promoted = false;
-  const pages = base.pages.map((page) => {
-    if (promoted) return page;
-    let pageChanged = false;
-    const blocks = page.blocks.map((block) => {
-      if (promoted || block.images.length === 0) return block;
-      promoted = true;
-      pageChanged = true;
-      const images = block.images.map((image, index) => (index === 0 ? uploaded : image));
-      return { ...block, images };
-    });
-    return pageChanged ? { ...page, blocks } : page;
-  });
-  if (!promoted) {
-    throw new Error('fixture pubblicata ostile: nessuno slot immagine da promuovere a uploaded (hero atteso)');
-  }
-
-  // RI-GATE dopo la mutazione: assetId deve essere un uuid e gli invarianti intatti.
-  const parsed = parseDocument({ ...base, pages });
-  if (!parsed.ok) {
-    throw new Error('fixture pubblicata ostile: il documento mutato non ha superato parseDocument');
-  }
-  const document = parsed.document;
-
-  // GUARDRAIL della fixture — l'hero uploaded e' ESATTAMENTE assetId (primo uploaded, home-first).
-  const info = extractBusinessInfo(document);
-  if (info.heroAssetId !== assetId) {
-    throw new Error(`fixture pubblicata ostile: heroAssetId (${String(info.heroAssetId)}) != assetId (${assetId})`);
-  }
-  // GUARDRAIL della fixture — tutti e sei i payload restano TESTO nel documento (nessuno scartato).
-  // Si confrontano i VALORI STRINGA GREZZI (foglie del documento), non JSON.stringify: due payload
-  // portano il carattere `"` (l'onerror e il srcdoc), che la serializzazione JSON escaperebbe a `\"`
-  // mancando il match — mentre nel DOM reso e nel testo del brief il carattere resta grezzo (e' cosi'
-  // che lo spec li cerca in document.body.textContent, come T-241/T-317).
-  const leaves: string[] = [];
-  const collect = (value: unknown): void => {
-    if (typeof value === 'string') leaves.push(value);
-    else if (Array.isArray(value)) value.forEach(collect);
-    else if (value !== null && typeof value === 'object') Object.values(value).forEach(collect);
-  };
-  collect(document);
-  const joined = leaves.join('\n');
-  for (const payload of Object.values(HOSTILE_PAYLOADS)) {
-    if (!joined.includes(payload)) {
-      throw new Error('fixture pubblicata ostile: un payload di HOSTILE_PAYLOADS non e nel documento come testo');
-    }
-  }
+  // Promozione dell'hero a `uploaded` (RI-GATED, hero == assetId) + guardrail sui sei payload: la stessa
+  // catena di DV2-602, estratta cosi' le due fixture non divergono in silenzio.
+  const document = withHeroUploaded(resolved.document, assetId);
+  assertHostilePayloadsPresent(document);
   return document;
 }
 
@@ -245,4 +254,49 @@ export function nearCollisionUuids(): { used: string; sibling: string } {
   const flipped = (parseInt(lastHex, 16) ^ 1).toString(16);
   const sibling = used.slice(0, -1) + flipped;
   return { used, sibling };
+}
+
+/**
+ * DV2-602 (macrotask e2e-visual-v2) — IL BRIEF OSTILE RICCO che fa ESISTERE anche i blocchi del CORPO
+ * introdotti in body-sections (chi-siamo, orari) oltre a quelli gia' esercitati da T-417 (hero, offerte,
+ * contatti, chrome). Estende `hostileBrief` (col nome di breakout del JSON-LD, cosi' hero + chrome + JSON-LD
+ * portano il breakout) con:
+ *  - `hours` — un VALORE che porta un payload ostile: Orari lo rende come TESTO in `.site-hours-v2__value`
+ *    (SiteText, escaping React), mai un href; fa esistere il blocco orari (`orariUtili`);
+ *  - `description`/`highlights` — che fanno ESISTERE chi-siamo (la sua prosa nasce dal MODELLO, gate
+ *    PoolSchema, non da campi brief: `brief_fields_rendered` vuoto), cosi' il blocco v2 si rende sotto attacco.
+ * I SEI payload delle offerte/social RESTANO quelli di `hostileBrief` (nessuna regressione di
+ * T-241/T-317/T-417): la ricchezza e' ADDITIVA. Il payload negli orari e' uno dei sei (scriptTag), cosi'
+ * il guardrail dei sei resta soddisfatto e Orari e' esercitato con un payload reale.
+ */
+function richHostileBrief() {
+  const base = hostileBrief(`${HOSTILE_BUSINESS_NAME} ${JSONLD_BREAKOUT_PAYLOAD}`);
+  return applyBriefUpdate(base, {
+    description: 'Osteria storica del vicolo: tre generazioni ai fornelli, forno a legna e pasta tirata a mano.',
+    highlights: ['Forno a legna dal 1962', 'Pasta fatta in casa'],
+    // Il payload (scriptTag, uno dei sei) nel VALORE di un giorno: reso come TESTO da Orari (nessun href).
+    // hours_value ammette fino a 100 code unit (BRIEF_LIMITS): il valore + payload vi sta comodo.
+    hours: { 'lun-ven': '12:00-15:00', sab: `19:00-23:00 ${HOSTILE_PAYLOADS.scriptTag}` },
+  }).brief;
+}
+
+/**
+ * DV2-602 (macrotask e2e-visual-v2) — IL DOCUMENTO PUBBLICATO OSTILE RICCO per /s/<slug>: il brief ostile
+ * ricco (`richHostileBrief`) attraverso il percorso reale (resolveVariantHome -> parseDocument), con l'hero
+ * promosso a `uploaded` (la STESSA catena RI-GATED di T-417: `withHeroUploaded`). Rende su /s/ TUTTI i
+ * blocchi ricchi v2 con superficie di rischio: hero (business_name + breakout, foto uploaded), offerte (i
+ * sei payload), orari (payload nel valore), contatti (social javascript:), header/footer chrome (nome +
+ * recapiti derivati). Lancia se il gate rifiuta o se un payload/hero non risulta (il fixture DEVE rendere
+ * la superficie, o non prova nulla).
+ *
+ * @param assetId l'uuid dell'asset caricato (una riga assets + oggetto Storage reali: seedAsset).
+ */
+export function buildRichHostileDocument(assetId: string): SiteDocument {
+  const resolved = resolveVariantHome(innocuousHomePool(), richHostileBrief(), 'e2e-hostile-rich', 0);
+  if (resolved === null) {
+    throw new Error('fixture ricca ostile: il documento home non ha superato parseDocument');
+  }
+  const document = withHeroUploaded(resolved.document, assetId);
+  assertHostilePayloadsPresent(document);
+  return document;
 }
