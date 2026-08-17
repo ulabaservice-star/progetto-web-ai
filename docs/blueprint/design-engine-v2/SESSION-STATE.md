@@ -9,8 +9,8 @@
 |---|---|
 | **Progetto** | Belora/Ulaba |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase) |
-| **Ultimo aggiornamento** | 2026-08-16 (**`variety-select` COSTRUITO — checkpoint VERDE + merge su `main`** (`362847f`, deploy ulaba.net): la varietà diventa VERA. **DV2-501:** `variant-document` congela TUTTI gli assi v2 (theme/hero/menu + **`section_layout_id` PER-BLOCCO** del corpo via `selectBodyLayout` + recipe) + **`vertical`** (SiteView lo inoltra ai blocchi: NON arrivava via `block.data` — `vertical` è consultato, non reso → il menu cadeva su 'altro'). **DV2-502:** `recipe_id` ASSE in `allowedCombinations` (DS-V2-D8, `pickRecipe` su flavor). **DV2-503:** **greedy farthest-first** (esclusione dura hero+theme, recipe nella distanza, `mulberry32(seed)`). **DV2-504:** requisito materiale (≥5 hero/theme + ≥2 recipe) o `selectDesign` fallisce forte (`assertSufficientMaterial` esportata, testata con pool crafted). **Rifiniture emerse al GATE, incluse nel commit:** (1) `site.css .site-page gap:0` — bande full-bleed CONTINUE (le strisce bianche erano il fondo `body` visto tra le bande); (2) migrazione e2e **DE-102** (distinzione hero v2 = tipografica, non background di sezione — in v2 la `<section>` è trasparente); (3) **IBRIDO PALETTE A+B (DV2-505):** greedy massimizza anche la **distanza cromatica** (accent-hue + luminosità fondo) + 2 palette a fondo NON-crema (`trattoria-a-lume` scura, `osteria-di-lago` fredda) → 5 mockup con palette davvero distinte (rosso/oro/verde/teal/magenta + una scura), non 5 caldi. Checkpoint: C1 R-04 **207→223** delta0 poi **new=0** post-palette (color-mix a valori unici, come `cdColors`), C2 semgrep 0, C3 **1717/1717**, C4 covers; `next build` 0; **e2e Chromium 30/30**; **mutazioni 6/6**; **gate visivo APPROVATO** (tema scuro premium). **Prossimo: `e2e-visual-v2`** (ULTIMO nodo del DAG)) |
-| **Sessione corrente** | 2026-08-16 — BUILD `variety-select` COMPLETO E MERGIATO (deploy). Metodo FOREGROUND (io scrivo test-first + verifico; niente subagenti). Gate visivo su `/s/` (5 varianti reali di un seed via Playwright, JS-off per catturare l'SSR intero) → 2 giri di rifinitura con l'utente: (a) `gap:0` per le bande continue, (b) ibrido palette A+B (accento spread + 2 palette non-crema) per la varietà cromatica. Recensioni "attaccato" = misurato 102px corretto (era il layout pre-`gap:0`). Prossimo: aprire `prompts/session-start.md`, macrotask `e2e-visual-v2` |
+| **Ultimo aggiornamento** | 2026-08-17 (**`e2e-visual-v2` COSTRUITO — checkpoint VERDE 35/35 + merge su `main`** (`8518bab`, deploy ulaba.net): **🎉 design-engine-v2 COMPLETO 6/6, DAG CHIUSO.** Il motore v2 è provato a RUNTIME: **DV2-601** misura in computed-style la varietà delle 5 varianti reali su `/s/` (firma hero 5/5 + corpo 5/5 + wow menu-carta + canary hero-identico rosso; seed `gate-v2-c` scelto perché evita il collasso variante-CD dei legacy); **DV2-602** l'anti-injection su TUTTI i blocchi ricchi (hero uploaded, offerte, orari, chi-siamo, contatti/mappa, chrome) via `buildRichHostileDocument` + canary. SOLO TEST (`e2e/`, igiene/sicurezza invariate), mutazioni 2/2 sulla produzione, gate visivo finale APPROVATO. **Storico `variety-select` (`362847f`):** la varietà diventa VERA. **DV2-501:** `variant-document` congela TUTTI gli assi v2 (theme/hero/menu + **`section_layout_id` PER-BLOCCO** del corpo via `selectBodyLayout` + recipe) + **`vertical`** (SiteView lo inoltra ai blocchi: NON arrivava via `block.data` — `vertical` è consultato, non reso → il menu cadeva su 'altro'). **DV2-502:** `recipe_id` ASSE in `allowedCombinations` (DS-V2-D8, `pickRecipe` su flavor). **DV2-503:** **greedy farthest-first** (esclusione dura hero+theme, recipe nella distanza, `mulberry32(seed)`). **DV2-504:** requisito materiale (≥5 hero/theme + ≥2 recipe) o `selectDesign` fallisce forte (`assertSufficientMaterial` esportata, testata con pool crafted). **Rifiniture emerse al GATE, incluse nel commit:** (1) `site.css .site-page gap:0` — bande full-bleed CONTINUE (le strisce bianche erano il fondo `body` visto tra le bande); (2) migrazione e2e **DE-102** (distinzione hero v2 = tipografica, non background di sezione — in v2 la `<section>` è trasparente); (3) **IBRIDO PALETTE A+B (DV2-505):** greedy massimizza anche la **distanza cromatica** (accent-hue + luminosità fondo) + 2 palette a fondo NON-crema (`trattoria-a-lume` scura, `osteria-di-lago` fredda) → 5 mockup con palette davvero distinte (rosso/oro/verde/teal/magenta + una scura), non 5 caldi. Checkpoint: C1 R-04 **207→223** delta0 poi **new=0** post-palette (color-mix a valori unici, come `cdColors`), C2 semgrep 0, C3 **1717/1717**, C4 covers; `next build` 0; **e2e Chromium 30/30**; **mutazioni 6/6**; **gate visivo APPROVATO** (tema scuro premium). **Prossimo: `e2e-visual-v2`** (ULTIMO nodo del DAG)) |
+| **Sessione corrente** | 2026-08-17 — BUILD `e2e-visual-v2` COMPLETO E MERGIATO (deploy) → **design-engine-v2 CHIUSO 6/6.** Metodo FOREGROUND (io scrivo test-first + verifico; niente subagenti). Flusso: ricognizione dominio (script vitest throwaway per scegliere il seed) → 2 spec e2e (DV2-601 varietà computed + wow + canary; DV2-602 anti-injection ricco + canary) → tsc/eslint/knip/vitest/e2e/next-build verdi → mutazioni 2/2 sulla produzione (backup+sha256) → gate visivo finale (5 screenshot JS-off, APPROVATO) → merge `main`. **NON c'è un macrotask v2 successivo:** la prossima priorità è fuori workstream (vedi memoria `ai-website-builder-project`: flusso utente/intervista, poi P5 billing) |
 
 ---
 
@@ -26,21 +26,20 @@
 | `body-sections-a` (chi-siamo/recensioni/faq) | **done** | **VERDE 4/4** (`77ccb12`) | DV2-401/402/403 parte-a: **`section_layout_id` PER-BLOCCO** nel `BlockSchema` (DS-V2-D11 #2, corpo eterogeneo); catalogo `SiteBodyLayout`+`BODY_LAYOUTS` (12 chi-siamo, 10 recensioni, 10 faq) + `bodyLayoutFor` proto-safe; renderer unici `ChiSiamo`/`Recensioni`/`Faq` + `body-kit` (container/eyebrow/**foto M5** un solo URL builder); **recensioni = scheletro** (copy UI fissa i18n, mai testimonianze finte), **faq = dual-mode** (Q&A reali o scheletro); **composizione di presentazione** (`presentation.ts`) emette recensioni/faq nel mockup SENZA toccare `blocksFor`/`generatable` (gate di costo P5 intatto, P2-D7 preservato, DS-V2-D11 #3). Checkpoint 4/4: suite **1669/1669**, `next build` 0, **e2e Chromium 30/30**, R-04 **210→179**, semgrep 0, mutazioni 2/2. **Gate visivo APPROVATO.** Migrati `site-blocks-data`/`generation-chooser`. Dip: `foundation` |
 | `body-sections-b` (orari/contatti/header+footer) | **done** | **VERDE 4/4** (`d405eaa`) | DV2-401b/403/404: `BODY_LAYOUTS` +12 orari +12 contatti + **catalogo dedicato `CHROME_LAYOUTS`** (6 header + 6 footer, `chromeLayoutFor`). `Orari`/`Contatti` renderer per-blocco v2 (24 varianti); **giorno-corrente = isola CLIENT** (`OrariToday`+`matchTodayKey` puro, doc byte-identico); **mappa = PhotoPlaceholder+pin**, geo in data-attr, href validati. **Header/footer = CHROME del SiteView** (DS-V2-D11 #4, `deriveChromeData`, contenuti derivati non-LLM, credito neutro **senza `new Date`**, nav `#slug`+`id=slug`). i18n `site.contact/footer.*`. Fix overflow foto (aspect-ratio+stretch). Checkpoint 4/4: suite **1692/1692**, `next build` 0, **e2e 30/30**, R-04 **179→207**, semgrep 0, mutazioni 2/2. **Gate visivo APPROVATO.** Migrati `site-blocks-data`/`site-blocks-untrusted`/`public-site-route`. Dip: `foundation`, `body-sections-a` |
 | `variety-select` | **done** | **VERDE** (`362847f`) | DV2-501/502/503/504 + rifiniture gate (`gap:0`, DE-102 e2e, ibrido palette A+B/DV2-505). Freeze per-blocco `section_layout_id` (`selectBodyLayout`) + menu + `vertical` (inoltrato da SiteView, non in `block.data`); `recipe_id` asse matrice; greedy farthest-first (esclusione dura hero+theme + **distanza cromatica** accent-hue/bg-lightness); `assertSufficientMaterial` fail-forte. themes.ts +2 palette non-crema. Suite **1717/1717**, e2e 30/30, next build 0, mutazioni 6/6, gate APPROVATO. Migrati 0 test (5 nuovi: document-design-selection-v2, design-matrix-recipe-v2, design-select-greedy-v2, design-select-material-v2, design-select-palette-v2). Dip: `hero`, `menu`, `body-sections` |
-| `e2e-visual-v2` | **todo** | — | 2 task (DV2-601…602): e2e-nucleo GATE (5 varianti reali di un seed divergono su hero VISIBILE + corpo computed + wow + canary rosso); anti-injection sui nuovi blocchi ricchi (doc ostile su /s/ + canary). Harness P4. **ULTIMO nodo del DAG.** Dip: `variety-select` |
+| `e2e-visual-v2` | **done** | **VERDE 35/35** (`8518bab`) | DV2-601/602 (SOLO TEST, `e2e/`). **DV2-601** (`visual-engine-v2.spec.ts`): 5 varianti REALI di un seed (via `selectDesign`, non doc a mano) rese su `/s/` ANON divergono su hero VISIBILE (**firma COMPUTED** = position foto + posizione/dimensione titolo, **5/5** distinte) E sul corpo (chi-siamo **5/5**); wow (PhotoPlaceholder hero + menu card-carta prezzi+leader + titolo ≥40px); oracolo `assertVariety` CONDIVISO col **canary hero-forzato-identico** (firme→1, rosso). **Seed `gate-v2-c`** scelto perché 5 varianti CD hero distinte (alcuni id legacy collassano sulla stessa variante → misuro la firma, non l'attributo). **DV2-602** (`public-hostile-v2.spec.ts`): doc ostile RICCO esercita TUTTI i blocchi ricchi (hero uploaded, offerte 6-payload, **orari** payload-nel-valore, **chi-siamo**, contatti social `javascript:`/mappa senza risorse, chrome header/footer) → `assertNoInjectionEffect` nullo + allowlist host + canary rosso. Fixture: `withHeroUploaded`/`assertHostilePayloadsPresent` estratti (T-417 INVARIATO), `richHostileBrief`/`buildRichHostileDocument` additivi. Checkpoint test-only VERDE, mutazioni 2/2. Gate visivo APPROVATO. Merge su `main` (deploy). Dip: `variety-select`. **ULTIMO nodo — DAG CHIUSO 6/6.** |
 
 ## 2. Macrotask corrente
 
-- **`variety-select` è DONE** (checkpoint VERDE, mergiato `362847f`, gate visivo APPROVATO, deploy ulaba.net) →
-  **la varietà è VERA su /s/**: le 5 varianti di un seed divergono su hero, menu, palette (accento + fondo scuro/freddo),
-  e OGNI sezione del corpo ha un layout diverso; le bande sono continue (`gap:0`).
-  **SELEZIONATO per la PROSSIMA sessione: `e2e-visual-v2`** (DV2-601/602, ULTIMO nodo del DAG), dip `variety-select` (verde).
-  Task: e2e-nucleo GATE (5 varianti reali di un seed divergono su hero VISIBILE computed + ≥1 asse del corpo computed + wow
-  + **canary rosso PRIMA del verde**); anti-injection sui blocchi ricchi (doc ostile su /s/ + canary). Harness P4 (seed.ts,
-  hostile-brief.ts, effect-assertions.ts). **NB:** l'e2e generale (30/30) già copre /s/ ma NON la MISURA computed della
-  varietà fra 5 varianti reali — quello è DV2-601. Riusare l'idea del gate-spec throwaway di questa sessione (5 varianti via
-  `resolveVariantHome` seed `gate-visivo-v2`, screenshot JS-off), ma con asserzioni computed-style + canary, non screenshot.
-- **Ordine (DAG):** `foundation → {hero, menu, body-sections} → variety-select → e2e-visual-v2`. Restano solo `e2e-visual-v2`.
-- **Criteri/test di riferimento**: vedi il modulo `06-e2e-visual-v2.md` e i `target_tests` dei task.
+- **🎉 design-engine-v2 COMPLETO — DAG CHIUSO 6/6** (`foundation → {hero, menu, body-sections} → variety-select →
+  e2e-visual-v2`, tutti done + mergiati + deployati su `main`/ulaba.net). **`e2e-visual-v2` è DONE** (checkpoint VERDE,
+  mergiato `8518bab`, gate visivo finale APPROVATO — 5 screenshot JS-off delle varianti reali: hero/palette/corpo distinti,
+  bande continue). L'e2e Chromium è ora **35/35** (30 P4/v1.1 + 5 nuovi v2). Il motore v2 è provato a RUNTIME: la varietà
+  è misurata in computed-style e l'anti-injection copre tutti i blocchi ricchi.
+- **NON c'è un macrotask successivo in design-engine-v2.** La prossima priorità del progetto è **fuori** da questo workstream:
+  vedi la memoria `ai-website-builder-project` — dopo la qualità-generazione (design-engine v2), la roadmap prevede il **flusso
+  utente / intervista** (fix del bug `update_brief` in ritardo) e poi **P5 (billing/crediti)**. Nuova sessione = nuovo prompt di
+  inizio (non più questo di design-engine-v2, che è chiuso).
+- **Criteri/test di riferimento** (storici): vedi il modulo `06-e2e-visual-v2.md` e i `target_tests` dei task.
 
 ## 3. Stato git
 
@@ -48,9 +47,9 @@
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `variety-select` costruito su `trueline/build/variety-select` (da `main` pulito), poi **mergiato ff su `main`** (`362847f`) e branch cancellato. Prossimo: aprire `trueline/build/e2e-visual-v2` da `main` pulito. Mai lavorare su `main` |
-| Ultimo commit | `362847f` feat(design-engine-v2): variety-select — greedy farthest-first + freeze assi + palette ibrida A+B (DV2-501..505) [checkpoint VERDE, gate APPROVATO]. Preceduto da `body-sections-b` (`d405eaa`), `body-sections-a` (`77ccb12`), `menu` (`df642ef`), `hero` (`14b27f1`), `foundation` (`70c756a`) |
-| Stato merge su `main` | **`variety-select` MERGIATO su `main`** su via umana esplicita (deploy-coupling coupled → deploy su ulaba.net). Verifica locale COMPLETA prima del merge: vitest **1717/1717**, `next build` 0, **e2e Chromium 30/30**, checkpoint (C1 R-04 207→223 delta0 + new=0 post-palette, C2 semgrep 0), mutazioni 6/6, gate visivo APPROVATO. `e2e-visual-v2` resta human-gated anche sul verde |
+| Branch di lavoro | `e2e-visual-v2` costruito su `trueline/build/e2e-visual-v2` (da `main` pulito), poi **mergiato ff su `main`** (`8518bab`) e branch cancellato. **DAG CHIUSO: nessun branch v2 successivo.** Mai lavorare su `main` |
+| Ultimo commit | `8518bab` feat(design-engine-v2): e2e-visual-v2 — gate finale varietà computed + anti-injection blocchi ricchi (DV2-601/602) [checkpoint VERDE 35/35, mutazioni 2/2]. Preceduto da `variety-select` (`362847f`), `body-sections-b` (`d405eaa`), `body-sections-a` (`77ccb12`), `menu` (`df642ef`), `hero` (`14b27f1`), `foundation` (`70c756a`) |
+| Stato merge su `main` | **`e2e-visual-v2` MERGIATO su `main`** su via umana esplicita (deploy-coupling coupled → deploy su ulaba.net, 2026-08-17). Verifica locale COMPLETA prima del merge: vitest **1717/1717**, `next build` 0, **e2e Chromium 35/35**, checkpoint test-only (igiene/sicurezza INVARIATE, gitleaks 0), mutazioni 2/2, gate visivo finale APPROVATO. **design-engine-v2 COMPLETO 6/6.** |
 | Deploy-coupling | **`coupled`** — Vercel connesso al repo (`ulabaservice-star/progetto-web-ai`): **push su `main` = deploy in produzione** su `ulaba.net`. Verificare **in locale** (vitest, e2e Chromium, computed-style, `next build`) prima di ogni merge |
 
 ## 4. Baseline & budget
@@ -68,6 +67,17 @@
   al confine dei macrotask (R-04, impronte sensibili alla POSIZIONE: i record-dato dei temi/cataloghi
   ri-fingerprintano impronte pre-esistenti; sono FP legittimi, mai gonfiare policy). `e2e/` escluso da
   jscpd. Ri-attribuire **prima** di ri-catturare.
+- **`e2e-visual-v2` (confine, VERDE `8518bab`)**: **macrotask SOLO TEST** — diff interamente in `e2e/` (2 spec nuovi +
+  `hostile-brief.ts` rifattorizzato), **zero `src/`**. Baseline igiene **INVARIATA** (jscpd ESCLUDE `e2e/` → nessuna dup nuova
+  conteggiata, nessuna re-cattura; ≠ da body-a/b/menu che toccavano `src/`). Baseline sicurezza **INVARIATA**: gitleaks **0
+  leaks** (`.trueline/bin/gitleaks.exe detect --no-git --source e2e/`), semgrep gira su `src/` intatto → 0, osv/rls invarianti
+  (nessuna dip/migrazione: `git diff` pulito su package-lock/supabase), 0 segreti nei file nuovi. tsc/eslint/knip 0, `next build`
+  0, suite **unit 1717/1717 + e2e Chromium 35/35**. **0 retry.** Batteria mutazione 2/2 uccise **sulla PRODUZIONE** (macrotask
+  test → si muta `src/`, `next build`, rosso, ripristino backup+sha256): (1) `Hero.tsx variantFor`→sempre fallback (collassa la
+  varietà hero) → DV2-601-1 ROSSO; (2) `Contatti.tsx` social href grezzo (bypassa `safeHttpsHref`) → DV2-602 `a[href^=javascript:]`
+  ROSSO. **GOTCHA:** gli screenshot Playwright con `path:'/tmp/...'` finiscono in **`C:\tmp\`** (node-Windows ≠ /tmp git-bash) →
+  usare path relativo al repo o cercarli in `C:\tmp`. **GOTCHA:** una mutazione che rimuove l'uso di un import romperebbe `next
+  build` (tsc) per il motivo SBAGLIATO → mutare mantenendo l'import referenziato (es. ramo ternario).
 - **`variety-select` (confine, VERDE `362847f`)**: baseline igiene **RI-CATTURATA 207→223** al 1° confine (18 dup NUOVE
   tutte LOW nei renderer del corpo NON toccati — la mia edit a `Offerte.tsx` ri-attribuisce le coppie clone Offerte↔body
   preesistenti; **0 cloni nei miei file**). **Post-ibrido-palette (A+B): delta new=0 SENZA re-cattura** — le 2 palette nuove
@@ -141,6 +151,31 @@
 
 ## 5. Carry-over / note ereditate
 
+- **🔴 LEZIONE e2e-visual-v2 — LA VARIETÀ HERO SI MISURA SULLA FIRMA COMPUTED, NON SULL'ATTRIBUTO.** La greedy garantisce 5
+  `hero_layout_id` DISTINTI per qualunque seed (esclusione dura), MA alcuni id LEGACY collassano sulla stessa variante CD
+  (`LAYOUT_TO_VARIANT`: es. `scena-scura@1` e `hero-full-centrato@1` → entrambi `fullCentrato`) → l'e2e che contasse
+  `data-hero-layout` sarebbe vacuo su quel seed. DV2-601 calcola una **firma computed** = `position(.site-photo-ph) |
+  posizione/dimensione(.site-hero-v2__title)` e conta le firme DISTINTE (soglia 4, reale 5/5, canary hero-identico 1). **Seed
+  scelto (`gate-v2-c`) verificato con ricognizione** (script vitest throwaway che stampa `selectDesign('ristorazione', seed, i)`
+  per i 0..4 → mappa id→variante CD): dà 5 varianti CD hero distinte. Ricognizione a livello DOMINIO (veloce) PRIMA dell'e2e (lento).
+- **🔴 LEZIONE e2e-visual-v2 — ORACOLO DI VARIETÀ CONDIVISO reale↔canary.** `assertVariety(signatures, min, label)` (lancia se
+  `Set(signatures).size < min`) usato 3 volte: reale-hero (verde), reale-corpo (verde), **canary hero-forzato-identico** (rosso).
+  Il canary costruisce 5 documenti con `hero_layout_id` sovrascritto identico (override + re-`parseDocument`, come il seedPublishedSite
+  di visual-engine v1.1) → firme→1 → `assertVariety` rosso. Il verde vale perché lo STESSO oracolo sa fallire. reducedMotion 'reduce'
+  per leggere la geometria del corpo sotto la piega (l'isola reveal non mette il gate → opacità piena).
+- **🔴 LEZIONE e2e-visual-v2 — MENU card-carta con prezzi + leader-dots richiede BRIEF PREZZATO.** Ristorazione ha `show_price:true`
+  (blocks.ts `OFFERINGS_VARIANTS`), ma `.site-menu-v2__price`/`.site-menu-v2__leader` compaiono SOLO se `item.price` esiste: la
+  fixture innocua di P4 NON prezza le offerte → per DV2-601 il brief va costruito con `price` sulle offerte (`hours_value` max 100,
+  `offering_price` max 50). Il wow usa un doc con `menu_layout_id:'menu-carta@1'` + `hero_layout_id:'hero-split@1'` IMPOSTI (override
+  + re-`parseDocument`), non una delle 5 varianti reali (il menu-carta non è garantito fra i 5 di un seed arbitrario).
+- **🔴 LEZIONE e2e-visual-v2 — ANTI-INJECTION dei blocchi ricchi: estendere la fixture ostile, non riscriverla.** `public-hostile.spec`
+  (T-417) gira già su codice v2 MA il suo doc ostile (brief senza `hours`/`description`) NON rende orari/chi-siamo. DV2-602 aggiunge
+  `richHostileBrief` (hostileBrief + `hours` con payload-nel-valore + `description`/`highlights`) → `buildRichHostileDocument` rende
+  TUTTI i blocchi ricchi. `withHeroUploaded`/`assertHostilePayloadsPresent` estratti e riusati da ENTRAMBE (T-417 INVARIATO, rieseguito
+  verde). Superfici v2 provate: Orari valore ostile → `.site-hours-v2__value` (SiteText escaped, nessun href); Contatti social
+  `javascript:` → `.site-contact-v2__social` SPAN (safeHttpsHref lo rifiuta) + mappa `.site-contact-v2__map` (`.site-photo-ph`, geo in
+  `data-geo-*`, NESSUN src/href); chrome header/footer (nome+recapiti derivati, href sicuri). **`e2e/` escluso da jscpd → duplicare
+  nelle fixture NON gonfia R-04** (ma qui ho comunque estratto gli helper per pulizia).
 - **🔴 LEZIONE variety-select — `vertical` NON arriva ai blocchi via `block.data` (va INOLTRATO).** `vertical` è
   "consultato, non reso" (blocks.ts): NON è in `brief_fields_rendered` di offerte, quindi `resolve` non lo copia in
   `block.data` → su /s/ `Offerte` cadeva sul settore generico 'altro' (layout logico sbagliato). DV2-501: congelare
@@ -355,6 +390,20 @@
 
 ## 6. Copertura dichiarata
 
+- **`e2e-visual-v2` (DV2-601/602) — tutti gli AC coperti e verdi + GATE VISIVO FINALE ESEGUITO E APPROVATO.** Target_tests:
+  `e2e/visual-engine-v2.spec.ts` (AC-DV2-601-1: 5 varianti reali via `resolveVariantHome`/`selectDesign` su `/s/` ANON → firme
+  hero computed 5/5 + corpo 5/5 distinte, oracolo `assertVariety`; AC-DV2-601-2: PhotoPlaceholder hero + menu-carta prezzi+leader
+  + titolo ≥40px; AC-DV2-601-3: canary hero-forzato-identico rende rosso lo stesso oracolo); `e2e/public-hostile-v2.spec.ts`
+  (AC-DV2-602-1: doc ostile ricco → i 6 payload+breakout come testo, counter 0, orari/contatti/mappa/chrome inerti, unici `<img>`
+  verso lo storage host esatto; AC-DV2-602-2: allowlist host esclude attacker, storage esercitato; AC-DV2-602-3: canary rosso).
+  **Mutazioni 2/2 uccise** (Hero variantFor→fallback; Contatti href grezzo). Suite unit 1717, e2e 35/35, next build 0.
+  **Gate visivo finale: 5 screenshot JS-off delle varianti reali (seed gate-v2-c) — hero/palette/corpo distinti, bande continue, APPROVATO.**
+- **NON coperto / dichiarato (L-COL-006, e2e-visual-v2):** (a) la **bellezza** resta gate umano (fatto). (b) L'asse
+  `section_layout_id` per-blocco del corpo entra nella varietà via `variantIndex` (`selectBodyLayout`), non nella distanza
+  farthest-first (dichiarato in variety-select). (c) **Foto reali** fuori scope (P4-D7/F): PhotoPlaceholder — tetto del wow. (d) Il
+  testo delle varianti nel gate porta la firma ' anteprima' del pool INNOCUO di test (`innocuousHomePool`), non del prodotto (la copy
+  reale è del modello a runtime). (e) DV2-602 lascia INNOCUA la prosa di chi-siamo/faq (slot del MODELLO, gate PoolSchema): la loro
+  superficie non-href è l'escaping React comune, esercitato dai payload negli altri blocchi; il payload ostile in orari (campo brief) è additivo.
 - **`variety-select` (DV2-501..505) — tutti gli AC coperti e verdi + GATE VISIVO ESEGUITO E APPROVATO.** Target_tests:
   `document-design-selection-v2` (AC-501-1/2/3: freeze theme/hero/menu versionati + `vertical` + `section_layout_id` per-blocco
   valido per tipo-sezione; SiteView proietta i data-* + inoltra design+vertical; Offerte riceve menu congelato E vertical
