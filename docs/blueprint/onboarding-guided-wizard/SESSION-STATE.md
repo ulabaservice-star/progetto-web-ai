@@ -8,7 +8,7 @@
 |---|---|
 | **Progetto** | Ulaba/Belora |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase) |
-| **Stato** | **BUILD 1/6** — `ai-usage-guard` (OGW-101/102) COMPLETO E MERGIATO su `main` (`0e3d2ba`, checkpoint 4/4 VERDE, deploy Vercel partito). ⚠️ **Migrazione `20260818000100` da applicare a Supabase Cloud** prima di OGW-303 (il push Vercel deploya l'app, NON applica le migrazioni al DB cloud). Prossimo selezionabile: `offerings-editor` o `generate-description` (dip. `ai-usage-guard` ora verde). |
+| **Stato** | **BUILD 2/6** — `offerings-editor` (OGW-201/202) COSTRUITO sul branch `trueline/build/offerings-editor` (`15dc511`), checkpoint 4/4 VERDE, mutazioni 2/2, gate visivo umano APPROVATO. **PRE-MERGE** (human-gated: `main` deploy-coupled). `ai-usage-guard` (OGW-101/102) resta MERGIATO su `main` (`0e3d2ba`). ⚠️ **Migrazione `20260818000100` da applicare a Supabase Cloud** prima di OGW-303 (il push Vercel deploya l'app, NON applica le migrazioni al DB cloud). Prossimo selezionabile: `generate-description` o `suggest-offerings` (dip. verdi). |
 
 ---
 
@@ -19,7 +19,7 @@
 | Macrotask | Stato | Checkpoint | Dip |
 |---|---|---|---|
 | `ai-usage-guard` (OGW-101/102) | **done — mergiato `main` (`0e3d2ba`)** | **4/4 VERDE** | — |
-| `offerings-editor` (OGW-201/202) | **todo** | — | — |
+| `offerings-editor` (OGW-201/202) | **done — branch (`15dc511`), pre-merge** | **4/4 VERDE** | — |
 | `generate-description` (OGW-301/302) | **todo** | — | `ai-usage-guard` |
 | `suggest-offerings` (OGW-401/402) | **todo** | — | `ai-usage-guard`, `offerings-editor` |
 | `wizard-shell` (OGW-501/502) | **todo** | — | `offerings-editor`, `generate-description`, `suggest-offerings` |
@@ -29,28 +29,36 @@
 
 ## 2. Macrotask corrente
 
-- **`ai-usage-guard` COSTRUITO** (branch `trueline/build/ai-usage-guard`, checkpoint 4/4 VERDE, pre-merge).
-  - **OGW-101**: migrazione `20260818000100_onboarding_ai_usage.sql` — tabella righe-per-uso
-    (`id, account_id, site_id, used_at, kind`), FK composita `(account_id, site_id)→sites(account_id, id)`,
-    **RLS owner-only APPEND-ONLY** (solo SELECT+INSERT `is_account_member`; niente UPDATE/DELETE utente =
-    il contatore non si azzera per aggirare il cap), nessun grant anon. Provata a runtime
-    (`tests/onboarding-ai-usage-rls.test.ts`, AC-101-1/2/3).
-  - **OGW-102**: dominio puro `src/domain/onboarding/ai-budget.ts` — porta `AiUsagePort` iniettata,
-    `checkAiBudget` (cap→'cap', rate a finestra→'rate', **no side-effect**) + `recordAiUsage`
-    (consume-on-success, append-only) + `DEFAULT_AI_BUDGET_LIMITS` (maxTotal 30 / windowMs 60000 /
-    maxInWindow 6); `now`/`at`/`limits` iniettati (nessun `Date.now`). Test deterministico fake-port
-    (`tests/onboarding-ai-budget.test.ts`, AC-102-1/2/3/4).
-- **Prossimo selezionabile** (DAG): **`offerings-editor`** (indipendente, UI) o **`generate-description`**
-  (dip. `ai-usage-guard` ora verde). Consiglio: `offerings-editor` (l'altro fondativo, chiude la base
-  UI/editor prima degli endpoint AI che riusano `checkAiBudget`).
+- **`offerings-editor` COSTRUITO** (branch `trueline/build/offerings-editor`, `15dc511`, checkpoint 4/4
+  VERDE, mutazioni 2/2, gate visivo APPROVATO, pre-merge).
+  - **OGW-201**: `BriefCorePatch` (`src/ui/onboarding/brief-fields.ts`) esteso a `offerings` (riuso
+    `Brief['content']['offerings']`, nessuna ri-dichiarazione). **Dominio invariato (OGW-D5)**:
+    `BriefUpdateSchema`/`applyBriefUpdate`/`upsertBrief` già persistono/fondono le offerte. Contract test
+    del canale (`tests/onboarding-offerings-patch.test.ts`, AC-201-1/2): valide accettate dal gate e
+    leggibili; voce fuori-forma scartata **campo-per-campo** senza far fallire gli altri campi (la difesa
+    è `applyBriefUpdate`; a livello `upsertBrief` la stessa patch malformata è 400 sull'intera patch —
+    dichiarato nel test).
+  - **OGW-202**: `src/ui/onboarding/OfferingsEditor.tsx` — editor generico CONTROLLATO (nome/gruppo/
+    prezzo/descrizione, add/edit/remove→`onChange`); etichetta di sezione da `resolveOfferings`
+    (`site.offerings.*`, riuso i18n); hint quando `show_price=false`; anti-injection (solo `value`/nodi
+    di testo, mai innerHTML/href, T-151). Chiavi `onboarding.offerings.*` in it+es (parità). Test
+    component (`tests/onboarding-offerings-editor.test.tsx`, AC-202-1/2/3/4).
+  - **DECISIONE DI SCOPE (gate umano):** l'**integrazione nel flusso UI** (sostituire la lista read-only
+    del `BriefPanel`, `onChange`→patch→`upsertBrief`, step "Offerte") è **DEMANDATA a `wizard-shell`
+    (OGW-501)**, che riorganizza comunque `OnboardingWorkspace`. Evita di riscrivere due volte il test di
+    sicurezza T-151 (`onboarding-ui.test.tsx`). Il componente NON è dead-code: usato dai test
+    (nel `project` set di knip).
+- **Prossimo selezionabile** (DAG): **`generate-description`** (dip. `ai-usage-guard` verde) o
+  **`suggest-offerings`** (dip. `ai-usage-guard` + `offerings-editor` verdi). ⚠️ `generate-description`
+  (OGW-303, 1° endpoint che usa la tabella) richiede la **migrazione applicata a Supabase Cloud** prima.
 
 ## 3. Stato git
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `trueline/build/ai-usage-guard` (mergiato, non cancellato) |
-| Ultimo commit | `0e3d2ba` `feat(ai-usage-guard)` OGW-101/102 — su `main` |
-| Stato merge su `main` | **MERGIATO** (gate umano approvato, ff-only + push → deploy Vercel). Verifica locale: tsc 0, eslint 0, suite 1725/1725, `next build` 0, checkpoint 4/4, mutazioni 2/2 |
+| Branch di lavoro | `trueline/build/offerings-editor` (da `main` pulito `d2405ac`) |
+| Ultimo commit | `15dc511` `feat(offerings-editor)` OGW-201/202 — sul branch (PRE-MERGE) |
+| Stato merge su `main` | **PENDING (human-gated)** — verifica locale VERDE: tsc 0, eslint 0, suite **1731/1731**, `next build` 0, checkpoint 4/4, mutazioni 2/2, gate visivo approvato. Attende il "vai" umano per ff-only + push → deploy Vercel. |
 | `main_deploy_coupled` | **true** (Vercel connesso al repo `ulabaservice-star/progetto-web-ai`: push su `main` = deploy su ulaba.net) → merge **human-gated anche sul verde**; verifica locale (vitest, e2e, `next build`) prima di ogni merge |
 
 ## 4. Baseline & budget
@@ -61,9 +69,14 @@
   (`.env.local` generic+anthropic-api-key, `siti css/*.txt`; `git check-ignore` positivo → mai nel
   repo) + 1 rls (anon-policy public-serving). Delta del macrotask = **0** (la RLS nuova non aggiunge
   finding: `rls_check` la valida owner-only).
-- **Baseline d'igiene**: `.trueline/hygiene-baseline.json` (jscpd; `e2e/` escluso) RI-CATTURATA
-  (VERSIONATA, committata): **count 223 invariato**, 4/223 fingerprint aggiornati = drift dei documenti
-  blueprint tra Aug 16→18, NON del macrotask (`dead-code:0`, nessun dup nuovo mio). Metodo checkpoint:
+- **Baseline d'igiene**: `.trueline/hygiene-baseline.json` (jscpd; `e2e/` escluso). **M2: RIGENERATA
+  control-compatibile** (formato `fingerprints[]`, **224 fp**, committata in `15dc511`). Motivo: la
+  baseline M1 (formato `capture --hygiene`) non conteneva il fingerprint del dup pre-esistente
+  `onboarding_ai_usage.sql`↔`assets_and_storage.sql` (50 token, LOW) — e `capture --hygiene` lo
+  rigenerava con un fingerprint **incompatibile** con quello di `control1Hygiene`, quindi il gate lo
+  vedeva "nuovo". Rimedio (§5): estrarre i fingerprint da `control1Hygiene(...).findings` (stesso metodo
+  del gate) → match garantito. **Verificato che 0 cloni coinvolgono file M2** (`dead-code:0`, dup delta 0).
+  Metodo checkpoint:
   **decomposto** — driver `.trueline/ogw-checkpoint.mjs` (import `control1Hygiene`/`control2Security`
   reali + `loadHygieneBaseline`/`classify`/`loadManifest`/`loadBaseline`, `blueprintDir` passato ma
   nessun contratto arch → gate arch no-op per OGW-D6) per C1+C2 in foreground; C3+C4 = `vitest run`
@@ -115,6 +128,32 @@
   Supabase Cloud. `20260818000100` va applicata al cloud (`supabase db push`) **prima di OGW-303** (il 1°
   endpoint che usa la tabella). Non urgente finché nessun endpoint la consuma.
 
+### Lezioni build M2 `offerings-editor` (2026-08-18)
+
+- **Integrazione UI di un componente riorganizzato a valle → rimandala.** L'`OfferingsEditor` è pronto e
+  testato, ma cablarlo nel `BriefPanel` legacy avrebbe richiesto di riscrivere il test di sicurezza T-151
+  (`onboarding-ui.test.tsx`) — che `wizard-shell` (OGW-501) riorganizza comunque. Gate umano → integrazione
+  demandata a OGW-501. Il componente NON è dead-code: knip lo vede usato dai test (`tests/**` è nel `project`).
+- **AC "senza far fallire il salvataggio" vive al layer di dominio, non all'endpoint.** `upsertBrief` fa
+  `BriefUpdateSchema.safeParse` → **400 sull'intera patch** su una voce d'offerta malformata; lo scarto
+  campo-per-campo (che mantiene gli altri campi) è di `applyBriefUpdate`. Il target test lo esercita lì e
+  lo **dichiara** (L-COL-006). Regola generale: leggi DOVE un AR è realmente osservabile prima di scegliere
+  il livello del test.
+- **Rebaseline d'igiene: usa i fingerprint del GATE, non di `capture`.** `baseline.mjs capture --hygiene` e
+  `control1Hygiene` possono calcolare fingerprint **diversi per lo stesso clone** (visto sul dup SQL al
+  limite dei 50 token) → un pre-esistente resta "nuovo" per sempre. Rimedio robusto: `control1Hygiene(repo,
+  {baseline:∅}).findings.map(f=>f.fingerprint)` → scrivi `{fingerprints:[…]}` (formato che `loadHygieneBaseline`
+  legge). Prima **prova che 0 cloni coinvolgono i file del macrotask** (contro-prova anti-mascheramento).
+- **`classify(repo)` ritorna la STRINGA id** (`'supabase-jsts'`), non un oggetto → `loadManifest(ecoId)` diretto;
+  con `eco.id` (undefined) il manifest è null e il gate **salta jscpd in silenzio** (C1 falsamente verde senza dup).
+- **Gate visivo di un componente non ancora cablato = preview isolata usa-e-getta.** Route temporanea
+  `src/app/[locale]/<name>/page.tsx` (client, monta il componente in `Card` con dati d'esempio) + `next dev`
+  + screenshot Chrome DevTools, poi RIMUOVI la route. Gotcha: una cartella con prefisso **`_`** è *private
+  folder* di Next App Router → **404** (usa un nome senza underscore).
+- **`git stash -u`/`pop` converte LF→CRLF** (autocrlf on): dopo il pop i file "risultano modificati" per solo
+  EOL (`diff` ignorando `\r` è vuoto). Ripristina i **byte testati** dai backup `.bak` (verifica sha256) prima
+  di committare, così il diff resta pulito.
+
 ## 6. Copertura dichiarata
 
 - **`ai-usage-guard` (OGW-101/102)** — target_tests coperti: `tests/onboarding-ai-usage-rls.test.ts`
@@ -124,6 +163,15 @@
   **Mutazioni 2/2 UCCISE** (ripristino backup+sha256): cap dominio `>=maxTotal`→`+1000` ⇒ AC-102-2 rosso;
   RLS `is_account_member`→`using(true)` sulla SELECT ⇒ AC-101-2 rosso (A vede le righe di B). Checkpoint
   decomposto 4/4 verde. Nessun gate visivo (macrotask DB+dominio, senza UI).
+- **`offerings-editor` (OGW-201/202)** — target_tests coperti: `tests/onboarding-offerings-patch.test.ts`
+  (AC-201-1 offerte valide accettate dal gate `BriefUpdateSchema` e leggibili; AC-201-2 voce fuori-forma
+  scartata campo-per-campo da `applyBriefUpdate` senza far fallire gli altri campi — livello dichiarato) +
+  `tests/onboarding-offerings-editor.test.tsx` (AC-202-1 add/edit/remove→onChange con preservazione dei
+  campi non toccati; AC-202-2 etichetta da `resolveOfferings` non fissa; AC-202-3 hint prezzo condizionale
+  su `show_price`; AC-202-4 anti-injection: payload solo in `value`, nessun `img`/`a` iniettato). **Mutazioni
+  2/2 UCCISE** (ripristino backup+sha256): name via `innerHTML` ⇒ AC-202-4 rosso; etichetta fissa `'Menu'` ⇒
+  AC-202-2 rosso. Checkpoint decomposto 4/4 verde. **Gate visivo umano APPROVATO** (preview isolata).
+  **Integrazione nel flusso NON coperta qui** (demandata a OGW-501, §2).
 - Da compilare a ogni `session-end` col macrotask chiuso (target_tests coperti, mutazioni, gate).
 - **NON coperto per costruzione (L-COL-006)**: la qualità *editoriale* della copy generata e l'ovvietà
   del confine "placeholder da personalizzare" non sono oracolabili → gate visivo umano. Foto reali e resa
