@@ -101,6 +101,15 @@
       "submit": "Importar del sitio",
       "error": "No se ha podido importar desde esta dirección."
     },
+    "generateDescription": {
+      "label": "Descripción de la web",
+      "phrasePlaceholder": "Escribe en dos palabras a qué te dedicas",
+      "generate": "Generar con IA",
+      "regenerate": "Regenerar",
+      "confirm": "Usar esta descripción",
+      "capReached": "Has alcanzado el límite de generaciones de IA para esta web.",
+      "error": "No se ha podido generar la descripción: inténtalo de nuevo."
+    },
     "readiness": {
       "complete": "El brief tiene todos los campos esenciales",
       "readyForReview": "El brief está listo para la revisión"

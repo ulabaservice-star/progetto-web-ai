@@ -101,6 +101,15 @@
       "submit": "Importa dal sito",
       "error": "Non è stato possibile importare da questo indirizzo."
     },
+    "generateDescription": {
+      "label": "Descrizione del sito",
+      "phrasePlaceholder": "Scrivi in due parole di che cosa ti occupi",
+      "generate": "Genera con l'AI",
+      "regenerate": "Rigenera",
+      "confirm": "Usa questa descrizione",
+      "capReached": "Hai raggiunto il limite di generazioni AI per questo sito.",
+      "error": "Non è stato possibile generare la descrizione: riprova."
+    },
     "readiness": {
       "complete": "Il brief ha tutti i campi essenziali",
       "readyForReview": "Il brief è pronto per la revisione"
