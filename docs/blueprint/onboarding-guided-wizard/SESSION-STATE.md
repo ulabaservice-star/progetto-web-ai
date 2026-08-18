@@ -92,6 +92,29 @@
 - **Nota atomicità (dichiarata)**: `OGW-501`/`OGW-502` sono i task più grossi (contenitore + integrazione
   + e2e); se in build non stanno in un ciclo, sono splittabili senza toccare il DAG.
 
+### Lezioni build M1 `ai-usage-guard` (2026-08-18)
+
+- **Baseline STALE all'inizio build → ri-catturala SEMPRE (§4 dovuto).** La baseline (Aug 6/16) era più
+  vecchia del repo → il gate segnalava rumore pre-esistente come "nuovo" (2 dup fra `SESSION-STATE.md` di
+  ALTRI blueprint + 3 secret FP GITIGNORATI: `.env.local`, `siti css/*.txt`). Prima di attribuire finding
+  al macrotask, **verifica `location.file`** (nessuno dei miei 4 file toccato) e `git check-ignore`; poi
+  ricattura oracle-driven: sposta i file del macrotask FUORI dal repo → `capture(repo, ['gitleaks',
+  'rls-check','osv'])` in `.trueline/checkpoint-baseline.json` come **ARRAY** (`Object.values(snap.findings)`,
+  NON lo snapshot) + `capture(repo, ['jscpd'])` in `.trueline/hygiene-baseline.json` (snapshot) → ripristina
+  → il driver conferma delta 0. `hygiene-baseline.json` è VERSIONATO (committato); `checkpoint-baseline.json`
+  è gitignorato (locale).
+- **RLS di un contatore anti-abuso = APPEND-ONLY, per sicurezza.** Niente policy UPDATE/DELETE per
+  `authenticated`: con DELETE l'utente azzererebbe il contatore per aggirare il cap; con UPDATE
+  falsificherebbe `used_at`. Cleanup solo via cascade. Vale per ogni futuro contatore/ledger anti-abuso.
+- **Checkpoint decomposto (driver `.trueline/ogw-checkpoint.mjs`, gitignorato):** import `control1Hygiene`/
+  `control2Security` reali + `loadHygieneBaseline`/`classify`/`loadManifest`/`loadBaseline`; `blueprintDir`
+  passato ma gate arch no-op (nessun `architecture:`, OGW-D6). **C3+C4 = `vitest run` completo** (1725/1725,
+  ~5 min < cap → niente shard). Verdetto dai campi `.green`, mai exit code. Foreground funziona; monolitico
+  in background = `0xC0000142`.
+- **Migrazione DB ≠ deploy app.** Il push su `main` deploya l'app su Vercel ma NON applica le migrazioni a
+  Supabase Cloud. `20260818000100` va applicata al cloud (`supabase db push`) **prima di OGW-303** (il 1°
+  endpoint che usa la tabella). Non urgente finché nessun endpoint la consuma.
+
 ## 6. Copertura dichiarata
 
 - **`ai-usage-guard` (OGW-101/102)** — target_tests coperti: `tests/onboarding-ai-usage-rls.test.ts`
