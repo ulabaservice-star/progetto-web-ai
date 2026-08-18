@@ -8,7 +8,7 @@
 |---|---|
 | **Progetto** | Ulaba/Belora |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase) |
-| **Stato** | **BLUEPRINT PRONTO (BOOTSTRAP completato 2026-08-18)** — nessun macrotask costruito. Self-check strutturale VERDE (11 task, `validate_blueprint` exit 0); semantico senza rilievi bloccanti (2 note dichiarate). Prossima sessione: **BUILD** dal primo macrotask le cui dipendenze sono verdi. |
+| **Stato** | **BUILD IN CORSO** — `ai-usage-guard` (OGW-101/102) COSTRUITO su branch, **checkpoint 4/4 VERDE**, in attesa del gate umano per il merge su `main` (deploy-coupled). Prossimo selezionabile: `offerings-editor` o `generate-description` (dip. `ai-usage-guard` ora verde). |
 
 ---
 
@@ -18,7 +18,7 @@
 
 | Macrotask | Stato | Checkpoint | Dip |
 |---|---|---|---|
-| `ai-usage-guard` (OGW-101/102) | **todo** | — | — |
+| `ai-usage-guard` (OGW-101/102) | **done (branch, pre-merge)** | **4/4 VERDE** | — |
 | `offerings-editor` (OGW-201/202) | **todo** | — | — |
 | `generate-description` (OGW-301/302) | **todo** | — | `ai-usage-guard` |
 | `suggest-offerings` (OGW-401/402) | **todo** | — | `ai-usage-guard`, `offerings-editor` |
@@ -29,27 +29,45 @@
 
 ## 2. Macrotask corrente
 
-- **Nessuno costruito.** I primi selezionabili (dipendenze vuote) sono **`ai-usage-guard`** e
-  **`offerings-editor`** (indipendenti). Consiglio d'ordine: `ai-usage-guard` per primo (fondativo,
-  tocca DB/RLS → baseline di sicurezza), poi `offerings-editor`.
-- Criteri/test di riferimento: i moduli `01…06` e i `target_tests` dei task.
+- **`ai-usage-guard` COSTRUITO** (branch `trueline/build/ai-usage-guard`, checkpoint 4/4 VERDE, pre-merge).
+  - **OGW-101**: migrazione `20260818000100_onboarding_ai_usage.sql` — tabella righe-per-uso
+    (`id, account_id, site_id, used_at, kind`), FK composita `(account_id, site_id)→sites(account_id, id)`,
+    **RLS owner-only APPEND-ONLY** (solo SELECT+INSERT `is_account_member`; niente UPDATE/DELETE utente =
+    il contatore non si azzera per aggirare il cap), nessun grant anon. Provata a runtime
+    (`tests/onboarding-ai-usage-rls.test.ts`, AC-101-1/2/3).
+  - **OGW-102**: dominio puro `src/domain/onboarding/ai-budget.ts` — porta `AiUsagePort` iniettata,
+    `checkAiBudget` (cap→'cap', rate a finestra→'rate', **no side-effect**) + `recordAiUsage`
+    (consume-on-success, append-only) + `DEFAULT_AI_BUDGET_LIMITS` (maxTotal 30 / windowMs 60000 /
+    maxInWindow 6); `now`/`at`/`limits` iniettati (nessun `Date.now`). Test deterministico fake-port
+    (`tests/onboarding-ai-budget.test.ts`, AC-102-1/2/3/4).
+- **Prossimo selezionabile** (DAG): **`offerings-editor`** (indipendente, UI) o **`generate-description`**
+  (dip. `ai-usage-guard` ora verde). Consiglio: `offerings-editor` (l'altro fondativo, chiude la base
+  UI/editor prima degli endpoint AI che riusano `checkAiBudget`).
 
 ## 3. Stato git
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | da aprire (es. `trueline/build/ai-usage-guard`) da `main` pulito. Mai lavorare su `main` |
-| Ultimo commit | blueprint bootstrap (docs), su `main` |
-| Stato merge su `main` | nessun macrotask ancora costruito |
+| Branch di lavoro | `trueline/build/ai-usage-guard` (da `main` pulito). Commit atomico del macrotask sul branch |
+| Ultimo commit | (branch) `feat(ai-usage-guard)` OGW-101/102, checkpoint 4/4 verde |
+| Stato merge su `main` | **SOSPESO — gate umano** (deploy-coupled). Verifica locale fatta: tsc 0, eslint 0, suite 1725/1725, `next build` da confermare al merge, mutazioni 2/2 |
 | `main_deploy_coupled` | **true** (Vercel connesso al repo `ulabaservice-star/progetto-web-ai`: push su `main` = deploy su ulaba.net) → merge **human-gated anche sul verde**; verifica locale (vitest, e2e, `next build`) prima di ogni merge |
 
 ## 4. Baseline & budget
 
-- **Baseline di sicurezza**: da ri-catturare a inizio BUILD (`.trueline/checkpoint-baseline.json`,
-  ARRAY; 2 FP noti = osv postcss MEDIUM + rls anon-policy). **OGW-101 aggiunge 1 tabella con RLS
-  owner-only** → il checkpoint la valida (`rls_check`), attendersi la nuova policy come legittima.
-- **Baseline d'igiene**: `.trueline/hygiene-baseline.json` (jscpd; `e2e/` escluso). Ri-attribuire
-  prima di ri-catturare se scatta R-04.
+- **Baseline di sicurezza**: RI-CATTURATA a inizio BUILD ai-usage-guard (§4 dovuto) su stato base
+  SENZA i file del macrotask → `.trueline/checkpoint-baseline.json` (ARRAY, gitignorato, locale):
+  **6 FP pre-esistenti** = 2 dependency-vuln (osv postcss + 1) + **3 secret FP GITIGNORATI**
+  (`.env.local` generic+anthropic-api-key, `siti css/*.txt`; `git check-ignore` positivo → mai nel
+  repo) + 1 rls (anon-policy public-serving). Delta del macrotask = **0** (la RLS nuova non aggiunge
+  finding: `rls_check` la valida owner-only).
+- **Baseline d'igiene**: `.trueline/hygiene-baseline.json` (jscpd; `e2e/` escluso) RI-CATTURATA
+  (VERSIONATA, committata): **count 223 invariato**, 4/223 fingerprint aggiornati = drift dei documenti
+  blueprint tra Aug 16→18, NON del macrotask (`dead-code:0`, nessun dup nuovo mio). Metodo checkpoint:
+  **decomposto** — driver `.trueline/ogw-checkpoint.mjs` (import `control1Hygiene`/`control2Security`
+  reali + `loadHygieneBaseline`/`classify`/`loadManifest`/`loadBaseline`, `blueprintDir` passato ma
+  nessun contratto arch → gate arch no-op per OGW-D6) per C1+C2 in foreground; C3+C4 = `vitest run`
+  completo (1725/1725, ~5 min < cap). Il monolitico resta da evitare in background (0xC0000142).
 - **Budget**: retry ≤2 per checkpoint; batteria di mutazione per macrotask (mutazione fatale +
   ripristino via **backup+sha256**, MAI `git checkout` — il macrotask è uncommitted).
 - **Contratto altitudine**: riusato dal globale (`tests/architecture-contract.test.ts`); nessun blocco
@@ -76,6 +94,13 @@
 
 ## 6. Copertura dichiarata
 
+- **`ai-usage-guard` (OGW-101/102)** — target_tests coperti: `tests/onboarding-ai-usage-rls.test.ts`
+  (AC-101-1/2/3, **RLS provata a runtime** con oracolo indipendente anti-placebo; isolamento A→B
+  simmetrico + scrittura cross-tenant negata su 2 fronti RLS 42501 e FK composita 23503) +
+  `tests/onboarding-ai-budget.test.ts` (AC-102-1/2/3/4, gating deterministico fake-port, no `Date.now`).
+  **Mutazioni 2/2 UCCISE** (ripristino backup+sha256): cap dominio `>=maxTotal`→`+1000` ⇒ AC-102-2 rosso;
+  RLS `is_account_member`→`using(true)` sulla SELECT ⇒ AC-101-2 rosso (A vede le righe di B). Checkpoint
+  decomposto 4/4 verde. Nessun gate visivo (macrotask DB+dominio, senza UI).
 - Da compilare a ogni `session-end` col macrotask chiuso (target_tests coperti, mutazioni, gate).
 - **NON coperto per costruzione (L-COL-006)**: la qualità *editoriale* della copy generata e l'ovvietà
   del confine "placeholder da personalizzare" non sono oracolabili → gate visivo umano. Foto reali e resa
