@@ -8,7 +8,7 @@
 |---|---|
 | **Progetto** | Ulaba/Belora |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase) |
-| **Stato** | **BUILD IN CORSO** — `ai-usage-guard` (OGW-101/102) COSTRUITO su branch, **checkpoint 4/4 VERDE**, in attesa del gate umano per il merge su `main` (deploy-coupled). Prossimo selezionabile: `offerings-editor` o `generate-description` (dip. `ai-usage-guard` ora verde). |
+| **Stato** | **BUILD 1/6** — `ai-usage-guard` (OGW-101/102) COMPLETO E MERGIATO su `main` (`0e3d2ba`, checkpoint 4/4 VERDE, deploy Vercel partito). ⚠️ **Migrazione `20260818000100` da applicare a Supabase Cloud** prima di OGW-303 (il push Vercel deploya l'app, NON applica le migrazioni al DB cloud). Prossimo selezionabile: `offerings-editor` o `generate-description` (dip. `ai-usage-guard` ora verde). |
 
 ---
 
@@ -18,7 +18,7 @@
 
 | Macrotask | Stato | Checkpoint | Dip |
 |---|---|---|---|
-| `ai-usage-guard` (OGW-101/102) | **done (branch, pre-merge)** | **4/4 VERDE** | — |
+| `ai-usage-guard` (OGW-101/102) | **done — mergiato `main` (`0e3d2ba`)** | **4/4 VERDE** | — |
 | `offerings-editor` (OGW-201/202) | **todo** | — | — |
 | `generate-description` (OGW-301/302) | **todo** | — | `ai-usage-guard` |
 | `suggest-offerings` (OGW-401/402) | **todo** | — | `ai-usage-guard`, `offerings-editor` |
@@ -48,9 +48,9 @@
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `trueline/build/ai-usage-guard` (da `main` pulito). Commit atomico del macrotask sul branch |
-| Ultimo commit | (branch) `feat(ai-usage-guard)` OGW-101/102, checkpoint 4/4 verde |
-| Stato merge su `main` | **SOSPESO — gate umano** (deploy-coupled). Verifica locale fatta: tsc 0, eslint 0, suite 1725/1725, `next build` da confermare al merge, mutazioni 2/2 |
+| Branch di lavoro | `trueline/build/ai-usage-guard` (mergiato, non cancellato) |
+| Ultimo commit | `0e3d2ba` `feat(ai-usage-guard)` OGW-101/102 — su `main` |
+| Stato merge su `main` | **MERGIATO** (gate umano approvato, ff-only + push → deploy Vercel). Verifica locale: tsc 0, eslint 0, suite 1725/1725, `next build` 0, checkpoint 4/4, mutazioni 2/2 |
 | `main_deploy_coupled` | **true** (Vercel connesso al repo `ulabaservice-star/progetto-web-ai`: push su `main` = deploy su ulaba.net) → merge **human-gated anche sul verde**; verifica locale (vitest, e2e, `next build`) prima di ogni merge |
 
 ## 4. Baseline & budget
