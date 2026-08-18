@@ -39,6 +39,12 @@ export type BriefCorePatch = Partial<{
   vertical: Brief['vertical'];
   primary_goal: NonNullable<Brief['primary_goal']>;
   hours: Record<string, string>;
+  // OGW-201 — le offerte diventano editabili nel pannello e viaggiano nella patch. Il
+  // TIPO e' quello del dominio (Brief['content']['offerings'], la lista di voci di
+  // OfferingSchema): nessuna ri-dichiarazione, cosi' non puo' divergere. La validazione
+  // resta server-side (BriefUpdateSchema/OfferingSchema, invariati): qui c'e' solo la
+  // forma di cio' che si spedisce, come per gli altri campi.
+  offerings: Brief['content']['offerings'];
 }>;
 
 // Il valore di un <select> e' una stringa qualunque: si accetta solo se e' nell'allowlist.

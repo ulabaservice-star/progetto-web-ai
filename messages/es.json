@@ -125,6 +125,15 @@
       "socialLink": "Perfil social {n}",
       "geoLat": "Latitud",
       "geoLng": "Longitud"
+    },
+    "offerings": {
+      "add": "Añadir elemento",
+      "remove": "Eliminar",
+      "name": "Nombre",
+      "description": "Descripción",
+      "price": "Precio",
+      "section": "Grupo",
+      "priceHiddenHint": "El precio no se mostrará en el sitio para este tipo de actividad."
     }
   },
   "site": {
