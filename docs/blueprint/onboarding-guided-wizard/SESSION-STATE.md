@@ -8,7 +8,7 @@
 |---|---|
 | **Progetto** | Ulaba/Belora |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase) |
-| **Stato** | **BUILD 2/6** — `offerings-editor` (OGW-201/202) COSTRUITO sul branch `trueline/build/offerings-editor` (`15dc511`), checkpoint 4/4 VERDE, mutazioni 2/2, gate visivo umano APPROVATO. **PRE-MERGE** (human-gated: `main` deploy-coupled). `ai-usage-guard` (OGW-101/102) resta MERGIATO su `main` (`0e3d2ba`). ⚠️ **Migrazione `20260818000100` da applicare a Supabase Cloud** prima di OGW-303 (il push Vercel deploya l'app, NON applica le migrazioni al DB cloud). Prossimo selezionabile: `generate-description` o `suggest-offerings` (dip. verdi). |
+| **Stato** | **BUILD 2/6** — `offerings-editor` (OGW-201/202) **COMPLETO E MERGIATO su `main` (`08c8404`)**, checkpoint 4/4 VERDE, mutazioni 2/2, gate visivo umano APPROVATO, deploy Vercel partito. `ai-usage-guard` (OGW-101/102) mergiato (`0e3d2ba`). ⚠️ **Migrazione `20260818000100` da applicare a Supabase Cloud** prima di OGW-303 (il push Vercel deploya l'app, NON applica le migrazioni al DB cloud). Prossimo selezionabile: `generate-description` o `suggest-offerings` (dip. verdi). |
 
 ---
 
@@ -19,7 +19,7 @@
 | Macrotask | Stato | Checkpoint | Dip |
 |---|---|---|---|
 | `ai-usage-guard` (OGW-101/102) | **done — mergiato `main` (`0e3d2ba`)** | **4/4 VERDE** | — |
-| `offerings-editor` (OGW-201/202) | **done — branch (`15dc511`), pre-merge** | **4/4 VERDE** | — |
+| `offerings-editor` (OGW-201/202) | **done — mergiato `main` (`08c8404`)** | **4/4 VERDE** | — |
 | `generate-description` (OGW-301/302) | **todo** | — | `ai-usage-guard` |
 | `suggest-offerings` (OGW-401/402) | **todo** | — | `ai-usage-guard`, `offerings-editor` |
 | `wizard-shell` (OGW-501/502) | **todo** | — | `offerings-editor`, `generate-description`, `suggest-offerings` |
@@ -56,9 +56,9 @@
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `trueline/build/offerings-editor` (da `main` pulito `d2405ac`) |
-| Ultimo commit | `15dc511` `feat(offerings-editor)` OGW-201/202 — sul branch (PRE-MERGE) |
-| Stato merge su `main` | **PENDING (human-gated)** — verifica locale VERDE: tsc 0, eslint 0, suite **1731/1731**, `next build` 0, checkpoint 4/4, mutazioni 2/2, gate visivo approvato. Attende il "vai" umano per ff-only + push → deploy Vercel. |
+| Branch di lavoro | `trueline/build/offerings-editor` (mergiato ff-only, non cancellato) |
+| Ultimo commit | `08c8404` `docs(offerings-editor): session-end` — su `main` (feat `15dc511`) |
+| Stato merge su `main` | **MERGIATO** (via umana esplicita, ff-only `d2405ac..08c8404` + push → deploy Vercel). Verifica locale VERDE: tsc 0, eslint 0, suite **1731/1731**, `next build` 0, checkpoint 4/4, mutazioni 2/2, gate visivo approvato. |
 | `main_deploy_coupled` | **true** (Vercel connesso al repo `ulabaservice-star/progetto-web-ai`: push su `main` = deploy su ulaba.net) → merge **human-gated anche sul verde**; verifica locale (vitest, e2e, `next build`) prima di ogni merge |
 
 ## 4. Baseline & budget
