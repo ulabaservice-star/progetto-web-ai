@@ -110,6 +110,14 @@
       "capReached": "Hai raggiunto il limite di generazioni AI per questo sito.",
       "error": "Non è stato possibile generare la descrizione: riprova."
     },
+    "suggestOfferings": {
+      "button": "✨ Suggerisci voci tipiche",
+      "exampleBadge": "esempio — personalizzalo",
+      "add": "Aggiungi",
+      "discard": "Scarta",
+      "capReached": "Hai raggiunto il limite di generazioni AI per questo sito.",
+      "error": "Non è stato possibile suggerire le voci: riprova."
+    },
     "readiness": {
       "complete": "Il brief ha tutti i campi essenziali",
       "readyForReview": "Il brief è pronto per la revisione"

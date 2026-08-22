@@ -8,7 +8,7 @@
 |---|---|
 | **Progetto** | Ulaba/Belora |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase) |
-| **Stato** | **BUILD 3/6** — `generate-description` (OGW-301/302) **COMPLETO E MERGIATO su `main` (`605b1fa`)**, checkpoint 4/4 VERDE, mutazioni 5/5, gate visivo umano APPROVATO, deploy Vercel partito. `ai-usage-guard` (`0e3d2ba`) + `offerings-editor` (`08c8404`) mergiati. ⚠️ **Migrazione `20260818000100` ANCORA da applicare a Supabase Cloud**: l'endpoint `generate-description` la consuma ma è **DORMIENTE** (UI non cablata nel flusso → OGW-501); da applicare prima che `wizard-shell` lo colleghi. Prossimo selezionabile: `suggest-offerings` (OGW-401/402, dip. `ai-usage-guard`+`offerings-editor` verdi). |
+| **Stato** | **BUILD 4/6** — `suggest-offerings` (OGW-401/402) **COMPLETO**, checkpoint 4/4 VERDE, mutazioni 5/5, gate visivo umano APPROVATO (con rifinitura: pulsante primario + icona). Storia precedente: **BUILD 3/6** — `generate-description` (OGW-301/302) **COMPLETO E MERGIATO su `main` (`605b1fa`)**, checkpoint 4/4 VERDE, mutazioni 5/5, gate visivo umano APPROVATO, deploy Vercel partito. `ai-usage-guard` (`0e3d2ba`) + `offerings-editor` (`08c8404`) mergiati. ⚠️ **Migrazione `20260818000100` ANCORA da applicare a Supabase Cloud**: l'endpoint `generate-description` la consuma ma è **DORMIENTE** (UI non cablata nel flusso → OGW-501); da applicare prima che `wizard-shell` lo colleghi. Prossimo selezionabile: `suggest-offerings` (OGW-401/402, dip. `ai-usage-guard`+`offerings-editor` verdi). |
 
 ---
 
@@ -21,7 +21,7 @@
 | `ai-usage-guard` (OGW-101/102) | **done — mergiato `main` (`0e3d2ba`)** | **4/4 VERDE** | — |
 | `offerings-editor` (OGW-201/202) | **done — mergiato `main` (`08c8404`)** | **4/4 VERDE** | — |
 | `generate-description` (OGW-301/302) | **done — mergiato `main` (`605b1fa`)** | **4/4 VERDE** | `ai-usage-guard` |
-| `suggest-offerings` (OGW-401/402) | **todo** | — | `ai-usage-guard`, `offerings-editor` |
+| `suggest-offerings` (OGW-401/402) | **done** | **4/4 VERDE** | `ai-usage-guard`, `offerings-editor` |
 | `wizard-shell` (OGW-501/502) | **todo** | — | `offerings-editor`, `generate-description`, `suggest-offerings` |
 | `remove-chat` (OGW-601) | **todo** | — | `wizard-shell` |
 
@@ -52,8 +52,30 @@
   - **DECISIONE DI SCOPE (gate umano):** l'**integrazione nel flusso UI** (cablare `onGenerate` al POST e
     `onConfirm` alla patch del brief, step "Racconto") è **DEMANDATA a `wizard-shell` (OGW-501)** — stesso
     confine di `offerings-editor`. Il componente NON è dead-code (usato dai test).
-- **Prossimo selezionabile** (DAG): **`suggest-offerings`** (OGW-401/402, dip. `ai-usage-guard` +
-  `offerings-editor` verdi). Poi `wizard-shell` (dopo suggest-offerings). ⚠️ La **migrazione
+- **`suggest-offerings` COSTRUITO** (branch `trueline/build/suggest-offerings`, checkpoint 4/4 VERDE,
+  mutazioni 5/5, gate visivo umano APPROVATO). **Sessione precedente interrotta** (guasto infrastrutturale)
+  col codice scritto ma MAI committato e il checkpoint fermo su C1 rosso; ripresa e chiusa il 2026-08-22.
+  - **OGW-401**: `src/domain/onboarding/suggest-offerings.ts` — dominio PURO `suggestOfferings(llm,
+    {vertical, description?})`. A differenza di `generateDescription` (testo, `tools:[]`) il trasporto è
+    **TOOL-USE**: l'output è una LISTA, quindi arriva via lo strumento `propose_offerings` e il dominio ne
+    VALIDA l'input; la porta condivisa `OnboardingLlmPort` non cambia. `input_schema` **senza `price`** +
+    tipo di ritorno `{name, section?}` ⇒ **placeholder a prezzo vuoto STRUTTURALE** (non una promessa del
+    prompt): `.strip()` di zod ignora un `price` proposto senza scartare la voce. Voci fuori-forma
+    scartate una a una (una voce rotta non fa cadere l'elenco), tetti da `BRIEF_LIMITS`, cap prudente di 12
+    suggerimenti (dichiarato, non un AC); risposta senza `tool_use` → lista vuota, mai un errore.
+    `description` (non fidata) nel ruolo user, `vertical` (enum) nel system.
+  - **OGW-402**: endpoint `src/app/api/onboarding/[siteId]/suggest-offerings/route.ts` (stessa catena del
+    gemello M3: guardie condivise → `checkAiBudget` PRIMA → confine LLM → `recordAiUsage` consume-on-success,
+    429 al cap, catch che LOGGA) — **body `{}` strict, nessun input dal client**: `vertical`/`description`
+    vengono dal BRIEF del sito, quindi zero nuova superficie non fidata (tetto byte 256). Zero suggerimenti
+    validi = **502 senza consumo**. UI `src/ui/onboarding/OfferingSuggestions.tsx`: proposte pendenti nello
+    stato del componente, ognuna col badge "esempio — personalizzalo", che escono verso il brief SOLO con
+    `onAccept` per-voce (AC-402-3 **strutturale**: non esiste percorso che inserisca senza clic); scarto
+    libero; `atCap` disabilita. Chiavi `onboarding.suggestOfferings.*` it+es.
+  - **Rifinitura del gate visivo**: pulsante da `variant="secondary"` a **primario** + icona ✨ nel testo
+    i18n it/es (il blueprint la citava nella prosa; non era un AC).
+- **Prossimo selezionabile** (DAG): **`wizard-shell`** (OGW-501/502, dip. `offerings-editor` +
+  `generate-description` + `suggest-offerings` tutti verdi). Poi `remove-chat` (OGW-601). ⚠️ La **migrazione
   `20260818000100`** va applicata a Supabase Cloud prima che un endpoint AI sia usato a runtime dalla UI
   (oggi endpoint dormiente).
 
@@ -61,7 +83,7 @@
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `trueline/build/generate-description` (mergiato ff-only, non cancellato) |
+| Branch di lavoro | `trueline/build/suggest-offerings` (mergiato ff-only, non cancellato) |
 | Ultimo commit | feat `605b1fa` su `main` (+ commit `docs(...): session-end` di questa chiusura) |
 | Stato merge su `main` | **MERGIATO** (via umana esplicita, ff-only `c72e0ad..605b1fa` + push → deploy Vercel). Verifica locale VERDE: tsc 0, eslint 0, knip 0, suite **1745/1745**, `next build` 0, checkpoint 4/4, mutazioni 5/5, gate visivo approvato. |
 | `main_deploy_coupled` | **true** (Vercel connesso al repo `ulabaservice-star/progetto-web-ai`: push su `main` = deploy su ulaba.net) → merge **human-gated anche sul verde**; verifica locale (vitest, e2e, `next build`) prima di ogni merge |
@@ -115,6 +137,24 @@
   visivo umano sui suggerimenti in build.
 - **Nota atomicità (dichiarata)**: `OGW-501`/`OGW-502` sono i task più grossi (contenitore + integrazione
   + e2e); se in build non stanno in un ciclo, sono splittabili senza toccare il DAG.
+
+- **M4 `suggest-offerings`: §4 dovuto SOLO sull'igiene (sicurezza invariata).** Nessuna migrazione/RLS
+  nuova (riusa `onboarding_ai_usage` + le guardie) → C2 green, baseline di sicurezza INVARIATA
+  (gitleaks:3/osv:2/rls:1 pre-esistenti). Baseline d'**igiene** RI-BASELINATA 224 → 227 fingerprint**:
+  C1 segnalava "3 duplication NUOVO" fra `turn/route.ts` ↔ `generate-description/route.ts` e
+  `api/generate/route.ts` — tutti file **già su `main`**, sfuggiti al gate di M3 (che chiuse a `dup:228`
+  0-nuove; il route M3 è cambiato dopo). **Contro-prova anti-mascheramento eseguita** (regola M2/M3):
+  rimossi i file del macrotask (backup+sha256, ripristino verificato identico) → jscpd dà **230 dup
+  IDENTICI, stessi 3 blocchi**, e **0 cloni coinvolgono `suggest-offerings`** ⇒ delta d'igiene del
+  macrotask = **0**, ratchet legittimo (non mascheramento). Refactor alla radice scartato per scope:
+  i 3 cloni vivono in `turn/route.ts`, che **`remove-chat` (OGW-601) elimina**. Metodo: fingerprint presi
+  da `control1Hygiene` (mai `capture --hygiene`), aggiunti al set esistente, poi **stesso oracolo rieseguito**
+  → C1 green `[dead-code:0 dup:230 cycle:0 twin:0]`.
+- **Nota sulla baseline d'igiene (ereditata, non toccare):** `hygiene-baseline.json` porta
+  `"project": "eval/reference-app"` (residuo della cattura originale su una fixture della skill) e per
+  questo i `location.file` dei finding d'igiene escono con quel prefisso spurio — **i path reali sono
+  relativi al repo** (verificato lanciando `run_dupcheck.mjs` a mano). Cambiare `project` invaliderebbe
+  tutti i fingerprint: si legge attraverso il prefisso, non lo si corregge.
 
 ### Lezioni build M1 `ai-usage-guard` (2026-08-18)
 
@@ -190,6 +230,31 @@
 - **knip: un `type` esportato ma usato solo nel file è dead-code** (`Unused exported types`) → renderlo
   LOCALE (structural typing: il chiamante passa un oggetto conforme senza importarlo), no export speculativo.
 
+### Lezioni build M4 `suggest-offerings` (2026-08-22, sessione ripresa)
+
+- **Ripresa di una sessione interrotta: ricostruisci lo stato dagli ARTEFATTI, non dalla memoria.**
+  `git status` (file uncommitted) + `SESSION-STATE` (macrotask atteso) + il **timestamp dei file in
+  `.trueline/`** dicono dove si era fermata: qui `dbg-c1.mjs` (l'ultimo file scritto, 18:32) indicava che
+  la sessione stava indagando proprio il C1 rosso. Prima di ri-verificare, **ri-esegui tutto da zero**
+  (tsc/eslint/knip/target/suite/build/checkpoint): nessun verde ereditato per sentito dire (L-COL-002).
+- **Un finding "nuovo" che non nomina nessun file del macrotask va CONTRO-PROVATO, non creduto.** La
+  contro-prova è misurare l'oracolo sullo **stato base** (file del macrotask rimossi, i18n a HEAD) e
+  confrontare: identico ⇒ debito pre-esistente, delta 0. Vale in entrambe le direzioni — è la stessa prova
+  che in M3 VIETÒ la ri-baseline (lì il clone toccava il macrotask) e che qui la AUTORIZZA.
+- **jscpd non è stabile fra macrotask vicini.** Aggiungere un file simile ai precedenti ri-organizza i
+  cluster: un clone già visto può ripresentarsi con `startLoc/endLoc` diversi ⇒ **fingerprint diverso ⇒
+  "nuovo"** anche senza codice nuovo. Non attribuirlo al macrotask senza la contro-prova sopra.
+- **Tool-use vs testo al confine LLM.** Quando l'output del dominio è una **lista** (non prosa), usare lo
+  strumento e validarne l'input è più robusto del parsing di testo: il tetto strutturale (niente `price`
+  nell'`input_schema`) fa metà del lavoro anti-invenzione, e `.strip()` di zod chiude l'altra metà
+  ignorando i campi non dichiarati **senza scartare la voce** (una voce con prezzo sopravvive, il prezzo no).
+- **`vitest run` completo supera i 10 minuti sotto carico** (267s a freddo, oltre 600s dopo suite+build+
+  dev server sulla stessa macchina): lanciarlo **in background** e leggere il log, invece di far scadere il
+  comando in foreground. Il gotcha Turbopack di M3 si ripresenta identico (riavvio pulito).
+- **`next dev` non muore col wrapper `npx`.** Fermare il task di shell lascia vivo il processo Next (che poi
+  rifiuta un secondo server: *"Another next dev server is already running"*): chiudi per **PID sulla porta**
+  (`Get-NetTCPConnection -LocalPort … | Stop-Process`), non solo il comando di shell.
+
 ## 6. Copertura dichiarata
 
 - **`ai-usage-guard` (OGW-101/102)** — target_tests coperti: `tests/onboarding-ai-usage-rls.test.ts`
@@ -220,6 +285,20 @@
   route rosso; rimozione scarto `empty` ⇒ AC-301-2 rosso; generazione che auto-salva ⇒ AC-302-4 rosso;
   clausola anti-invenzione rimossa ⇒ AC-301-3 rosso. Checkpoint decomposto 4/4 verde. **Gate visivo umano
   APPROVATO** (preview isolata, 3 stati). **Integrazione nel flusso NON coperta qui** (→ OGW-501).
+- **`suggest-offerings` (OGW-401/402)** — target_tests coperti: `tests/onboarding-suggest-offerings.test.ts`
+  (AC-401-1 almeno una voce con `name` non vuoto e senza prezzo; AC-401-2 voci fuori-forma scartate, restano
+  le valide; AC-401-3 un `price` proposto è ignorato e la voce sopravvive; + risposta senza `tool_use` → lista
+  vuota; + la `description` non fidata resta nel ruolo user) + `tests/onboarding-suggest-offerings-route.test.ts`
+  (AC-402-1 200 coi suggerimenti e contatore +1 con `kind: suggest_offerings`; AC-402-2 429 al cap senza
+  modello né incremento; AC-402-4 guardie same-origin/sessione/proprietà, mai il modello; + zero suggerimenti
+  validi = 502 senza consumo; + confine che lancia = 502 senza consumo; + body con chiavi extra = 400) +
+  `tests/onboarding-suggest-offerings-ui.test.tsx` (AC-402-3 solo la voce confermata esce via `onAccept`, le
+  altre restano pendenti e non entrano; + scarto; + `atCap`; + anti-injection T-151; + errore di suggerimento).
+  **Mutazioni 5/5 UCCISE** (backup+sha256, ripristino verificato): propagazione del `raw` col prezzo ⇒ AC-401-3
+  rosso; voci fuori-forma accettate ⇒ AC-401-2 rosso; auto-`onAccept` alla proposta ⇒ AC-402-3 rosso; gate 429
+  saltato ⇒ AC-402-2 rosso; `guardOwnedSite` neutralizzata ⇒ AC-402-4 rosso. Checkpoint decomposto 4/4 verde
+  (C1 dopo ri-baseline legittima, §4). **Gate visivo umano APPROVATO** con rifinitura (pulsante primario + ✨).
+  **Integrazione nel flusso NON coperta qui** (demandata a OGW-502, §2).
 - Da compilare a ogni `session-end` col macrotask chiuso (target_tests coperti, mutazioni, gate).
 - **NON coperto per costruzione (L-COL-006)**: la qualità *editoriale* della copy generata e l'ovvietà
   del confine "placeholder da personalizzare" non sono oracolabili → gate visivo umano. Foto reali e resa
