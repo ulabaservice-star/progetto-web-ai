@@ -8,7 +8,7 @@
 |---|---|
 | **Progetto** | Ulaba/Belora |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase) |
-| **Stato** | **BUILD 4/6** — `suggest-offerings` (OGW-401/402) **COMPLETO**, checkpoint 4/4 VERDE, mutazioni 5/5, gate visivo umano APPROVATO (con rifinitura: pulsante primario + icona). Storia precedente: **BUILD 3/6** — `generate-description` (OGW-301/302) **COMPLETO E MERGIATO su `main` (`605b1fa`)**, checkpoint 4/4 VERDE, mutazioni 5/5, gate visivo umano APPROVATO, deploy Vercel partito. `ai-usage-guard` (`0e3d2ba`) + `offerings-editor` (`08c8404`) mergiati. ⚠️ **Migrazione `20260818000100` ANCORA da applicare a Supabase Cloud**: l'endpoint `generate-description` la consuma ma è **DORMIENTE** (UI non cablata nel flusso → OGW-501); da applicare prima che `wizard-shell` lo colleghi. Prossimo selezionabile: `suggest-offerings` (OGW-401/402, dip. `ai-usage-guard`+`offerings-editor` verdi). |
+| **Stato** | **BUILD 4/6** — `suggest-offerings` (OGW-401/402) **COMPLETO**, checkpoint 4/4 VERDE, mutazioni 5/5, gate visivo umano APPROVATO (con rifinitura: pulsante primario + icona). Storia precedente: **BUILD 3/6** — `generate-description` (OGW-301/302) **COMPLETO E MERGIATO su `main` (`605b1fa`)**, checkpoint 4/4 VERDE, mutazioni 5/5, gate visivo umano APPROVATO, deploy Vercel partito. `ai-usage-guard` (`0e3d2ba`) + `offerings-editor` (`08c8404`) mergiati. ✅ **Migrazione `20260818000100` APPLICATA a Supabase Cloud** (2026-08-23, via SQL Editor del dashboard + registrata a mano in `supabase_migrations.schema_migrations`; verificata: RLS attiva, 2 sole policy SELECT/INSERT, nessun grant ad `anon`). I due endpoint AI restano **DORMIENTI** finché `wizard-shell` non li cabla nel flusso. Prossimo selezionabile: `wizard-shell` (OGW-501/502, tutte le dipendenze verdi). |
 
 ---
 
@@ -75,9 +75,8 @@
   - **Rifinitura del gate visivo**: pulsante da `variant="secondary"` a **primario** + icona ✨ nel testo
     i18n it/es (il blueprint la citava nella prosa; non era un AC).
 - **Prossimo selezionabile** (DAG): **`wizard-shell`** (OGW-501/502, dip. `offerings-editor` +
-  `generate-description` + `suggest-offerings` tutti verdi). Poi `remove-chat` (OGW-601). ⚠️ La **migrazione
-  `20260818000100`** va applicata a Supabase Cloud prima che un endpoint AI sia usato a runtime dalla UI
-  (oggi endpoint dormiente).
+  `generate-description` + `suggest-offerings` tutti verdi). Poi `remove-chat` (OGW-601). ✅ La **migrazione
+  `20260818000100` è APPLICATA al cloud** (2026-08-23): il blocco che precedeva `wizard-shell` è caduto.
 
 ## 3. Stato git
 
@@ -176,8 +175,12 @@
   ~5 min < cap → niente shard). Verdetto dai campi `.green`, mai exit code. Foreground funziona; monolitico
   in background = `0xC0000142`.
 - **Migrazione DB ≠ deploy app.** Il push su `main` deploya l'app su Vercel ma NON applica le migrazioni a
-  Supabase Cloud. `20260818000100` va applicata al cloud (`supabase db push`) **prima di OGW-303** (il 1°
-  endpoint che usa la tabella). Non urgente finché nessun endpoint la consuma.
+  Supabase Cloud. `20260818000100` **applicata il 2026-08-23**, ma NON con `db push`: la CLI 2.x fallisce
+  `Initialising login role... 28P01 password authentication failed for user "supabase_admin"` se
+  `SUPABASE_DB_PASSWORD` non è la **DB password del progetto** (diversa dalla password dell'account
+  Supabase, e non salvata dal `link`); la CLI non fa il prompt, **legge solo la env var**. Ripiego usato:
+  SQL Editor del dashboard + `insert into supabase_migrations.schema_migrations (version) values (…)`,
+  senza il quale il prossimo `db push` riapplicherebbe la migrazione e fallirebbe.
 
 ### Lezioni build M2 `offerings-editor` (2026-08-18)
 
