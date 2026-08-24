@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/ui/primitives';
+import { AiFieldStatus } from '@/ui/onboarding/AiFieldStatus';
 
 // OGW-402 (macrotask suggest-offerings) — il pulsante ✨ "Suggerisci voci tipiche" e la lista
 // dei suggerimenti proposti. Ogni voce e' un PLACEHOLDER a prezzo vuoto etichettato "esempio",
@@ -75,8 +76,7 @@ export function OfferingSuggestions({ onSuggest, onAccept, atCap = false }: Offe
         {t('button')}
       </Button>
 
-      {atCap && <p className="text-sm text-muted-foreground">{t('capReached')}</p>}
-      {failed && <p className="text-sm text-destructive">{t('error')}</p>}
+      <AiFieldStatus atCap={atCap} failed={failed} capMessage={t('capReached')} errorMessage={t('error')} />
 
       {pending.length > 0 && (
         <ul className="flex list-none flex-col gap-xs p-0">

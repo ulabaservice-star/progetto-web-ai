@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button, Label, Textarea } from '@/ui/primitives';
+import { AiFieldStatus } from '@/ui/onboarding/AiFieldStatus';
 
 // OGW-302 (macrotask generate-description) — il campo ✨ dello step Racconto: espande una
 // frase dell'utente in una descrizione (copy) tramite l'AI, la PROPONE in un campo
@@ -82,8 +83,7 @@ export function GenerateDescriptionField({
         onChange={(event) => setDraft(event.target.value)}
       />
 
-      {atCap && <p className="text-sm text-muted-foreground">{t('capReached')}</p>}
-      {failed && <p className="text-sm text-destructive">{t('error')}</p>}
+      <AiFieldStatus atCap={atCap} failed={failed} capMessage={t('capReached')} errorMessage={t('error')} />
 
       <div className="flex gap-sm">
         <Button type="button" variant="secondary" onClick={generate} disabled={atCap || busy}>

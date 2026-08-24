@@ -8,7 +8,7 @@
 |---|---|
 | **Progetto** | Ulaba/Belora |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase) |
-| **Stato** | **BUILD 4/6** — `suggest-offerings` (OGW-401/402) **COMPLETO**, checkpoint 4/4 VERDE, mutazioni 5/5, gate visivo umano APPROVATO (con rifinitura: pulsante primario + icona). Storia precedente: **BUILD 3/6** — `generate-description` (OGW-301/302) **COMPLETO E MERGIATO su `main` (`605b1fa`)**, checkpoint 4/4 VERDE, mutazioni 5/5, gate visivo umano APPROVATO, deploy Vercel partito. `ai-usage-guard` (`0e3d2ba`) + `offerings-editor` (`08c8404`) mergiati. ✅ **Migrazione `20260818000100` APPLICATA a Supabase Cloud** (2026-08-23, via SQL Editor del dashboard + registrata a mano in `supabase_migrations.schema_migrations`; verificata: RLS attiva, 2 sole policy SELECT/INSERT, nessun grant ad `anon`). I due endpoint AI restano **DORMIENTI** finché `wizard-shell` non li cabla nel flusso. Prossimo selezionabile: `wizard-shell` (OGW-501/502, tutte le dipendenze verdi). |
+| **Stato** | **BUILD 4/6** — `suggest-offerings` (OGW-401/402) **COMPLETO**, checkpoint 4/4 VERDE, mutazioni 5/5, gate visivo umano APPROVATO (con rifinitura: pulsante primario + icona). Storia precedente: **BUILD 3/6** — `generate-description` (OGW-301/302) **COMPLETO E MERGIATO su `main` (`605b1fa`)**, checkpoint 4/4 VERDE, mutazioni 5/5, gate visivo umano APPROVATO, deploy Vercel partito. `ai-usage-guard` (`0e3d2ba`) + `offerings-editor` (`08c8404`) mergiati. ✅ **Migrazione `20260818000100` APPLICATA a Supabase Cloud** (2026-08-23, via SQL Editor del dashboard + registrata a mano in `supabase_migrations.schema_migrations`; verificata: RLS attiva, 2 sole policy SELECT/INSERT, nessun grant ad `anon`). I due endpoint AI restano **DORMIENTI** finché `wizard-shell` non li cabla nel flusso. **FIX `onboarding-ai-dedup` (2026-08-24, branch `trueline/fix/onboarding-ai-dedup`):** il session-end di `suggest-offerings` ha scoperto che il verde C1 di `433e10d` era su una **misura d'igiene difettosa** (la contro-prova jscpd di ieri era cieca: i 5 cloni endpoint↔endpoint + 1 UI erano reali, non pre-esistenti). Risolto ALLA RADICE: estratto `_shared/ai-endpoint.ts` (factory `aiEndpoint`, pipeline condivisa dei due endpoint) + `ui/onboarding/AiFieldStatus.tsx` (blocco stato cap/errore) → **macrotask a delta d'igiene 0 CONFERMATO** (0 cloni su tutti e 6 i file toccati, misura diretta), ri-baseline illegittima 227→**224 ANNULLATA**, checkpoint 4/4 VERDE onesto, suite 1761/1761, mutazioni 7/7 (le 4 sull'helper uccidono ENTRAMBE le suite di rotta). Prossimo selezionabile: `wizard-shell` (OGW-501/502, tutte le dipendenze verdi). |
 
 ---
 
@@ -82,9 +82,9 @@
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `trueline/build/suggest-offerings` (mergiato ff-only, non cancellato) |
-| Ultimo commit | feat `605b1fa` su `main` (+ commit `docs(...): session-end` di questa chiusura) |
-| Stato merge su `main` | **MERGIATO** (via umana esplicita, ff-only `c72e0ad..605b1fa` + push → deploy Vercel). Verifica locale VERDE: tsc 0, eslint 0, knip 0, suite **1745/1745**, `next build` 0, checkpoint 4/4, mutazioni 5/5, gate visivo approvato. |
+| Branch di lavoro | `trueline/fix/onboarding-ai-dedup` (fix d'igiene post-merge; `suggest-offerings` gia' mergiato) |
+| Ultimo commit su `main` | docs `0cb65d8` (migrazione applicata); feat `433e10d` (suggest-offerings). Fix dedup sul branch, pre-merge. |
+| Stato merge su `main` | `suggest-offerings` MERGIATO (`433e10d`). **Fix `onboarding-ai-dedup` sul branch, NON ancora mergiato** (deploy-coupled → human-gated). Verifica locale VERDE: tsc 0, eslint 0, knip 0, suite **1761/1761**, `next build` 0, checkpoint 4/4 (C1 verde ONESTO su baseline 224, delta 0 verificato per-file), mutazioni 7/7. |
 | `main_deploy_coupled` | **true** (Vercel connesso al repo `ulabaservice-star/progetto-web-ai`: push su `main` = deploy su ulaba.net) → merge **human-gated anche sul verde**; verifica locale (vitest, e2e, `next build`) prima di ogni merge |
 
 ## 4. Baseline & budget
@@ -257,6 +257,32 @@
 - **`next dev` non muore col wrapper `npx`.** Fermare il task di shell lascia vivo il processo Next (che poi
   rifiuta un secondo server: *"Another next dev server is already running"*): chiudi per **PID sulla porta**
   (`Get-NetTCPConnection -LocalPort … | Stop-Process`), non solo il comando di shell.
+
+### Lezione fix `onboarding-ai-dedup` (2026-08-24, durante il session-end di suggest-offerings)
+
+- **Il session-end NON è una formalità: ri-eseguire il checkpoint ha scoperto un rosso reale.** Il C1
+  del session-end (dopo i commit docs) è tornato **rosso con 7 cloni**, 5 dei quali coinvolgevano
+  DIRETTAMENTE i file del macrotask (`suggest-offerings/route.ts` ↔ `generate-description/route.ts`, e
+  `OfferingSuggestions.tsx` ↔ `GenerateDescriptionField.tsx`). **Contraddiceva** la misura su cui avevo
+  ri-baselinato in build (224→227): la contro-prova jscpd di ieri (base-state = 230 con e senza macrotask
+  → "delta 0") era **CIECA**. Non ho capito del tutto perché (jscpd riportava 230/suggest:0 ieri, 236/
+  suggest:5 oggi sugli STESSI file immutati — instabilità dei cluster jscpd fra macrotask vicini, §M4,
+  spinta all'estremo); ho quindi **smesso di fidarmi della sola diff-baseline** e verifico ora il verde con
+  una **misura diretta per-file** (0 cloni su ciascuno dei file toccati) come cross-check dell'oracolo.
+- **Ri-baseline vietata quando il clone tocca il macrotask (regola M3) — ci ero cascato.** I 5 cloni erano
+  duplicazione VERA introdotta dal gemello `suggest-offerings` (copiava verbatim la pipeline di rotta di
+  `generate-description`). Rimedio corretto = **root-cause, non baseline**: `_shared/ai-endpoint.ts` con la
+  **factory `aiEndpoint(config)`** (ritorna l'handler → la rotta è `export const POST = aiEndpoint({...})`,
+  niente preludio di delega ripetuto) + `AiFieldStatus.tsx` per il blocco stato cap/errore condiviso. Segue
+  la convenzione già stabilita (`_shared/route-guards.ts` nacque dallo stesso motivo per turn/generate).
+- **Il primo tentativo di estrazione lasciava un clone residuo** (il preludio `export async function POST
+  … return runAiEndpoint(…`, 57t): la **factory** lo elimina alla radice (l'handler non è più scritto nella
+  rotta). Poi knip ha segnalato `AiRouteContext`/`jsonError` come export non usati → **resi LOCALI** (§M3).
+- **Le mutazioni sull'helper condiviso uccidono ENTRAMBE le suite di rotta**: prova più forte del confine
+  condiviso (un solo punto protegge i due endpoint). 7/7 uccise, ripristino backup+sha256.
+- **main ha avuto brevemente una baseline illegittima (227).** La fix la riporta a 224 (la pre-macrotask):
+  onestà retroattiva, il debito che il macrotask NON introduce resta assorbito, quello che introduce è
+  rimosso, non mascherato.
 
 ## 6. Copertura dichiarata
 
