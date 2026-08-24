@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, within, cleanup } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import type Anthropic from '@anthropic-ai/sdk';
 import { NextRequest } from 'next/server';
@@ -397,16 +398,25 @@ describe('T-150 rotta onboarding protetta', () => {
     // then: il brief e caricato per QUEL sito, via getBrief — e per nessun altro
     expect(getBriefSpy).toHaveBeenCalledWith(SITE_A); // covers: AC-150-2
     expect(getBriefSpy).not.toHaveBeenCalledWith(SITE_B); // covers: AC-150-2
-    // then: lo stato corrente del brief e reso (etichette localizzate + valori).
-    // I valori dei campi vivono nei controlli EDITABILI del BriefPanel (T-151, montato
-    // qui dalla pagina di T-150): per un input l'equivalente di getByText e
-    // getByDisplayValue. La prova resta a livello di DOM e non di props, quindi
-    // continua a morire se la pagina carica o passa il brief del sito sbagliato.
+    // then: lo stato corrente del brief e reso (etichette localizzate + valori). Con
+    // OGW-501 il montaggio non e' piu' il BriefPanel ma il WIZARD, che parte allo step
+    // ENTRY: li' i valori del brief non sono ancora visibili. Il `business_name` vive nel
+    // controllo EDITABILE dello step BASE, quindi si NAVIGA a Base ("Prosegui") e per un
+    // input l'equivalente di getByText e' getByDisplayValue. La prova resta a livello di
+    // DOM e non di props, quindi continua a morire se la pagina carica o passa il brief del
+    // sito sbagliato. Lo status e il nome del sito sono resi dalla PAGE (fuori dal wizard),
+    // quindi restano osservabili.
+    const user = userEvent.setup();
+    await user.click(
+      screen.getByRole('button', { name: itMessages.onboarding.wizard.entry.continue }),
+    );
     const main = within(screen.getByRole('main'));
-    expect(main.getByText(itMessages.onboarding.fields.businessName)).toBeTruthy(); // covers: AC-150-2
+    expect(main.getByText(itMessages.onboarding.wizard.base.name)).toBeTruthy(); // covers: AC-150-2
     expect(main.getByDisplayValue('Bar Sole')).toBeTruthy(); // covers: AC-150-2
-    expect(main.getByDisplayValue('Caffe e cornetti in centro')).toBeTruthy(); // covers: AC-150-2
-    expect(main.getByDisplayValue('+39 06 1234567')).toBeTruthy(); // covers: AC-150-2
+    // `description` ('Caffe e cornetti in centro') e `phone` ('+39 06 1234567') vivono negli
+    // step Racconto/Contatti, che in OGW-501 sono ancora StepPlaceholder: la loro resa (e
+    // l'asserzione sui valori) e' demandata a OGW-502, che cabla quegli step.
+    // OGW-502
     expect(main.getByText(SITE_A_NAME)).toBeTruthy(); // covers: AC-150-2
     expect(main.getByText(itMessages.onboarding.statusDraft)).toBeTruthy(); // covers: AC-150-2
     // then: NULLA dell'altro sito posseduto entra nel DOM — ne il nome ne il brief.
@@ -423,13 +433,15 @@ describe('T-150 rotta onboarding protetta', () => {
     // when: A apre /it/onboarding/S
     await renderPage(SITE_A);
     // then: la pagina e resa (brief:null NON e trattato come accesso negato). Il
-    // segnaposto `briefEmpty` non esiste piu': la pagina monta il pannello di T-151 su
-    // un brief VUOTO, quindi "stato vuoto" significa il pannello reso con i campi in
-    // bianco — non un messaggio. Le due asserzioni insieme tengono la stessa forza di
-    // prima: la pagina ha reso qualcosa (non 404) e non ha reso il brief di nessun altro.
+    // segnaposto `briefEmpty` non esiste piu': la pagina monta il WIZARD (OGW-501) su un
+    // brief VUOTO, quindi "stato vuoto" significa il guscio reso allo step ENTRY con i
+    // campi in bianco — non un messaggio. Il titolo del BriefPanel (`panel.title`) non e'
+    // piu' un osservabile: al suo posto si asserisce il titolo dello step Entry, reso dal
+    // wizard che la page monta. Le due asserzioni insieme tengono la stessa forza di prima:
+    // la pagina ha reso qualcosa (non 404) e non ha reso il brief di nessun altro.
     expect(notFoundSpy).not.toHaveBeenCalled(); // covers: AC-150-2
     const main = within(screen.getByRole('main'));
-    expect(main.getByText(itMessages.onboarding.panel.title)).toBeTruthy(); // covers: AC-150-2
+    expect(main.getByText(itMessages.onboarding.wizard.steps.entry)).toBeTruthy(); // covers: AC-150-2
     expect(screen.queryByDisplayValue('Bar Sole')).toBeNull(); // covers: AC-150-2
   });
 

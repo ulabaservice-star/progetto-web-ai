@@ -315,7 +315,7 @@ const FORME_VIETATE_LLM = [
 // in flat config le opzioni della stessa regola si sostituiscono invece di sommarsi,
 // quindi li' il confine puo' cadere da solo.
 const PERCORSI_SOGGETTI_LLM = [
-  'src/ui/onboarding/ChatPanel.tsx', // UI del builder (blocco base), file VERO
+  'src/ui/onboarding/OnboardingWorkspace.tsx', // UI del builder (blocco base), file VERO
   'src/app/[locale]/page.tsx', // App Router: qui vivono le page 'use client', file VERO
   'src/ui/site/Hero.tsx', // layer del sito generato (T-231), non ancora su disco
   'src/ui/onboarding/Legacy.jsx', // NON-TS fuori da src/ui/site/
@@ -478,7 +478,7 @@ describe('T-131 confine LLM: le forme equivalenti dell import, e il layering che
     const dinamica = "export const carica = () => import('@/data//anthropic');\n";
 
     // Il layer piu' esposto: la UI del builder, che finisce nel browser.
-    const percorso = 'src/ui/onboarding/ChatPanel.tsx';
+    const percorso = 'src/ui/onboarding/OnboardingWorkspace.tsx';
 
     // Il buco: la statica NON e' presa. Se un giorno lo diventasse, questa riga e' rossa.
     expect(await erroriDelConfine(statica, percorso)).toEqual([]);

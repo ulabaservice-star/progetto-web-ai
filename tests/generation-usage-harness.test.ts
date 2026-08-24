@@ -735,7 +735,7 @@ const SORGENTE_CHE_VIOLA = [
 ].join('\n');
 
 /** Il layer client di riferimento: e' quello che AC-225-5 nomina per il confronto. */
-const PERCORSO_DI_RIFERIMENTO = 'src/ui/onboarding/ChatPanel.tsx';
+const PERCORSO_DI_RIFERIMENTO = 'src/ui/onboarding/OnboardingWorkspace.tsx';
 
 describe('T-225 la directory degli script e dentro il perimetro dei confini (P2-D27)', () => {
   // MUTAZIONE CHE LO FA DIVENTARE ROSSO: togliere il blocco 'scripts/**' da

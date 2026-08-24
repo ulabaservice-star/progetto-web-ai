@@ -118,6 +118,36 @@
       "capReached": "Hai raggiunto il limite di generazioni AI per questo sito.",
       "error": "Non è stato possibile suggerire le voci: riprova."
     },
+    "wizard": {
+      "steps": {
+        "entry": "Come vuoi iniziare",
+        "base": "L'essenziale",
+        "story": "Racconta la tua attività",
+        "offerings": "Che cosa offri",
+        "contacts": "Contatti e orari",
+        "review": "Rivedi e genera"
+      },
+      "entry": {
+        "hint": "Hai già un sito o una pagina Instagram? Importa i dati, oppure parti da zero.",
+        "continue": "Prosegui"
+      },
+      "base": {
+        "name": "Nome dell'attività"
+      },
+      "nav": {
+        "back": "Indietro",
+        "next": "Avanti",
+        "skip": "Salta",
+        "generate": "Genera il sito"
+      },
+      "missing": {
+        "intro": "Per generare il sito manca:",
+        "business_name": "il nome dell'attività",
+        "vertical": "il tipo di attività",
+        "primary_goal": "l'obiettivo"
+      },
+      "placeholder": "Questo passo arriva a breve."
+    },
     "readiness": {
       "complete": "Il brief ha tutti i campi essenziali",
       "readyForReview": "Il brief è pronto per la revisione"

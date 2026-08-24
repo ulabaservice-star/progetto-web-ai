@@ -118,6 +118,36 @@
       "capReached": "Has alcanzado el límite de generaciones de IA para esta web.",
       "error": "No se han podido sugerir los elementos: inténtalo de nuevo."
     },
+    "wizard": {
+      "steps": {
+        "entry": "Cómo quieres empezar",
+        "base": "Lo esencial",
+        "story": "Cuenta tu actividad",
+        "offerings": "Qué ofreces",
+        "contacts": "Contacto y horarios",
+        "review": "Revisa y genera"
+      },
+      "entry": {
+        "hint": "¿Ya tienes una web o un perfil de Instagram? Importa los datos o empieza desde cero.",
+        "continue": "Continuar"
+      },
+      "base": {
+        "name": "Nombre del negocio"
+      },
+      "nav": {
+        "back": "Atrás",
+        "next": "Siguiente",
+        "skip": "Omitir",
+        "generate": "Generar el sitio"
+      },
+      "missing": {
+        "intro": "Para generar el sitio falta:",
+        "business_name": "el nombre del negocio",
+        "vertical": "el tipo de negocio",
+        "primary_goal": "el objetivo"
+      },
+      "placeholder": "Este paso llegará pronto."
+    },
     "readiness": {
       "complete": "El brief tiene todos los campos esenciales",
       "readyForReview": "El brief está listo para la revisión"

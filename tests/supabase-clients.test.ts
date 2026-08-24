@@ -268,7 +268,7 @@ const FORME_VIETATE_ADMIN = [
 // SOSTITUISCONO invece di sommarsi, quindi un layer puo' perdere il confine mentre gli
 // altri lo tengono. I tre percorsi NON-TS coprono il terzo buco (`allowJs`).
 const PERCORSI_SOGGETTI_ADMIN = [
-  'src/ui/onboarding/ChatPanel.tsx', // UI del builder (blocco base), file VERO
+  'src/ui/onboarding/OnboardingWorkspace.tsx', // UI del builder (blocco base), file VERO
   'src/app/[locale]/page.tsx', // App Router: qui vivono le page 'use client', file VERO
   'src/domain/onboarding/interview.ts', // dominio: server, ma non e un modulo dati, file VERO
   'src/ui/site/Hero.tsx', // layer del sito generato (T-231), non ancora su disco
