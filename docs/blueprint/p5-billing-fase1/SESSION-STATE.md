@@ -85,6 +85,12 @@
 - **Framing onesto**: il codice fa ciò che i task chiedevano, senza morto nuovo, senza vuln nuove ≥ HIGH,
   senza regressioni — **NON** "il billing è completo/sicuro in assoluto" (è il primo anello; il webhook
   che *muove* l'entitlement e i gate che lo *applicano* arrivano nei macrotask successivi).
+- **Copertura dichiarata / NON coperto (L-COL-006)**: target_tests BIL-101/102/103 tutti coperti (5+6+5,
+  ogni asserzione tracciata a un AC via `covers:`); mutazioni 3/3. **NON coperto, dichiarato:** la RLS di
+  `subscriptions` è provata a runtime SOLO sul DB **locale** — il cloud non è ancora migrato, quindi la
+  RLS/GRANT sul cloud restano da verificare a valle dell'applicazione manuale; `business` è dichiarato ma
+  non-mappato (degrada a `free`, nessun test dedicato, fuori scope Fase 1); il webhook che *scrive*
+  l'entitlement e i gate che lo *applicano* non esistono ancora (BIL-2xx/3xx) — qui si LEGGE soltanto.
 
 ## 6. Prossimi passi
 
