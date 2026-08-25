@@ -139,7 +139,7 @@ describe('T-002 confine service_role: la regola ESLint viene eseguita, non solo 
   // "server" da solo non basta a ottenere la service_role.
   it('il layer di dominio, pur essendo server, resta soggetto al divieto', async () => {
     const eslint = new ESLint({ cwd: root });
-    const domainModule = resolve(root, 'src/domain/onboarding/interview.ts');
+    const domainModule = resolve(root, 'src/domain/onboarding/generate-description.ts');
 
     const [result] = await eslint.lintText(ADMIN_IMPORT_FIXTURE, { filePath: domainModule });
 
@@ -270,7 +270,7 @@ const FORME_VIETATE_ADMIN = [
 const PERCORSI_SOGGETTI_ADMIN = [
   'src/ui/onboarding/OnboardingWorkspace.tsx', // UI del builder (blocco base), file VERO
   'src/app/[locale]/page.tsx', // App Router: qui vivono le page 'use client', file VERO
-  'src/domain/onboarding/interview.ts', // dominio: server, ma non e un modulo dati, file VERO
+  'src/domain/onboarding/brief.ts', // dominio: server, ma non e un modulo dati, file VERO
   'src/ui/site/Hero.tsx', // layer del sito generato (T-231), non ancora su disco
   'src/ui/onboarding/Legacy.jsx', // NON-TS fuori da src/ui/site/
   'src/app/[locale]/legacy.mjs', // NON-TS sotto src/app/

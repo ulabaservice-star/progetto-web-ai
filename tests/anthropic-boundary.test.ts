@@ -150,9 +150,9 @@ describe('T-131 confine LLM server-only e mockabile', () => {
     }
 
     // Caso NEGATIVO: dal layer domain (server) lo stesso import deve restare lecito,
-    // altrimenti l'orchestrazione dell'intervista (T-132) sarebbe impossibile.
+    // altrimenti le funzioni AI di onboarding (layer di dominio) non potrebbero usare il confine LLM.
     const [domainResult] = await eslint.lintText(source, {
-      filePath: resolve(root, 'src/domain/onboarding/interview.ts'),
+      filePath: resolve(root, 'src/domain/onboarding/generate-description.ts'),
     });
     expect(domainResult.messages.some((m) => m.fatal === true)).toBe(false); // covers: AC-131-2 — guardia anti-placebo: nessun errore di parsing
     expect(domainResult.messages.filter((m) => m.ruleId === 'no-restricted-imports')).toEqual([]); // covers: AC-131-2
@@ -209,7 +209,7 @@ describe('T-131 confine LLM server-only e mockabile', () => {
 // leggibile PRIMA del build, ed e' un gate della CI.
 //
 // IL RAMO CHE CONTA DI PIU' E' QUELLO NEGATIVO. Il confine LLM, a differenza del
-// service_role, e' APERTO al layer di dominio: l'orchestrazione dell'intervista (T-132)
+// service_role, e' APERTO al layer di dominio: le funzioni AI di onboarding (T-131)
 // deve poter chiamare il modello. La restrizione dinamica deve rispecchiare ESATTAMENTE
 // quel layering — se vietasse import('@/data/anthropic') anche a src/domain/**,
 // vieterebbe per via dinamica cio' che per via statica e' lecito, e nessuna asserzione
@@ -332,7 +332,7 @@ const PERCORSI_SOGGETTI_LLM = [
 // layer per cui il confine esiste APERTO (T-132). Gli altri sono i moduli server
 // designati e gli helper di test.
 const PERCORSI_LIBERI_LLM = [
-  { percorso: 'src/domain/onboarding/interview.ts', vero: true },
+  { percorso: 'src/domain/onboarding/generate-description.ts', vero: true },
   { percorso: 'src/domain/generation/blocks.ts', vero: true },
   { percorso: 'src/data/briefs.ts', vero: true },
   { percorso: 'tests/anthropic-boundary.test.ts', vero: true },

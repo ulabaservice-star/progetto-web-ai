@@ -88,15 +88,6 @@
       "socialLinks": "Perfiles sociales",
       "brandHints": "Indicaciones de estilo"
     },
-    "chat": {
-      "title": "Entrevista guiada",
-      "you": "Tú",
-      "assistant": "Asistente",
-      "assistantSilent": "El asistente ha actualizado el brief sin añadir texto",
-      "message": "Tu mensaje",
-      "send": "Enviar",
-      "error": "El turno no se ha completado: inténtalo de nuevo."
-    },
     "import": {
       "url": "Dirección del sitio que quieres importar",
       "submit": "Importar del sitio",

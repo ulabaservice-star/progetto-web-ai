@@ -1,0 +1,166 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`OGW-601 AC-601-3 — la generazione non regredisce dopo la rimozione della chat > il documento e IDENTICO a quello pinnato prima della rimozione (invarianza byte-per-byte) 1`] = `
+{
+  "effect_level": "L1",
+  "h1_treatment_id": "occhiello@1",
+  "hero_layout_id": "hero-poster@1",
+  "menu_layout_id": "menu-registro@1",
+  "ornament_id": "divisori-linea@1",
+  "pages": [
+    {
+      "blocks": [
+        {
+          "brief_fields_rendered": [
+            "business_name",
+          ],
+          "content": {
+            "hero_subtitle": "Nel centro storico di Roma, ogni giorno.",
+            "hero_title": "La cucina di mercato di Trattoria Aurora",
+            "hero_title_kicker": "Dal 1980",
+          },
+          "data": {
+            "business_name": "Trattoria Aurora",
+          },
+          "id": "hero",
+          "images": [
+            {
+              "source": "theme-placeholder",
+              "token": "hero",
+            },
+          ],
+        },
+        {
+          "brief_fields_rendered": [],
+          "content": {
+            "about_body": "Una trattoria di famiglia aperta da tre generazioni.",
+            "about_points": [
+              "Materie prime del mercato",
+              "Ricette della tradizione",
+            ],
+            "about_title": "Chi siamo",
+          },
+          "data": {},
+          "id": "chi-siamo",
+          "images": [],
+          "section_layout_id": "chi-siamo-timeline@1",
+        },
+        {
+          "brief_fields_rendered": [
+            "offerings",
+          ],
+          "content": {
+            "offerings_intro": "Una carta corta che cambia con la stagione.",
+            "offerings_title": "I nostri piatti",
+          },
+          "data": {
+            "offerings": [
+              {
+                "name": "Antipasto della casa",
+                "section": "Cucina",
+              },
+              {
+                "name": "Tagliatelle al ragu",
+                "section": "Cucina",
+              },
+              {
+                "name": "Tiramisu",
+                "section": "Dessert",
+              },
+            ],
+          },
+          "id": "offerte",
+          "images": [],
+        },
+        {
+          "brief_fields_rendered": [],
+          "content": {
+            "faq_items": [
+              {
+                "answer": "Si, per telefono o WhatsApp.",
+                "question": "Accettate prenotazioni?",
+              },
+              {
+                "answer": "Ogni giorno almeno due piatti.",
+                "question": "Avete opzioni vegetariane?",
+              },
+            ],
+            "faq_title": "Domande frequenti",
+          },
+          "data": {},
+          "id": "faq",
+          "images": [],
+          "section_layout_id": "faq-numerata@1",
+        },
+        {
+          "brief_fields_rendered": [
+            "address",
+            "phone",
+            "whatsapp",
+          ],
+          "content": {
+            "contact_intro": "Prenota un tavolo o scrivici.",
+            "contact_title": "Vieni a trovarci",
+          },
+          "data": {
+            "address": "Via Verdi 12, Roma",
+            "phone": "+39 06 5551234",
+            "whatsapp": "+39 333 4445566",
+          },
+          "id": "contatti",
+          "images": [],
+          "section_layout_id": "contatti-tabellone@1",
+        },
+        {
+          "brief_fields_rendered": [
+            "hours",
+          ],
+          "content": {
+            "hours_intro": "A pranzo nei feriali, a cena il sabato.",
+            "hours_title": "Quando siamo aperti",
+          },
+          "data": {
+            "hours": {
+              "lun-ven": "12:00-15:00",
+              "sab": "19:00-23:00",
+            },
+          },
+          "id": "orari",
+          "images": [],
+          "section_layout_id": "orari-tabella@1",
+        },
+        {
+          "brief_fields_rendered": [
+            "whatsapp",
+          ],
+          "content": {
+            "whatsapp_cta_title": "Scrivici su WhatsApp",
+          },
+          "data": {
+            "whatsapp": "+39 333 4445566",
+          },
+          "id": "cta-whatsapp",
+          "images": [],
+        },
+        {
+          "brief_fields_rendered": [],
+          "content": {},
+          "data": {},
+          "id": "recensioni",
+          "images": [],
+          "section_layout_id": "recensioni-scontrini@1",
+        },
+      ],
+      "meta_description": "La cucina di mercato di Trattoria Aurora",
+      "role": "home",
+      "slug": "home",
+      "title": "Dal 1980",
+    },
+  ],
+  "recipe_id": "racconto-di-bottega@1",
+  "section_layout_id": "chi-siamo-ritratto@1",
+  "section_treatment_id": "a-scheda@1",
+  "theme_id": "fine-dining@1",
+  "vertical": "ristorazione",
+}
+`;

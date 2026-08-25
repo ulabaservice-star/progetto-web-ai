@@ -11,8 +11,8 @@ import { briefDiff } from '@/ui/onboarding/wizard/brief-diff';
 
 // OGW-501/502 (macrotask wizard-shell) — RISCRITTURA IN LOCO: da onboarding chat-led a WIZARD
 // guidato a step (OGW-D1). Unica sede dello stato condiviso (reducer puro). Non monta piu' la
-// chat ne' il pannello brief (ChatPanel/BriefPanel ELIMINATI; interview.ts + POST /turn restano
-// finche' OGW-601 non li rimuove). La distinzione draft (vista) / persisted (DB) di T-151 vive nel
+// chat ne' il pannello brief (ChatPanel/BriefPanel ELIMINATI; interview.ts + POST /turn RIMOSSI
+// da OGW-601). La distinzione draft (vista) / persisted (DB) di T-151 vive nel
 // reducer, e con essa l'invariante "l'import PROPONE, non salva".
 //
 // OGW-502 — ORCHESTRAZIONE:

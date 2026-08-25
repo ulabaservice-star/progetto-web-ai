@@ -3,7 +3,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type Anthropic from '@anthropic-ai/sdk';
 import { fetchSafe } from '@/domain/import/fetchSafe';
 import { fromUrl } from '@/domain/import/fromUrl';
-import { runInterviewTurn } from '@/domain/onboarding/interview';
 import type { OnboardingLlmPort } from '@/domain/onboarding/llm-port';
 import {
   BRIEF_LIMITS,
@@ -198,15 +197,15 @@ function keywordNonSupportate(node: unknown, path = 'tools'): string[] {
 }
 
 /**
- * I tool di TUTTI i percorsi di P1 che parlano col modello, esattamente come li
- * riceve il confine (T-131): l'intervista in chat (T-132) e l'import da URL (T-141).
+ * I tool del percorso di P1 che parla col modello, esattamente come li riceve il
+ * confine (T-131): l'import da URL (T-141). L'intervista in chat e' stata rimossa
+ * (OGW-601), quindi i suoi tool (update_brief/mark_ready_for_review) non sono piu'
+ * dichiarati al modello.
  */
 async function toolsDichiaratiAlModello(): Promise<Anthropic.ToolUnion[]> {
   // Serve solo cio' che viene PASSATO al confine: la risposta del modello e'
   // irrilevante qui, quindi non si ricostruisce un Anthropic.Message intero.
   boundary.mockResolvedValue({ content: [] } as unknown as Anthropic.Message);
-
-  await runInterviewTurn({ messages: [], brief: emptyBrief('it'), userMessage: 'ciao' }, boundary);
 
   // La pagina non dichiara nulla di se stessa (nessun JSON-LD dell'attivita, nessun
   // og:title) ma ha del testo: e' la condizione in cui T-141 invoca il confine.
@@ -432,34 +431,13 @@ describe('P1-D17 tetto di lunghezza dei campi del brief', () => {
     const tools = await toolsDichiaratiAlModello();
 
     // Anti-placebo: senza tool da scandire la scansione sarebbe vuota, e verde per il
-    // motivo sbagliato. Sono i tool dei due percorsi che in P1 parlano col modello.
+    // motivo sbagliato. E' il tool dell'unico percorso che in P1 parla col modello
+    // (import da URL); la chat e' stata rimossa (OGW-601).
     expect(tools.map((tool) => ('name' in tool ? tool.name : '')).sort()).toEqual([
       'extract_brief',
-      'mark_ready_for_review',
-      'update_brief',
     ]); // P1-D20
 
     expect(keywordNonSupportate(tools)).toEqual([]); // P1-D20
-  });
-
-  // P1-D20, in luogo dell'annullato AC-E17-7: il motivo della clausola 4 di P1-D17
-  // resta valido (la chat scarta l'INTERA tool-call su un solo campo invalido), e la
-  // mitigazione si sposta nella description — prosa, sempre ammessa.
-  it('il tool update_brief dichiara i tetti al modello nella description, derivandoli dalle costanti', async () => {
-    const tool = (await toolsDichiaratiAlModello()).find(
-      (candidate): candidate is Anthropic.Tool =>
-        'input_schema' in candidate && candidate.name === 'update_brief',
-    );
-    if (tool === undefined) throw new Error('update_brief non e dichiarato al modello');
-    const description = tool.description ?? '';
-
-    // Solo i campi di testo libero, dove il modello puo' davvero sforare: venti
-    // numeri in un prompt sarebbero rumore. I numeri sono confrontati con le
-    // costanti, quindi una description che li riscrivesse a mano e poi divergesse
-    // direbbe al modello un limite che la validazione non applica.
-    expect(description).toContain(String(BRIEF_LIMITS.description)); // P1-D20
-    expect(description).toContain(String(BRIEF_LIMITS.brand_hints)); // P1-D20
-    expect(description).toContain(String(BRIEF_LIMITS.offering_description)); // P1-D20
   });
 
   // covers: AC-E17-8
