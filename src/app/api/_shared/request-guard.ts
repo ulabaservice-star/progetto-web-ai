@@ -45,8 +45,10 @@ import { NextResponse, type NextRequest } from 'next/server';
 // quindi ognuna passa il PROPRIO `maxBodyBytes`, derivato dai propri cap accanto ad essi. Un
 // tetto unico qui direbbe a una delle due un limite che non le appartiene.
 
-/** Il motivo GENERICO del rifiuto: nessun dettaglio interno, stessa forma delle due rotte. */
-function jsonError(status: number, reason: string): NextResponse {
+/** Il motivo GENERICO del rifiuto: nessun dettaglio interno, stessa forma delle due rotte.
+ *  Esportato perche' gli endpoint billing (BIL-203) riusano LO STESSO helper invece di
+ *  ridefinirlo (evita una copia in piu' della stessa risposta d'errore). */
+export function jsonError(status: number, reason: string): NextResponse {
   return NextResponse.json({ error: reason }, { status });
 }
 
