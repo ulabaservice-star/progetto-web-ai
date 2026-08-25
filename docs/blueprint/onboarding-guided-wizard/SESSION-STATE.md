@@ -8,7 +8,7 @@
 |---|---|
 | **Progetto** | Ulaba/Belora |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase) |
-| **Stato** | **BUILD 5/6 IN CORSO** — `wizard-shell` **OGW-501 DONE** (guscio wizard a step riscritto in loco di `OnboardingWorkspace`, branch `trueline/build/wizard-shell` `e369fef`, checkpoint 4/4 VERDE, mutazioni 4/4, gate visivo umano APPROVATO). **NON mergiato su `main`**: il flusso è incompleto (Racconto/Offerte/Contatti = `StepPlaceholder`, «Genera il sito» non ancora cablato a `/generate`) finché **OGW-502** non porta step AI + review→generate + persist-on-Advance + e2e → merge a macrotask completo. Storia precedente: **BUILD 4/6** — `suggest-offerings` (OGW-401/402) **COMPLETO**, checkpoint 4/4 VERDE, mutazioni 5/5, gate visivo umano APPROVATO (con rifinitura: pulsante primario + icona). Storia precedente: **BUILD 3/6** — `generate-description` (OGW-301/302) **COMPLETO E MERGIATO su `main` (`605b1fa`)**, checkpoint 4/4 VERDE, mutazioni 5/5, gate visivo umano APPROVATO, deploy Vercel partito. `ai-usage-guard` (`0e3d2ba`) + `offerings-editor` (`08c8404`) mergiati. ✅ **Migrazione `20260818000100` APPLICATA a Supabase Cloud** (2026-08-23, via SQL Editor del dashboard + registrata a mano in `supabase_migrations.schema_migrations`; verificata: RLS attiva, 2 sole policy SELECT/INSERT, nessun grant ad `anon`). I due endpoint AI restano **DORMIENTI** finché `wizard-shell` non li cabla nel flusso. **FIX `onboarding-ai-dedup` (2026-08-24, branch `trueline/fix/onboarding-ai-dedup`):** il session-end di `suggest-offerings` ha scoperto che il verde C1 di `433e10d` era su una **misura d'igiene difettosa** (la contro-prova jscpd di ieri era cieca: i 5 cloni endpoint↔endpoint + 1 UI erano reali, non pre-esistenti). Risolto ALLA RADICE: estratto `_shared/ai-endpoint.ts` (factory `aiEndpoint`, pipeline condivisa dei due endpoint) + `ui/onboarding/AiFieldStatus.tsx` (blocco stato cap/errore) → **macrotask a delta d'igiene 0 CONFERMATO** (0 cloni su tutti e 6 i file toccati, misura diretta), ri-baseline illegittima 227→**224 ANNULLATA**, checkpoint 4/4 VERDE onesto, suite 1761/1761, mutazioni 7/7 (le 4 sull'helper uccidono ENTRAMBE le suite di rotta). Prossimo selezionabile: `wizard-shell` (OGW-501/502, tutte le dipendenze verdi). |
+| **Stato** | **BUILD 6/6 — `wizard-shell` COMPLETO E MERGIATO su `main` (`1d2d690`, ff-only, deploy Vercel partito, 2026-08-25).** OGW-502 (integrazione step Racconto/Offerte/Contatti + Rivedi→genera + persist-on-Advance + e2e) DONE: checkpoint 4/4 VERDE (C1 `dup:226` 0-nuove per **misura diretta per-file**; C2 invariata gitleaks:3/osv:2/semgrep:0/rls:1; suite **1773/1773**; AC-502-1/2/3 + e2e AC-502-4 2/2 Chromium), mutazioni **7/7**, gate visivo umano APPROVATO. OGW-501 (`e369fef`) + OGW-502 (`1d2d690`) mergiati INSIEME come macrotask completo. **Decisioni gate umano:** **ReviewConfirm guida il traguardo** (barra su Rivedi = solo Indietro; conferma→`/generate` via prop `afterConfirmHref`) + **readiness AVVISA-non-blocca** (raffina il `then` di AC-501-4; `/generate` resta il gate reale `generatable`). De-dup alla radice (NON ri-baseline): `withAtCap` (ai-calls) + `HourRowInputs` (Hours↔Review) + `hours.ts`. **Prossimo e ULTIMO: `remove-chat` (OGW-601)** — rimuove chat libera (`interview.ts` + POST `/turn` + i18n chat + i fixture-path che li tengono knip-vivi). Storia precedente: **BUILD 4/6** — `suggest-offerings` (OGW-401/402) **COMPLETO**, checkpoint 4/4 VERDE, mutazioni 5/5, gate visivo umano APPROVATO (con rifinitura: pulsante primario + icona). Storia precedente: **BUILD 3/6** — `generate-description` (OGW-301/302) **COMPLETO E MERGIATO su `main` (`605b1fa`)**, checkpoint 4/4 VERDE, mutazioni 5/5, gate visivo umano APPROVATO, deploy Vercel partito. `ai-usage-guard` (`0e3d2ba`) + `offerings-editor` (`08c8404`) mergiati. ✅ **Migrazione `20260818000100` APPLICATA a Supabase Cloud** (2026-08-23, via SQL Editor del dashboard + registrata a mano in `supabase_migrations.schema_migrations`; verificata: RLS attiva, 2 sole policy SELECT/INSERT, nessun grant ad `anon`). I due endpoint AI restano **DORMIENTI** finché `wizard-shell` non li cabla nel flusso. **FIX `onboarding-ai-dedup` (2026-08-24, branch `trueline/fix/onboarding-ai-dedup`):** il session-end di `suggest-offerings` ha scoperto che il verde C1 di `433e10d` era su una **misura d'igiene difettosa** (la contro-prova jscpd di ieri era cieca: i 5 cloni endpoint↔endpoint + 1 UI erano reali, non pre-esistenti). Risolto ALLA RADICE: estratto `_shared/ai-endpoint.ts` (factory `aiEndpoint`, pipeline condivisa dei due endpoint) + `ui/onboarding/AiFieldStatus.tsx` (blocco stato cap/errore) → **macrotask a delta d'igiene 0 CONFERMATO** (0 cloni su tutti e 6 i file toccati, misura diretta), ri-baseline illegittima 227→**224 ANNULLATA**, checkpoint 4/4 VERDE onesto, suite 1761/1761, mutazioni 7/7 (le 4 sull'helper uccidono ENTRAMBE le suite di rotta). |
 
 ---
 
@@ -22,15 +22,28 @@
 | `offerings-editor` (OGW-201/202) | **done — mergiato `main` (`08c8404`)** | **4/4 VERDE** | — |
 | `generate-description` (OGW-301/302) | **done — mergiato `main` (`605b1fa`)** | **4/4 VERDE** | `ai-usage-guard` |
 | `suggest-offerings` (OGW-401/402) | **done** | **4/4 VERDE** | `ai-usage-guard`, `offerings-editor` |
-| `wizard-shell` (OGW-501/502) | **in_progress — OGW-501 done (`e369fef`, branch non mergiato); OGW-502 todo** | **OGW-501: 4/4 VERDE** | `offerings-editor`, `generate-description`, `suggest-offerings` |
-| `remove-chat` (OGW-601) | **todo** | — | `wizard-shell` |
+| `wizard-shell` (OGW-501/502) | **done — mergiato `main` (`1d2d690`, ff-only, deploy)** | **4/4 VERDE** (mut 7/7) | `offerings-editor`, `generate-description`, `suggest-offerings` |
+| `remove-chat` (OGW-601) | **todo — PROSSIMO E ULTIMO** | — | `wizard-shell` |
 
 **Build order (DAG):** `{ai-usage-guard, offerings-editor} → generate-description · suggest-offerings → wizard-shell → remove-chat`.
 
 ## 2. Macrotask corrente
 
-- **`wizard-shell` OGW-501 COSTRUITO** (branch `trueline/build/wizard-shell`, feat `e369fef`, checkpoint
-  4/4 VERDE, mutazioni 4/4, gate visivo APPROVATO; **NON mergiato su `main`** — flusso incompleto).
+- **`wizard-shell` COMPLETO E MERGIATO** (OGW-501 `e369fef` + OGW-502 `1d2d690`, ff-only su `main`,
+  deploy Vercel partito 2026-08-25; checkpoint 4/4 VERDE, mutazioni **7/7**, gate visivo APPROVATO). Il
+  macrotask è chiuso: flusso guidato completo (Ingresso→Base→Racconto→Offerte→Contatti&orari→Rivedi→Genera).
+  - **OGW-502** (integrazione): `ai-calls.ts` (confine client `fetch` ai due endpoint AI, 429→`atCap`,
+    `withAtCap` adattatore condiviso); `StepStory` (`GenerateDescriptionField`, `onGenerate` allargato
+    a passare la frase), `StepOfferings` (`OfferingsEditor` + `OfferingSuggestions`, `onAccept` appende),
+    `StepContacts` (contatti + `HoursEditor` ricreato dal vecchio `BriefPanel` + `HourRowInputs`
+    condiviso col recap + `hours.ts` puro), `StepReview` (`ReviewConfirm` + prop `afterConfirmHref`
+    → `/${locale}/generate/${siteId}`, **percorso `/generate` INVARIATO**). **persist-on-Advance**:
+    guscio salva il `briefDiff(persisted, draft)` a ogni «Avanti» (additivo: non svuota `.min(1)`;
+    limite T-122 offerte-per-nome dichiarato), poi `markSaved` avanza `persisted`. Reducer +2 azioni
+    (`setOfferings`, `markSaved`). `StepReview` passa `brief=persisted` (base del diff = DB). i18n
+    `panel.hoursRemove` it+es. `StepPlaceholder` rimosso (superato). Test `onboarding-wizard-integration`
+    (AC-502-1/2/3 + anti-injection rich-step + reducer) + e2e `onboarding-wizard.spec.ts` (AC-502-4, 2
+    percorsi, seed-non-run: verifica che `/generate` OFFRA la generazione, non la esegue live).
   - **OGW-501**: guscio wizard a step in loco di `OnboardingWorkspace` — `wizard/wizard-reducer.ts`
     (reducer PURO `{draft, persisted, stepIndex}` + `makeWizardReducer(stepCount)`, azioni
     `applyProposal`/`patchCore`/`goNext`/`goBack`/`goTo`), `wizard/steps.tsx` (config dichiarativa
@@ -91,23 +104,21 @@
     libero; `atCap` disabilita. Chiavi `onboarding.suggestOfferings.*` it+es.
   - **Rifinitura del gate visivo**: pulsante da `variant="secondary"` a **primario** + icona ✨ nel testo
     i18n it/es (il blueprint la citava nella prosa; non era un AC).
-- **Prossimo selezionabile** (DAG): **`wizard-shell` OGW-502** (dip. OGW-501 ✓ + `generate-description` ✓ +
-  `suggest-offerings` ✓): StepStory (`GenerateDescriptionField`, **`onGenerate` allargato a passare la
-  frase digitata** — vedi §5), StepOfferings (`OfferingsEditor` + `OfferingSuggestions` via `ai-calls.ts`,
-  429→`atCap`), StepContacts (estrai `HoursEditor`/`hours.ts` — la logica orari era in `BriefPanel`, GIÀ
-  eliminato, va ricreata), StepReview (`ReviewConfirm` + prop opzionale `afterConfirmHref`=`/generate` →
-  redirect; `buildReviewPatch` invariato sul default), `brief-diff.ts` + **persist-on-Advance**. Test
-  `onboarding-wizard-integration.test.tsx` (AC-502-1..3) + e2e `onboarding-wizard.spec.ts` (AC-502-4).
-  **Merge del macrotask su `main` DOPO 502.** Poi `remove-chat` (OGW-601). ✅ La **migrazione
-  `20260818000100` è APPLICATA al cloud** (2026-08-23).
+- **Prossimo selezionabile** (DAG, ULTIMO): **`remove-chat` (OGW-601)** — dip. `wizard-shell` ✓.
+  Rimuove la chat libera ora orfana: `src/domain/onboarding/interview.ts`, endpoint `POST
+  /api/onboarding/[siteId]/turn`, chiavi i18n della chat. ⚠️ Gotcha noto (lezione OGW-501): i 3 test
+  di confine (`anthropic-boundary`/`generation-usage-harness`/`supabase-clients`) referenziano un file
+  client del layer per **PATH-stringa** (non import): oggi puntano a `OnboardingWorkspace.tsx`; se
+  `turn/route.ts` viene rimosso, verificare che nessun fixture-path resti orfano (knip). ✅ La
+  **migrazione `20260818000100` è APPLICATA al cloud** (2026-08-23). Brief/generazione/motore-v2 invariati.
 
 ## 3. Stato git
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `trueline/build/wizard-shell` (OGW-501; OGW-502 da fare). Ultimo commit `e369fef`, pushato su `origin`. |
-| Ultimo commit su `main` | `57a2b29` (fix `onboarding-ai-dedup`, **già mergiato**: era HEAD di `main` all'apertura di questa sessione — la §3 precedente lo dava erroneamente ancora sul branch). |
-| Stato merge su `main` | **OGW-501 committato sul branch `trueline/build/wizard-shell` (`e369fef`), NON mergiato** (flusso incompleto → il merge del macrotask `wizard-shell` avviene DOPO OGW-502, human-gated). Verifica locale VERDE: tsc 0, eslint 0, knip 0 (exit 0), suite **1746/1746**, `next build` 0, checkpoint 4/4 (C1 verde su baseline **225**, misura diretta per-file: 0 cloni sui file del macrotask), mutazioni 4/4. |
+| Branch di lavoro | `trueline/build/wizard-shell` (OGW-501 `e369fef` + OGW-502 `1d2d690`), pushato su `origin`. Mergiato ff-only su `main`. |
+| Ultimo commit su `main` | `1d2d690` (feat OGW-502) + docs(session-end) di chiusura macrotask. **`wizard-shell` chiuso e mergiato.** |
+| Stato merge su `main` | **MERGIATO ff-only su `main` (`1d2d690`), push → deploy Vercel partito (2026-08-25)** — gate umano APPROVATO (visivo + «merge a main ora»). Verifica locale VERDE PRIMA del merge: tsc 0, eslint 0, knip 0, suite **1773/1773**, `next build` 0, checkpoint C1/C2 verde (C1 `dup:226` 0-nuove, misura diretta per-file: 0 cloni nuovi sui file del macrotask), e2e Chromium 2/2, mutazioni 7/7. |
 | `main_deploy_coupled` | **true** (Vercel connesso al repo `ulabaservice-star/progetto-web-ai`: push su `main` = deploy su ulaba.net) → merge **human-gated anche sul verde**; verifica locale (vitest, e2e, `next build`) prima di ogni merge |
 
 ## 4. Baseline & budget
@@ -150,6 +161,15 @@
   VUOTO su ENTRAMBI i file ⇒ il macrotask non li ha toccati ⇒ ri-baseline del solo fingerprint
   `3d63f067` LEGITTIMA (regola M3: vietata solo se il clone tocca il macrotask). **Misura diretta
   per-file**: 0 cloni sui file del macrotask (`control1Hygiene` con baseline vuota + filtro), verde ONESTO.
+
+- **M6 `wizard-shell` OGW-502: §4 NON dovuto (baseline INVARIATE).** Nessuna migrazione/RLS nuova
+  (integrazione UI + dominio-client) → C2 GREEN invariata. Baseline d'**igiene INVARIATA (nessuna
+  ri-baseline)**: C1 segnalava dapprima 3 cloni «nuovi» — TUTTI risolti ALLA RADICE, non baselinati:
+  (a) `ai-calls.ts` self-clone dei due gemelli → estratto `postAi` (pipeline) + `withAtCap` (adattatore);
+  (b) `StepStory`↔`StepOfferings` (wrapper AI, 51t) → `withAtCap` condiviso; (c) `HoursEditor`↔`ReviewConfirm`
+  (render orari, 69t) → `HourRowInputs` condiviso. Dopo i fix: C1 GREEN `dup:226` 0-nuove; l'unico clone che
+  tocca un file del macrotask è `ReviewConfirm` interno highlights↔social (86t) **pre-esistente e già in
+  baseline** (misura diretta per-file lo conferma). Coerente con M3: clone che tocca il macrotask ⇒ root-cause.
 
 ## 5. Carry-over / note ereditate (dal design doc + gate delle assunzioni)
 
@@ -346,6 +366,37 @@
   monta `OnboardingWorkspace` con `emptyBrief`; `next dev` + Chrome DevTools per gli screenshot; poi RIMOSSA.
   `next dev` chiuso per **PID sulla porta 3000** (il wrapper `npm run dev` non muore col task).
 
+### Lezioni build M6 `wizard-shell` OGW-502 (2026-08-25)
+
+- **🔴 il checkpoint usa `jscpd@4`, i tuoi scan manuali `jscpd` (v5): TOKENIZER DIVERSI, cloni diversi.**
+  `run_dupcheck.mjs` invoca `npx jscpd@4 ... --mode strict` sul repo (ignora solo test/spec/d.ts/node_modules).
+  Uno scan manuale `npx jscpd` risolve la **v5 installata** e puo' dare 0 cloni dove il driver ne trova 3
+  (visto in M6: v5 vedeva pulito StepStory/ReviewConfirm, jscpd@4 no). **Per riprodurre il driver: `npx
+  jscpd@4 . --min-tokens 50 --mode strict --ignore "**/*.test.ts,**/*.test.tsx,**/*.spec.ts,**/*.d.ts,**/node_modules/**"**
+  e leggi `duplicates[]` (firstFile/secondFile/fragment) → questa e' la MISURA DIRETTA per-file affidabile.
+- **`--mode strict` NON ignora i commenti**, e run_dupcheck NON esclude `.next`/`.trueline`/`scratchpad`.
+  Non lasciare report jscpd o log con frammenti di sorgente in `scratchpad/` prima di rilanciare il driver
+  (`scratchpad/` non e' gitignorato → viene scansionato). Puliscili.
+- **Cloni nuovi = root-cause, non ri-baseline (regola M3 confermata).** I 3 cloni di M6 toccavano file del
+  macrotask → estratti `postAi`+`withAtCap` (ai-calls), `HourRowInputs` (Hours↔Review). Zero ri-baseline.
+- **Mutazione SURVIVED per un buco del TEST, non del codice.** `setOfferings` che scriveva `persisted =
+  draft` sopravviveva perche' `initWizardState` parte con `draft === persisted` (stesso riferimento) → il
+  test non poteva falsificare. Rimedio: rendere `draft != persisted` (un `patchCore` prima) così l'invariante
+  «persisted intatto» diventa uccidibile. Lezione: le asserzioni d'identita' vogliono stati DISTINTI a monte.
+- **Tensione OGW-501-testato ⟂ §2 risolta dal gate umano.** La CTA «Genera» del WizardNav (testata in
+  AC-501-4) confliggeva con la conferma di ReviewConfirm sullo step Rivedi. Scelta utente: **ReviewConfirm
+  guida** (barra su Rivedi = solo Indietro), readiness **avvisa-non-blocca**. AC-501-4 raffinato nel test
+  (banner nomina i mancanti; niente CTA duplicata) — raffinamento dichiarato dentro il macrotask unico, non
+  divergenza silenziosa.
+- **e2e del wizard = seed-non-run (disciplina AC-240).** Le due porte (da-zero / import) guidano il wizard
+  in Chromium fino a `/generate` che OFFRE la generazione (brief `generatable` → CTA «Genera cinque
+  proposte»); NON si lancia la generazione live ne' l'import LLM (coperti dai loro oracoli). L'import e'
+  rappresentato da un brief DRAFT pre-popolato via `adminClient` (lo stato che un import produce).
+- **`GenerateDescriptionField.onGenerate` allargato a `(phrase)`** (prima 0-arg): l'endpoint vuole la frase
+  nel body; il componente passa il testo corrente del campo (trimmato). Il test UI mockava onGenerate
+  ignorando gli arg → invariato. Mock di modulo con nuovo export (`withAtCap`): usare `importActual` e
+  sovrascrivere solo le funzioni di rete, o la mock rompe gli altri import del modulo.
+
 ## 6. Copertura dichiarata
 
 - **`ai-usage-guard` (OGW-101/102)** — target_tests coperti: `tests/onboarding-ai-usage-rls.test.ts`
@@ -403,9 +454,24 @@
   ⇒ AC-501-2 rosso; `aria-pressed` sempre false ⇒ AC-501-3 rosso; `wizardReadiness` sempre ready ⇒ AC-501-4
   rosso. Checkpoint decomposto 4/4 verde. **Gate visivo umano APPROVATO** (5 screenshot: entry/base/placeholder/
   review-ok/review-incompleto; estetica rimandata a passata dedicata di fine piano — decisione utente).
-  **NON coperto qui (→ OGW-502):** integrazione step AI, `HoursEditor`, review→generate, persist-on-Advance,
-  e2e. **NON coperto (→ T-152/ReviewConfirm):** save del brief, orari/offerte editabili e la loro
-  anti-injection (fino a OGW-502).
+  **NON coperto qui (→ OGW-502, ora COPERTO):** integrazione step AI, `HoursEditor`, review→generate,
+  persist-on-Advance, e2e — vedi entry OGW-502 sotto.
+- **`wizard-shell` OGW-502 (integrazione + e2e)** — target_tests coperti: `tests/onboarding-wizard-integration.test.tsx`
+  (AC-502-1 Racconto espone ✨ genera-descrizione cablato + Offerte espone `OfferingsEditor` + ✨ suggerisci
+  cablato; AC-502-2 la review mostra tutti i campi raccolti attraverso gli step, editabili; AC-502-3 conferma
+  → `confirmBrief(siteId)` + redirect `/{locale}/generate/{siteId}` — percorso `/generate` invariato) + e2e
+  `e2e/onboarding-wizard.spec.ts` (AC-502-4, 2 percorsi Chromium da-zero/import → `/generate` OFFRE la
+  generazione, **seed-non-run**). + unità di supporto: `onboarding-hours` (rows↔record), `onboarding-brief-diff`
+  (diff additivo), `onboarding-ai-calls` (200/429→atCap/errore + `withAtCap`), reducer `setOfferings`/`markSaved`,
+  **anti-injection rich-step** (brief ostile attraversa Racconto/Offerte/Contatti senza `img`/`script`/href/src
+  — chiude il rimando di OGW-501). **Mutazioni 7/7 UCCISE** (backup+sha256): `withAtCap` senza side-effect
+  atCap ⇒ ai-calls rosso; status cap ≠429 ⇒ rosso; `markSaved` non avanza persisted ⇒ integrazione rosso;
+  `setOfferings` contamina persisted ⇒ rosso; persist-on-Advance saltato ⇒ AC-501-1 rosso; redirect dashboard
+  invece di /generate ⇒ AC-502-3 rosso; guard stringa-vuota rimosso in brief-diff ⇒ rosso. Checkpoint 4/4
+  verde (C1 `dup:226` 0-nuove), e2e 2/2. **Gate visivo umano APPROVATO** (screenshot 4 rich-step, `scratchpad/
+  gate-502-*.png`; estetica → passata di fine piano). **Merge ff-only su `main` (`1d2d690`), deploy partito.**
+  **NON coperto per costruzione (L-COL-006):** la generazione LIVE e l'estrazione LLM dell'import (coperte da
+  harness P2 / oracoli import); la qualità editoriale della copy (gate visivo).
 - Da compilare a ogni `session-end` col macrotask chiuso (target_tests coperti, mutazioni, gate).
 - **NON coperto per costruzione (L-COL-006)**: la qualità *editoriale* della copy generata e l'ovvietà
   del confine "placeholder da personalizzare" non sono oracolabili → gate visivo umano. Foto reali e resa
