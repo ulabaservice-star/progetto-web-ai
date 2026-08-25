@@ -27,6 +27,16 @@ type CorePatch = Partial<Omit<Brief, 'content' | 'locale'>>;
 export type WizardAction =
   | { type: 'applyProposal'; proposal: Brief }
   | { type: 'patchCore'; patch: CorePatch }
+  // OGW-502 — le offerte NON sono un campo core (vivono in `content.offerings`, che CorePatch
+  // esclude): hanno un'azione loro. La sorgente e' l'editor (OfferingsEditor.onChange, la lista
+  // intera) o un suggerimento accettato (OfferingSuggestions.onAccept, una voce in coda) — in
+  // entrambi i casi il contenitore calcola la lista e la passa qui.
+  | { type: 'setOfferings'; offerings: Brief['content']['offerings'] }
+  // OGW-502 — persist-on-Advance: dopo un salvataggio riuscito, `persisted` diventa lo snapshot
+  // del draft salvato (passato dal contenitore), cosi' il diff del prossimo «Avanti» riparte
+  // dalla base giusta e non ri-spedisce cio' che e' gia' in tabella. Prende lo snapshot invece
+  // di leggere `state.draft` per non marcare come salvate le battiture arrivate dopo la POST.
+  | { type: 'markSaved'; brief: Brief }
   | { type: 'goNext' }
   | { type: 'goBack' }
   | { type: 'goTo'; stepIndex: number };
@@ -51,6 +61,18 @@ export function makeWizardReducer(stepCount: number) {
         return { ...state, draft: mergeProposal(state.draft, action.proposal) };
       case 'patchCore':
         return { ...state, draft: { ...state.draft, ...action.patch } };
+      case 'setOfferings':
+        // Solo le offerte del content; il resto del content (social/highlights/brand_hints)
+        // resta intatto. Come patchCore, tocca SOLO il draft: nulla e' salvato finche' il
+        // contenitore non persiste e non emette markSaved.
+        return {
+          ...state,
+          draft: { ...state.draft, content: { ...state.draft.content, offerings: action.offerings } },
+        };
+      case 'markSaved':
+        // Il salvataggio e' avvenuto: la base del diff avanza allo snapshot salvato. Il draft
+        // NON si tocca (l'utente continua a vedere e modificare cio' che aveva).
+        return { ...state, persisted: action.brief };
       case 'goNext':
         // draft e persisted restano per riferimento: la navigazione non tocca i dati.
         return { ...state, stepIndex: clamp(state.stepIndex + 1, 0, lastIndex) };

@@ -23,6 +23,18 @@ import itMessages from '../messages/it.json';
 const importBriefFromUrl = vi.hoisted(() => vi.fn());
 vi.mock('@/data/import', () => ({ importBriefFromUrl }));
 
+// OGW-502 — il guscio ora PERSISTE a ogni «Avanti» (persist-on-Advance) e lo step Rivedi monta
+// ReviewConfirm (che salva/conferma e naviga). Si mockano i confini reali, non il comportamento:
+//  - `@/data/briefs` upsertBrief/confirmBrief: server action (RLS/cookies) non eseguibili in jsdom;
+//    qui pilotano l'esito (ok) senza rete. Sono il seam del persist-on-Advance e della conferma.
+//  - `next/navigation` useRouter: ReviewConfirm reindirizza dopo la conferma; se ne spia il push.
+const upsertBrief = vi.hoisted(() => vi.fn());
+const confirmBrief = vi.hoisted(() => vi.fn());
+vi.mock('@/data/briefs', () => ({ upsertBrief, confirmBrief }));
+
+const routerPush = vi.hoisted(() => vi.fn());
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: routerPush }) }));
+
 // Import DOPO i mock (vi.mock/vi.hoisted sono issati).
 import { OnboardingWorkspace } from '@/ui/onboarding/OnboardingWorkspace';
 import { WIZARD_STEPS } from '@/ui/onboarding/wizard/steps';
@@ -41,6 +53,9 @@ function wrap(ui: ReactNode) {
 
 beforeEach(() => {
   importBriefFromUrl.mockReset();
+  upsertBrief.mockReset().mockResolvedValue({ ok: true, complete: false });
+  confirmBrief.mockReset().mockResolvedValue({ ok: true });
+  routerPush.mockReset();
 });
 afterEach(cleanup);
 
@@ -107,14 +122,22 @@ describe('wizardReadiness (puro)', () => {
 // ---------------------------------------------------------------------------
 async function proceedToBase(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: w.entry.continue }));
+  await screen.findByLabelText(w.base.name);
+}
+
+// OGW-502: ogni «Avanti» e' async (persist-on-Advance), quindi si attende il titolo dello step
+// successivo prima di procedere. Il titolo e' l'h2 del guscio (`wizard.steps.<id>`).
+async function clickNextTo(user: ReturnType<typeof userEvent.setup>, heading: string) {
+  await user.click(screen.getByRole('button', { name: w.nav.next }));
+  await screen.findByRole('heading', { name: heading });
 }
 
 async function advanceToReview(user: ReturnType<typeof userEvent.setup>) {
   await proceedToBase(user);
-  // base -> story -> offerings -> contacts -> review: 4 "Avanti"
-  for (let i = 0; i < 4; i += 1) {
-    await user.click(screen.getByRole('button', { name: w.nav.next }));
-  }
+  await clickNextTo(user, w.steps.story);
+  await clickNextTo(user, w.steps.offerings);
+  await clickNextTo(user, w.steps.contacts);
+  await clickNextTo(user, w.steps.review);
 }
 
 describe('T-wizard il guscio naviga e conserva lo stato', () => {
@@ -124,11 +147,14 @@ describe('T-wizard il guscio naviga e conserva lo stato', () => {
 
     await proceedToBase(user);
     await user.type(screen.getByLabelText(w.base.name), 'Bar Sole');
-    await user.click(screen.getByRole('button', { name: w.nav.next })); // -> story
+    await clickNextTo(user, w.steps.story); // -> story (persist-on-Advance salva il nome)
     await user.click(screen.getByRole('button', { name: w.nav.back })); // -> base
+    await screen.findByLabelText(w.base.name);
 
     const name = screen.getByLabelText(w.base.name) as HTMLInputElement;
     expect(name.value).toBe('Bar Sole'); // covers: AC-501-1
+    // Il persist-on-Advance ha spedito il diff (solo il nome), non l'intero brief.
+    expect(upsertBrief).toHaveBeenCalledWith(SITE_ID, { business_name: 'Bar Sole' });
   });
 
   it('AC-501-2: un import a buon fine pre-compila il draft come proposta, senza salvare', async () => {
@@ -146,6 +172,8 @@ describe('T-wizard il guscio naviga e conserva lo stato', () => {
     expect(
       screen.getByRole('button', { name: V.ristorazione }).getAttribute('aria-pressed'),
     ).toBe('true'); // covers: AC-501-2
+    // L'import PROPONE, non salva: fino a qui nessuna scrittura (l'ingresso non passa da onAdvance).
+    expect(upsertBrief).not.toHaveBeenCalled(); // covers: AC-501-2
   });
 
   it('AC-501-3: i bottoni tipo/obiettivo settano vertical/primary_goal dall allowlist (aria-pressed)', async () => {
@@ -162,18 +190,20 @@ describe('T-wizard il guscio naviga e conserva lo stato', () => {
     expect(screen.getByRole('button', { name: V.fitness }).getAttribute('aria-pressed')).toBe('false');
   });
 
-  it('AC-501-4: senza un campo minimo la CTA Genera e disabilitata e la UI nomina cosa manca', async () => {
+  it('AC-501-4: su Rivedi la UI nomina i campi minimi mancanti e NON offre una CTA Genera (avvisa, non blocca)', async () => {
     const user = userEvent.setup();
     wrap(<OnboardingWorkspace siteId={SITE_ID} initialBrief={emptyBrief('it')} />);
 
     await advanceToReview(user);
-    const generate = screen.getByRole('button', { name: w.nav.generate }) as HTMLButtonElement;
-    expect(generate.disabled).toBe(true); // covers: AC-501-4
-    expect(screen.getByRole('status').textContent).toContain(w.missing.business_name); // covers: AC-501-4
-    expect(screen.getByRole('status').textContent).toContain(w.missing.primary_goal); // covers: AC-501-4
+    // La readiness AVVISA (banner role=status che nomina cosa manca): OGW-502, decisione umana.
+    const status = screen.getByRole('status');
+    expect(status.textContent).toContain(w.missing.business_name); // covers: AC-501-4
+    expect(status.textContent).toContain(w.missing.primary_goal); // covers: AC-501-4
+    // Il traguardo lo possiede ReviewConfirm (conferma -> /generate): il wizard non ha una CTA Genera.
+    expect(screen.queryByRole('button', { name: w.nav.generate })).toBeNull(); // covers: AC-501-4
   });
 
-  it('AC-501-4: con nome+tipo+obiettivo la CTA Genera e disponibile', async () => {
+  it('AC-501-4: con nome+tipo+obiettivo il banner readiness sparisce (non blocca il traguardo)', async () => {
     const user = userEvent.setup();
     const full: Brief = {
       ...emptyBrief('it'),
@@ -184,8 +214,9 @@ describe('T-wizard il guscio naviga e conserva lo stato', () => {
     wrap(<OnboardingWorkspace siteId={SITE_ID} initialBrief={full} />);
 
     await advanceToReview(user);
-    const generate = screen.getByRole('button', { name: w.nav.generate }) as HTMLButtonElement;
-    expect(generate.disabled).toBe(false); // covers: AC-501-4
+    // Brief pronto: nessun banner di readiness; ReviewConfirm (il traguardo) e' montato.
+    expect(screen.queryByRole('status')).toBeNull(); // covers: AC-501-4
+    expect(screen.getByText(itMessages.onboarding.panel.title)).toBeTruthy(); // ReviewConfirm montato
   });
 });
 

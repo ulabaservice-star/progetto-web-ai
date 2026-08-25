@@ -17,14 +17,14 @@ import esMessages from '../messages/es.json';
 // e AC-151-4 (localizzazione), piu' l'anti-injection di §7 p.4; ognuna e' taggata
 // `// covers: AC-151-<n>` dove mappa su un AC.
 //
-// L-COL-006 — SUPERFICIE DI TESTO NON FIDATO IN OGW-501: nel wizard l'UNICO step che rende
-// testo NON FIDATO dell'utente e' `base` (il nome dell'attivita', in un `value` di Input).
-// `description`, `offerte` e `orari` vivono in step PLACEHOLDER (StepPlaceholder) finche'
-// OGW-502 non porta i componenti ricchi; la loro anti-injection (markup nei nodi di testo,
-// href/src da campi ostili) e' coperta ALTROVE fino ad allora: dal recap di
-// onboarding-review.test (T-152), che li rende gia' oggi. Quando OGW-502 aggiungera' quegli
-// step, l'anti-injection dei rispettivi campi si aggiunge qui (o nel test del componente
-// ricco), non prima: asserirla su uno StepPlaceholder sarebbe vera per costruzione.
+// L-COL-006 — SUPERFICIE DI TESTO NON FIDATO. Questo oracolo prova l'anti-injection allo step
+// `base` (il nome dell'attivita', in un `value` di Input), che e' cio' che la ROTTA monta al
+// primo affaccio. Gli step ricchi di OGW-502 (`description`/`offerte`/`orari`: Racconto, Offerte,
+// Contatti&orari) rendono anch'essi testo non fidato solo in `value`/nodi di testo, e la loro
+// anti-injection e' coperta (a) dai test dei singoli componenti (onboarding-offerings-editor
+// AC-202-4, onboarding-suggest-offerings-ui, onboarding-generate-description-ui) e (b) al livello
+// del guscio da onboarding-wizard-integration (brief ostile che attraversa i rich-step, nessun
+// img/script/href/src). Qui non si ri-naviga fin la': la rotta si prova al montaggio.
 //
 // Cosa si mocka e perche' NON e' hollow:
 //  - `@/data/briefs` getBrief: la pagina carica lo STATO CORRENTE del brief e lo passa al

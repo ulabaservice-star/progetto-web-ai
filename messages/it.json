@@ -81,6 +81,7 @@
       "hoursDay": "Giorno {n}",
       "hoursValue": "Orario {n}",
       "hoursAdd": "Aggiungi un giorno",
+      "hoursRemove": "Rimuovi",
       "notChosen": "Non scelto",
       "offerings": "Offerta",
       "highlights": "Punti di forza",

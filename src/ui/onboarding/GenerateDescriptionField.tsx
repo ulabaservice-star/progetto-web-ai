@@ -40,7 +40,9 @@ type GenerateDescriptionFieldProps = {
   // (wizard-shell) la traduce in una patch. NON e' chiamata dalla generazione.
   onConfirm: (description: string) => void;
   // Genera la descrizione (iniettata: chiama l'endpoint). Il componente non conosce la rotta.
-  onGenerate: () => Promise<GenerateDescriptionOutcome>;
+  // OGW-502: riceve la FRASE corrente del campo (il testo da espandere): l'endpoint la vuole nel
+  // body (`phrase`), e senza passarla girerebbe su un input vuoto. Il testo e' input dell'utente.
+  onGenerate: (phrase: string) => Promise<GenerateDescriptionOutcome>;
   // Budget AI esaurito: disabilita la generazione e mostra il messaggio (AC-302-3, lato UI).
   atCap?: boolean;
 };
@@ -62,7 +64,9 @@ export function GenerateDescriptionField({
   const generate = async () => {
     setBusy(true);
     setFailed(false);
-    const outcome = await onGenerate();
+    // La frase da espandere e' il testo CORRENTE del campo (trimmato): e' cio' che l'utente ha
+    // scritto come spunto. L'esito la sostituisce con la descrizione proposta (editabile).
+    const outcome = await onGenerate(draft.trim());
     setBusy(false);
     if (outcome.ok) setDraft(outcome.description);
     else setFailed(true);

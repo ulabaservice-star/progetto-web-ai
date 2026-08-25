@@ -14,6 +14,8 @@ import {
 } from '@/ui/onboarding/brief-fields';
 import { upsertBrief, confirmBrief } from '@/data/briefs';
 import type { Brief } from '@/domain/onboarding/brief';
+import { HourRowInputs } from '@/ui/onboarding/HourRowInputs';
+import { rowsToHours, hoursToRows, sameHours, type HourRow } from '@/ui/onboarding/hours';
 import { routing } from '@/i18n/routing';
 
 // T-152 (macrotask onboarding-ui, P1) — schermata Rivedi&conferma: recap EDITABILE di
@@ -122,7 +124,6 @@ const OFFERING_FIELDS = [
 
 type OfferingField = (typeof OFFERING_FIELDS)[number][0];
 type OfferingRow = Record<OfferingField, string>;
-type HourRow = { key: string; value: string };
 type Offering = Brief['content']['offerings'][number];
 
 // La patch e' un sottoinsieme di BriefUpdateSchema: i campi che questa schermata rende
@@ -157,7 +158,7 @@ function toDraft(brief: Brief): Draft {
     primary_goal: brief.primary_goal ?? '',
     lat: brief.geo ? String(brief.geo.lat) : '',
     lng: brief.geo ? String(brief.geo.lng) : '',
-    hours: Object.entries(brief.hours ?? {}).map(([key, value]) => ({ key, value })),
+    hours: hoursToRows(brief.hours),
     offerings: brief.content.offerings.map((offering) => ({
       name: offering.name,
       section: offering.section ?? '',
@@ -179,22 +180,6 @@ function sameOfferings(a: readonly OfferingRow[], b: readonly OfferingRow[]): bo
   return (
     a.length === b.length &&
     a.every((row, index) => OFFERING_FIELDS.every(([field]) => row[field] === b[index][field]))
-  );
-}
-
-function sameHours(a: Record<string, string>, b: Record<string, string>): boolean {
-  const keysA = Object.keys(a);
-  return (
-    keysA.length === Object.keys(b).length &&
-    keysA.every((key) => Object.hasOwn(b, key) && a[key] === b[key])
-  );
-}
-
-// Le righe con la chiave vuota si scartano (regola di casa, cfr. T-151): una chiave ''
-// non e' un giorno, e passerebbe BriefUpdateSchema senza che nessuno se ne accorga.
-function hoursOf(rows: readonly HourRow[]): Record<string, string> {
-  return Object.fromEntries(
-    rows.filter((row) => row.key.trim().length > 0).map((row) => [row.key.trim(), row.value]),
   );
 }
 
@@ -256,8 +241,8 @@ function buildReviewPatch(draft: Draft, brief: Brief): ReviewPatch {
     patch.geo = { lat: Number(draft.lat), lng: Number(draft.lng) };
   }
 
-  const hours = hoursOf(draft.hours);
-  if (!sameHours(hours, hoursOf(base.hours))) patch.hours = hours;
+  const hours = rowsToHours(draft.hours);
+  if (!sameHours(hours, rowsToHours(base.hours))) patch.hours = hours;
 
   // Le collezioni si spediscono INTERE: social_links e highlights SOSTITUISCONO in T-122,
   // quindi una patch parziale cancellerebbe le voci che non nomina.
@@ -288,9 +273,15 @@ type ReviewConfirmProps = {
   // Vincolato all'allowlist dal TIPO, non da una convenzione: e' cio' che entra nella
   // destinazione interna fissa della dashboard.
   locale: Locale;
+  // OGW-502 — dove andare DOPO la conferma. Assente (pagina /review standalone, T-152) =
+  // dashboard, comportamento invariato. Lo step Rivedi del wizard passa `/{locale}/generate/
+  // {siteId}` (percorso /generate INVARIATO). E' una destinazione INTERNA costruita dal chiamante
+  // con `locale` dall'allowlist e `siteId` codificato — mai da input libero dell'utente
+  // (anti open-redirect, come `dashboardHref`): il tipo `Locale` e l'encode lo garantiscono.
+  afterConfirmHref?: string;
 };
 
-export function ReviewConfirm({ siteId, brief, locale }: ReviewConfirmProps) {
+export function ReviewConfirm({ siteId, brief, locale, afterConfirmHref }: ReviewConfirmProps) {
   const t = useTranslations('onboarding');
   const tCommon = useTranslations('common');
   const router = useRouter();
@@ -382,8 +373,10 @@ export function ReviewConfirm({ siteId, brief, locale }: ReviewConfirmProps) {
       setConfirmFailed(true);
       return;
     }
-    // Confermato: l'utente torna alla dashboard (destinazione interna fissa).
-    router.push(dashboardHref);
+    // Confermato: si va alla destinazione interna fissa. Nel wizard (OGW-502) e' /generate, cosi'
+    // dopo aver confermato il brief l'utente arriva alla generazione; sulla pagina /review
+    // standalone (default) e' la dashboard, comportamento invariato.
+    router.push(afterConfirmHref ?? dashboardHref);
   }
 
   return (
@@ -486,21 +479,15 @@ export function ReviewConfirm({ siteId, brief, locale }: ReviewConfirmProps) {
                     {t('fields.hours')}
                   </legend>
                   {draft.hours.map((row, index) => (
+                    // Etichette POSIZIONALI (chiavi orario libere e non fidate): la coppia di
+                    // campi e' condivisa con HoursEditor via HourRowInputs (una sola sede).
                     <div key={index} className="flex flex-wrap items-center gap-sm">
-                      {/* Etichette POSIZIONALI: le chiavi degli orari sono libere e non
-                          fidate (possono venire dal JSON-LD di un altro sito), quindi non
-                          si usa il giorno come etichetta del proprio campo. */}
-                      <Input
-                        aria-label={t('panel.hoursDay', { n: String(index + 1) })}
-                        value={row.key}
-                        onChange={(event) => setHour(index, { key: event.target.value })}
-                        className="max-w-xs"
-                      />
-                      <Input
-                        aria-label={t('panel.hoursValue', { n: String(index + 1) })}
-                        value={row.value}
-                        onChange={(event) => setHour(index, { value: event.target.value })}
-                        className="max-w-xs"
+                      <HourRowInputs
+                        index={index}
+                        dayValue={row.key}
+                        hourValue={row.value}
+                        onDayChange={(value) => setHour(index, { key: value })}
+                        onHourChange={(value) => setHour(index, { value })}
                       />
                     </div>
                   ))}
