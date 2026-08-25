@@ -17,10 +17,10 @@
 /** I piani vendibili. 'business' e DICHIARATO (lo ammette anche il CHECK del DB) ma e
  *  Oltre-P5 (agenzie): non ha ancora una entry in PLAN_LIMITS, quindi in Fase 1 una
  *  subscription 'business' attiva degrada a 'free' (fail-safe) finche' il tier non esiste. */
-type Plan = 'free' | 'pro' | 'business';
+export type Plan = 'free' | 'pro' | 'business';
 
 /** Gli stati dell'abbonamento presso il provider (specchio del CHECK di BIL-101). */
-type SubscriptionStatus = 'active' | 'trialing' | 'past_due' | 'canceled';
+export type SubscriptionStatus = 'active' | 'trialing' | 'past_due' | 'canceled';
 
 /** I diritti concreti di un piano. Costanti pure (BIL-D3): cambiarli e un deploy. */
 export type PlanLimits = {
