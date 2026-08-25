@@ -10,7 +10,7 @@
 | **Progetto** | Ulaba/Belora — P5 Fase 1 (nucleo billing) |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase Cloud EU) |
 | **Ultimo aggiornamento** | 2026-08-25 (session-end del BUILD `entitlement-core`) |
-| **Sessione corrente** | BUILD `entitlement-core` — CHIUSA (checkpoint 4/4 verde; merge su `main` HUMAN-GATED, non ancora mergiato) |
+| **Sessione corrente** | BUILD `entitlement-core` — CHIUSA (checkpoint 4/4 verde; **MERGIATO su `main` `2f07dd3`** dopo "vai" umano; deploy coupled avviato) |
 
 ---
 
@@ -43,8 +43,8 @@
 | Campo | Valore |
 |---|---|
 | Branch di lavoro | `trueline/build/entitlement-core` (da `main` pulito `a9c6db4`) |
-| Commit del macrotask | commit atomico `entitlement-core` (BIL-101/102/103) sul branch — vedi `git log` del branch |
-| Stato merge su `main` | **NON mergiato — HUMAN-GATED.** `main` è deploy-coupled (push = deploy su ulaba.net): merge sospeso in attesa del "vai" umano. Verifica locale già passata (vitest 1760/1760, e2e non pertinente al macrotask, `next build` ok) |
+| Commit del macrotask | `876d24d` (branch) → merge `2f07dd3` su `main` |
+| Stato merge su `main` | **MERGIATO** (`2f07dd3`, `--no-ff`) dopo "vai" umano; push su `origin/main` → deploy coupled avviato. Verifica locale passata prima del merge (vitest 1760/1760, `next build` ok) |
 | Deploy-coupling | **coupled** — confermato. Il merge deployerebbe: resta gate umano anche sul checkpoint verde |
 
 ## 4. Baseline & budget
@@ -88,9 +88,9 @@
 
 ## 6. Prossimi passi
 
-- **Merge su `main`**: attende il **"vai" umano** (deploy-coupled). Verifica locale già passata.
-- **Migrazione `subscriptions` al cloud**: da applicare a Supabase Cloud (SQL Editor + registrazione in
-  `supabase_migrations.schema_migrations`, come per `onboarding_ai_usage`) **dopo** il merge e **prima**
+- **Merge su `main`**: ✅ FATTO (`2f07dd3`, deploy coupled avviato).
+- **⏳ Migrazione `subscriptions` al cloud — DA FARE (manuale)**: applicare a Supabase Cloud (SQL Editor +
+  registrazione in `supabase_migrations.schema_migrations`, come per `onboarding_ai_usage`) **prima**
   che i gate dipendenti (`plan-gates`) diventino attivi. Sul **locale** è già applicata (BUILD/test).
 - **Prossimo macrotask**: `stripe-checkout-webhook` o `plan-gates` (paralleli nel DAG).
 - **Nota**: le chiavi Stripe (secret + signing) e i price id sono config di deploy (env Vercel), non
