@@ -9,8 +9,8 @@
 |---|---|
 | **Progetto** | Ulaba/Belora — P5 Fase 1 (nucleo billing) |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase Cloud EU) |
-| **Ultimo aggiornamento** | 2026-08-25 (session-end del bootstrap) |
-| **Sessione corrente** | bootstrap — CHIUSA |
+| **Ultimo aggiornamento** | 2026-08-25 (session-end del BUILD `entitlement-core`) |
+| **Sessione corrente** | BUILD `entitlement-core` — CHIUSA (checkpoint 4/4 verde; merge su `main` HUMAN-GATED, non ancora mergiato) |
 
 ---
 
@@ -20,22 +20,21 @@
 
 | Macrotask | Stato | Checkpoint | Dip |
 |---|---|---|---|
-| `entitlement-core` (BIL-101/102/103) | todo | — | — |
-| `stripe-checkout-webhook` (BIL-201/202/203) | todo | — | `entitlement-core` |
-| `plan-gates` (BIL-301/302/303/304) | todo | — | `entitlement-core` |
-| `billing-ui` (BIL-401/402) | todo | — | `entitlement-core`, `stripe-checkout-webhook` |
-| `downgrade-lifecycle` (BIL-501/502) | todo | — | `entitlement-core`, `stripe-checkout-webhook` |
+| `entitlement-core` (BIL-101/102/103) | **done** | **verde 4/4** (2026-08-25) | — |
+| `stripe-checkout-webhook` (BIL-201/202/203) | todo | — | `entitlement-core` ✅ |
+| `plan-gates` (BIL-301/302/303/304) | todo | — | `entitlement-core` ✅ |
+| `billing-ui` (BIL-401/402) | todo | — | `entitlement-core` ✅, `stripe-checkout-webhook` |
+| `downgrade-lifecycle` (BIL-501/502) | todo | — | `entitlement-core` ✅, `stripe-checkout-webhook` |
 
-**Build order (DAG):** `entitlement-core → {stripe-checkout-webhook, plan-gates} → {billing-ui, downgrade-lifecycle}`.
+**Build order (DAG):** `entitlement-core ✅ → {stripe-checkout-webhook, plan-gates} → {billing-ui, downgrade-lifecycle}`.
 
 ## 2. Macrotask corrente
 
-- **Selezionato**: `entitlement-core` (nessuna dipendenza aperta: è la base del DAG).
-- **Task atomici**: BIL-101 (tabella subscriptions + RLS), BIL-102 (PLAN_LIMITS + resolveEntitlement
-  puro), BIL-103 (reader getAccountEntitlement).
-- **Criteri/test di riferimento**: modulo `01-entitlement-core.md`; `target_tests`
-  `tests/subscriptions-rls.test.ts`, `tests/billing-resolve-entitlement.test.ts`,
-  `tests/billing-get-account-entitlement.test.ts`.
+- **Prossimo**: `stripe-checkout-webhook` **oppure** `plan-gates` (entrambi hanno l'unica dipendenza
+  `entitlement-core` ora verde; il DAG li mette in parallelo — il prossimo `session-start` sceglie).
+  Nota di sequenza: `plan-gates` consuma già `getAccountEntitlement`/`PLAN_LIMITS` (pronti); il webhook
+  è la sorgente che *scrive* lo stato. Nessun blocco tecnico su nessuno dei due.
+- Alla ripresa: aprire `prompts/session-start.md`, leggere questo file, scegliere il macrotask e il branch.
 
 ## 3. Stato git
 
@@ -43,38 +42,56 @@
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | — nessuno (bootstrap docs-only committato direttamente su `main`); il BUILD userà `trueline/build/entitlement-core` da `main` pulito |
-| Ultimo commit | `93676f4` (docs: bootstrap blueprint p5-billing-fase1) — pushato su `origin/main` |
-| Stato merge su `main` | bootstrap (solo docs) su `main`; **nessun macrotask di CODICE ancora costruito** |
-| Deploy-coupling | **coupled** (push su `main` = deploy su ulaba.net); il bootstrap è docs-only → non altera il sito servito. Il CODICE del BUILD sarà human-gated con verifica locale prima del merge |
+| Branch di lavoro | `trueline/build/entitlement-core` (da `main` pulito `a9c6db4`) |
+| Commit del macrotask | commit atomico `entitlement-core` (BIL-101/102/103) sul branch — vedi `git log` del branch |
+| Stato merge su `main` | **NON mergiato — HUMAN-GATED.** `main` è deploy-coupled (push = deploy su ulaba.net): merge sospeso in attesa del "vai" umano. Verifica locale già passata (vitest 1760/1760, e2e non pertinente al macrotask, `next build` ok) |
+| Deploy-coupling | **coupled** — confermato. Il merge deployerebbe: resta gate umano anche sul checkpoint verde |
 
 ## 4. Baseline & budget
 
-- **Baseline di sicurezza**: quella del repo (findings noti P0–P4 + OGW invariati); la nuova tabella
-  `subscriptions` sarà validata dal checkpoint (RLS SELECT owner-only, nessuna scrittura client, no
-  anon).
-- **Budget consumato**: 0 (bootstrap).
+- **Baseline di sicurezza**: invariata (findings noti P0–P4 + OGW). La nuova tabella `subscriptions` è
+  stata **validata dal checkpoint** (C2 verde: `rls_check` — 1 sola policy SELECT owner-only
+  `is_account_member(account_id)`, nessuna scrittura authenticated, no anon; semgrep 0, nessun finding
+  nuovo ≥ HIGH).
+- **Baseline d'igiene**: `219 → 225` fingerprint (ri-baseline **onesta**: i 9 dup "nuovi" erano tutti su
+  file `.md` del blueprint committati nel bootstrap docs-only `a9c6db4` — **0 su codice**, misura diretta
+  `jscpd@4 --mode strict`; guard anti-codice superato). `dead-code:0` dopo aver reso locali i type
+  `Plan`/`SubscriptionStatus` (non ancora consumati esternamente; li ri-esporterà `plan-gates`).
+- **Budget consumato**: 1 macrotask (3 task atomici), nessun loop di fix di sicurezza (C2 verde al primo colpo).
 
 ## 5. Esiti dell'ultima sessione (framing onesto)
 
-- Blueprint `p5-billing-fase1` generato dai template trueline: 5 moduli, 14 task atomici, DAG
-  `entitlement-core → {stripe-checkout-webhook, plan-gates} → {billing-ui, downgrade-lifecycle}`.
-- **Self-check strutturale (`validate_blueprint.mjs`) ESEGUITO: VERDE — exit 0, 14 task, 5/5 controlli
-  (TASKS_PRESENT, REQUIRED_FIELDS, AC_COVERAGE, DAG_VALID, UNIQUE_IDS, MACROTASK_OWNERSHIP).**
-- **Self-check semantico (punti 6–10): nessun rilievo aperto.** R1 (catena checkout→webhook:
-  `account_id` incorporato nel `metadata` della sessione da `createCheckout` e recuperato da
-  `parseWebhook`) risolto in-place nel DoD di BIL-201/203; rilievi dichiarati non bloccanti — set
-  concreto dei campi SEO-avanzati (BIL-303) da fissare a inizio macrotask; cap-AI (BIL-304) deriva
-  l'account dal sito col pattern esistente di `generate-description`.
-- **Framing onesto:** il piano ha superato i controlli strutturali e non presenta rilievi semantici
-  aperti — NON "il piano è giusto" (la correttezza dell'intento resta una scelta umana).
-- Blueprint committato + pushato su `main`: `93676f4` (docs-only). Memoria di progetto aggiornata.
+- **`entitlement-core` COSTRUITO test-first, 3/3 task verdi:**
+  - **BIL-101** — migrazione `20260825000100_subscriptions.sql`: `public.subscriptions` con `account_id`
+    PK (una sub per account, strutturale) + FK→accounts cascade; CHECK `plan`/`status`; **RLS: 1 sola
+    policy SELECT owner-only**, zero scrittura authenticated; GRANT SELECT solo authenticated, scritture
+    solo service_role, niente anon. Test RLS runtime `subscriptions-rls.test.ts` (5/5) contro il DB
+    **locale** (mai il cloud): INSERT/UPDATE/DELETE client → **42501** (no GRANT + no policy, difesa a
+    due strati), anon → 42501, oracolo indipendente anti-placebo.
+  - **BIL-102** — dominio puro `src/domain/billing/entitlement.ts`: `PLAN_LIMITS {free,pro}`
+    (business Oltre-P5, degrada a free) + `resolveEntitlement(sub|null, now)` puro, `now` iniettato,
+    fail-safe (assente/non-attivo/scaduto/non-mappato ⇒ free). Test `billing-resolve-entitlement.test.ts`
+    (6/6). `past_due` servito Pro fino a `current_period_end` (coerente BIL-D6).
+  - **BIL-103** — reader `src/data/subscriptions.ts`: `getAccountEntitlement(accountId)` legge sotto RLS
+    col **client di sessione** (mai service_role), `now` al confine, nessuna riga/guasto ⇒ free. Test
+    `billing-get-account-entitlement.test.ts` (5/5): prova comportamentale che usa il client di sessione
+    (con un tenant diverso l'entitlement di A è free) + guardia statica (no import admin/chiave).
+- **Checkpoint 4/4 VERDE**: C1 igiene (verde dopo ri-baseline documentale), C2 sicurezza (verde),
+  C3 regressioni (vitest **1760/1760**; il solo `scaffold.test.ts` era un falso rosso da contesa con
+  `next build` concorrente — verde isolato), C4 conformità (16/16 target test).
+- **Batteria di mutazione 3/3** (ripristino backup+sha256, mai `git checkout` sul macrotask uncommitted):
+  policy INSERT authenticated → AC-101-1 rosso; `Date.now` interno → AC-102-4 rosso; default `pro` →
+  AC-102-1/3/4 + AC-103-2 rossi. Tutti catturati, poi verde ripristinato.
+- **Framing onesto**: il codice fa ciò che i task chiedevano, senza morto nuovo, senza vuln nuove ≥ HIGH,
+  senza regressioni — **NON** "il billing è completo/sicuro in assoluto" (è il primo anello; il webhook
+  che *muove* l'entitlement e i gate che lo *applicano* arrivano nei macrotask successivi).
 
 ## 6. Prossimi passi
 
-- **Prima sessione BUILD: macrotask `entitlement-core`** su branch `trueline/build/entitlement-core`
-  (apri `prompts/session-start.md` in sessione fresca).
-- Migrazione `subscriptions` da applicare a Supabase Cloud (SQL Editor + registrazione in
-  `schema_migrations`, come per `onboarding_ai_usage`) prima che i gate dipendenti diventino attivi.
-- **Nota:** le chiavi Stripe (secret + signing) e i price id sono config di deploy (env Vercel), non
-  artefatti del blueprint; il verde del checkpoint usa un fake PaymentProvider iniettato.
+- **Merge su `main`**: attende il **"vai" umano** (deploy-coupled). Verifica locale già passata.
+- **Migrazione `subscriptions` al cloud**: da applicare a Supabase Cloud (SQL Editor + registrazione in
+  `supabase_migrations.schema_migrations`, come per `onboarding_ai_usage`) **dopo** il merge e **prima**
+  che i gate dipendenti (`plan-gates`) diventino attivi. Sul **locale** è già applicata (BUILD/test).
+- **Prossimo macrotask**: `stripe-checkout-webhook` o `plan-gates` (paralleli nel DAG).
+- **Nota**: le chiavi Stripe (secret + signing) e i price id sono config di deploy (env Vercel), non
+  artefatti del blueprint; il verde del checkpoint usa un fake `PaymentProvider` iniettato.
