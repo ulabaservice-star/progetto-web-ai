@@ -10,7 +10,7 @@
 | **Progetto** | Ulaba/Belora — P5 Fase 1 (nucleo billing) |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase Cloud EU) |
 | **Ultimo aggiornamento** | 2026-08-25 (session-end del BUILD `stripe-checkout-webhook`) |
-| **Sessione corrente** | BUILD `stripe-checkout-webhook` — CHIUSA (checkpoint 4/4 verde; **commit di branch `2b62108`**; merge su `main` **PENDING human-gate** — deploy-coupling coupled) |
+| **Sessione corrente** | BUILD `stripe-checkout-webhook` — CHIUSA (checkpoint 4/4 verde; **commit di branch `2b62108`**; merge su `main` **FATTO** (`6ea0572`, `--no-ff`) — deploy coupled avviato) |
 
 ---
 
@@ -47,7 +47,7 @@
 |---|---|
 | Branch di lavoro | `trueline/build/stripe-checkout-webhook` (da `main` pulito `ef19cc0`) |
 | Commit del macrotask | `2b62108` (branch) — 18 file, +1520/-14 |
-| Stato merge su `main` | **PENDING human-gate.** Checkpoint 4/4 verde + verifica locale passata (vitest 1781 pass, `next build` verde). Il merge deployerebbe (deploy-coupling **coupled**, push su `main` = deploy su ulaba.net): resta gate umano — attende il "vai". |
+| Stato merge su `main` | **MERGIATO** (`6ea0572`, `--no-ff`) dopo il "vai" umano; push su `origin/main` -> deploy coupled avviato. Verifica locale passata prima del merge (vitest 1781 pass, `next build` verde). |
 | Deploy-coupling | **coupled** — confermato. |
 
 ## 4. Baseline & budget
