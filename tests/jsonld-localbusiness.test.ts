@@ -255,6 +255,13 @@ const { readHolder, readPublishedSiteSpy } = vi.hoisted(() => {
 });
 vi.mock('@/data/public-site', () => ({ readPublishedSite: readPublishedSiteSpy }));
 
+// BIL-303 (plan-gates): il JSON-LD LocalBusiness e' un campo SEO avanzato, ora Pro-only. Il Gruppo B
+// verifica che il <script ld+json> reso sia serializzato in modo SICURO, quindi fissa il piano a Pro
+// (seo_advanced) per esercitarlo — il GATE free/Pro e' provato in tests/plan-gate-seo-advanced.test.ts.
+vi.mock('@/data/public-site-entitlement', () => ({
+  getPublicSiteEntitlement: async () => ({ plan: 'pro', limits: PLAN_LIMITS.pro }),
+}));
+
 // I blocchi e il badge risolvono le etichette via getTranslations: si risolve alla chiave (come in
 // generation-preview). Il blocco della fixture e' comunque un id NON registrato -> renderBlock null.
 vi.mock('next-intl/server', () => ({
@@ -263,6 +270,7 @@ vi.mock('next-intl/server', () => ({
 
 // Import DOPO i mock.
 import PublicSitePage from '@/app/s/[slug]/page';
+import { PLAN_LIMITS } from '@/domain/billing/entitlement';
 
 // Blocco con id NON registrato (renderBlock -> null): la pagina rende senza dipendere dai componenti
 // dei blocchi, ma extractBusinessInfo legge comunque `data` e `images` per il JSON-LD.

@@ -87,7 +87,9 @@ const ACTIVE_STATUSES: ReadonlySet<SubscriptionStatus> = new Set([
   'past_due',
 ]);
 
-const FREE_ENTITLEMENT: Entitlement = { plan: 'free', limits: PLAN_LIMITS.free };
+// Esportato (BIL-302/303): e' il valore di fail-safe condiviso — reader e serving pubblico lo usano
+// come trattamento "Free" in dubbio, senza ricostruirlo (una sola fonte del default free).
+export const FREE_ENTITLEMENT: Entitlement = { plan: 'free', limits: PLAN_LIMITS.free };
 
 /**
  * Risolve l'entitlement effettivo da una subscription e da un istante `now` INIETTATO.

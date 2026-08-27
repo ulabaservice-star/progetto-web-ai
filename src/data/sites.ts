@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { hasLocale } from 'next-intl';
 import { createServerSupabaseClient } from '@/data/supabase-ssr';
+import { getAccountEntitlement } from '@/data/subscriptions';
+import { resolveOwnAccountId } from '@/data/account';
 import { generateUniqueSlug } from '@/domain/sites/slug';
 import { routing } from '@/i18n/routing';
 
@@ -38,7 +40,9 @@ export type SiteSummary = {
 
 export type CreateSiteResult =
   | { ok: true; id: string }
-  | { ok: false; status: 400 | 401 | 500 };
+  // 403: limite di siti del piano raggiunto (BIL-301). L'esito e' esplicito; il
+  // messaggio "passa a Pro" nella UI e' di billing-ui, oltre questo esito.
+  | { ok: false; status: 400 | 401 | 403 | 500 };
 
 export type ListSitesResult =
   | { ok: true; sites: SiteSummary[] }
@@ -66,15 +70,27 @@ export async function createSite(name: string): Promise<CreateSiteResult> {
   if (!parsed.success) return { ok: false, status: 400 };
   const cleanName = parsed.data;
 
-  // Account derivato dall'identità: mai un account_id arbitrario dal client.
-  // UNIQUE(owner_id) su accounts rende .single() sicuro per costruzione.
-  const { data: account, error: accountError } = await supabase
-    .from('accounts')
-    .select('id')
-    .eq('owner_id', user.id)
-    .single();
-  if (accountError || !account) return { ok: false, status: 500 };
-  const accountId = account.id as string;
+  // Account derivato dall'identità (mai un account_id dal client): risoluzione condivisa.
+  const accountId = await resolveOwnAccountId(supabase, user.id);
+  if (accountId === null) return { ok: false, status: 500 };
+
+  // BIL-301 (plan-gates) — GATE del limite di piano PRIMA di creare il sito. L'entitlement
+  // (subscriptions sotto RLS, fail-safe => free) fornisce max_sites; il conteggio dei siti
+  // dell'account (RLS: solo i propri) e' confrontato con esso. Alla soglia: 403 esplicito e
+  // nessun insert. Un guasto del conteggio => 500 (mai un bypass silenzioso del limite: in
+  // dubbio si rifiuta, non si crea). L'entitlement in dubbio degrada gia' a free (limite piu'
+  // stretto), coerente col fail-safe dell'intero macrotask.
+  const [entitlement, { count: siteCount, error: countError }] = await Promise.all([
+    getAccountEntitlement(accountId),
+    supabase
+      .from('sites')
+      .select('id', { count: 'exact', head: true })
+      .eq('account_id', accountId),
+  ]);
+  if (countError) return { ok: false, status: 500 };
+  if ((siteCount ?? 0) >= entitlement.limits.max_sites) {
+    return { ok: false, status: 403 };
+  }
 
   // Slug unico per-account: il predicato exists interroga sites con metodi tipati.
   const slug = await generateUniqueSlug(cleanName, async (candidate) => {

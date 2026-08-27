@@ -72,6 +72,21 @@ describe.skipIf(!SB)('T-101 createSite/listSites (runtime, Supabase locale)', ()
     accountAId = accA!.id as string;
     accountBId = accB!.id as string;
 
+    // BIL-301: questi test T-101 esercitano la creazione di PIU' siti per A (verificano
+    // createSite/listSites, non il gate di piano). Si seeda una subscription PRO per l'account di A
+    // (max_sites=5) cosi' il limite del piano non interferisce. Il GATE free/pro e' provato in
+    // tests/plan-gate-site-limit.test.ts.
+    const proPeriodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    await admin.from('subscriptions').insert({
+      account_id: accountAId,
+      plan: 'pro',
+      status: 'active',
+      provider: 'stripe',
+      provider_subscription_id: `sub_${randomUUID().slice(0, 8)}`,
+      provider_customer_id: `cus_${randomUUID().slice(0, 8)}`,
+      current_period_end: proPeriodEnd,
+    });
+
     // Un solo sign-in per A (riusato); B resta gestito via service_role (setup).
     clientA = await signInAs(emailA, password);
     // Client anonimo senza sessione: auth.getUser() → nessun utente.

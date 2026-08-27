@@ -43,8 +43,16 @@ const { readHolder, readPublishedSiteSpy } = vi.hoisted(() => {
 });
 vi.mock('@/data/public-site', () => ({ readPublishedSite: readPublishedSiteSpy }));
 
+// BIL-303 (plan-gates): i campi SEO avanzati (openGraph/twitter) sono ora Pro-only. Questo oracolo
+// verifica la CORRETTEZZA di quei campi, quindi fissa il piano dell'account a Pro (seo_advanced) — il
+// GATE free/Pro (assenza per Free, fail-safe) e' provato in tests/plan-gate-seo-advanced.test.ts.
+vi.mock('@/data/public-site-entitlement', () => ({
+  getPublicSiteEntitlement: async () => ({ plan: 'pro', limits: PLAN_LIMITS.pro }),
+}));
+
 // Import DOPO i mock.
 import { generateMetadata } from '@/app/s/[slug]/page';
+import { PLAN_LIMITS } from '@/domain/billing/entitlement';
 
 // ── costanti d'ambiente ────────────────────────────────────────────────────────
 const BASE = 'https://belora.example';
