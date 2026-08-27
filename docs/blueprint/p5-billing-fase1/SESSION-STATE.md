@@ -109,22 +109,13 @@
 - **NON coperto, dichiarato (L-COL-006)**: l'idempotenza + l'upsert sono provati **in-memory** (nessun
   test runtime del webhook contro il DB); `createCheckout`/`openBillingPortal` **reali** (rete Stripe)
   non sono testati a unità (il verde usa il **fake** iniettato); le chiavi Stripe (secret + signing +
-  price id) sono **config di deploy** (env Vercel), non nel verde. La RLS del ledger
-  `billing_webhook_events` è verificata solo **staticamente** (rls_check su DDL): il cloud non è ancora
-  migrato. Il resolver del customer id per il billing portal reale è iniettabile ma non cablato a un
+  price id) sono **config di deploy** (env Vercel), non nel verde. La RLS di `subscriptions` e del ledger `billing_webhook_events` è ora verificata **anche a runtime sul cloud** (2026-08-27, migrazioni applicate): owner-only, deny esplicito, `anon` assente, entrambe in `schema_migrations`. Il resolver del customer id per il billing portal reale è iniettabile ma non cablato a un
   reader dedicato (openBillingPortal reale non esercitato nei test).
 
 ## 6. Prossimi passi
 
-- **Merge su `main`**: ⏳ **PENDING human-gate** (deploy-coupling coupled). Verifica locale passata
-  (vitest 1781 pass, `next build` verde). Attende il "vai" umano; poi merge `--no-ff` + push
-  (= deploy su ulaba.net).
-- **⏳ Migrazioni al cloud — DA FARE (manuale)**: (1) `subscriptions` (`20260825000100`) — ancora da
-  applicare, prereq di `plan-gates`; (2) **`billing_webhook_events` (`20260825000200`)** — nuova,
-  prereq del webhook in produzione. Applicare entrambe a Supabase Cloud (SQL Editor + registrazione in
-  `supabase_migrations.schema_migrations`, come per `onboarding_ai_usage`), verificando RLS/GRANT
-  (`anon` assente). Sul **locale** `subscriptions` è già applicata; `billing_webhook_events` va
-  applicata al locale con `db reset`/SQL (non richiesta per il verde, ma per i futuri test runtime).
+- **Merge su `main`**: ✅ **FATTO** — merge `--no-ff` `6ea0572` + push `origin/main` (`ef19cc0..515aab8`, incl. docs); deploy coupled avviato su ulaba.net.
+- **✅ Migrazioni al cloud — APPLICATE (2026-08-27)**: `subscriptions` (`20260825000100`) + `billing_webhook_events` (`20260825000200`) via `supabase db push` autonomo (dry-run poi apply); **RLS/GRANT verificati a runtime** (owner-only su subscriptions; deny + solo service_role sul ledger; `anon` assente). **Autonomia migrazioni cloud RIPRISTINATA** (`SUPABASE_DB_PASSWORD` in `.env.local`, URL Session pooler `aws-1-eu-west-1` percent-encoded; dettaglio + trappole in memoria). Sul **locale**: `subscriptions` già applicata; `billing_webhook_events` NON ancora (non serve al verde; `db reset` quando servirà un test runtime).
 - **Prossimo macrotask**: `plan-gates` (poi `billing-ui`/`downgrade-lifecycle`).
 - **Config di deploy (non blueprint)**: env Vercel `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` /
   `STRIPE_PRICE_PRO` / `NEXT_PUBLIC_APP_URL` (documentate in `.env.example`); registrare l'endpoint
