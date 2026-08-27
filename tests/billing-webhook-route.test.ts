@@ -17,10 +17,12 @@ import { fakePaymentProvider } from './helpers/fake-payment-provider';
 import type { SubscriptionEvent } from '@/domain/billing/payment-port';
 
 // ── Client Supabase admin IN-MEMORY (backing di subscriptions + ledger degli eventi) ────────
+type PublicationRow = { site_id: string; account_id: string; is_published: boolean };
 type FakeAdmin = {
   client: unknown;
   subscriptions: Map<string, Record<string, unknown>>;
   events: Set<string>;
+  publications: Map<string, PublicationRow>;
   failUpsert: boolean;
 };
 
@@ -29,6 +31,7 @@ function makeFakeAdmin(): FakeAdmin {
     client: null,
     subscriptions: new Map(),
     events: new Set(),
+    publications: new Map(),
     failUpsert: false,
   };
   state.client = {
@@ -65,6 +68,31 @@ function makeFakeAdmin(): FakeAdmin {
             }
             state.events.add(row.event_id);
             return Promise.resolve({ error: null });
+          },
+        };
+      }
+      if (table === 'site_publications') {
+        // Backing dei siti pubblicati (BIL-502): la retrocessione morbida legge le publications
+        // dell'account e ne porta is_published=false le eccedenti (mai delete).
+        return {
+          select() {
+            return {
+              eq(_col: string, value: string) {
+                const data = [...state.publications.values()]
+                  .filter((p) => p.account_id === value)
+                  .map((p) => ({ site_id: p.site_id, is_published: p.is_published }));
+                return Promise.resolve({ data, error: null });
+              },
+            };
+          },
+          update(patch: { is_published: boolean }) {
+            return {
+              eq(_col: string, value: string) {
+                const row = state.publications.get(value);
+                if (row) row.is_published = patch.is_published; // NON distruttivo: la riga resta
+                return Promise.resolve({ error: null });
+              },
+            };
           },
         };
       }
@@ -226,5 +254,31 @@ describe('BIL-202 applySubscriptionEvent — idempotenza per event id (store ini
     const out = await applySubscriptionEvent(activatedEvent, m.store);
     expect(out.applied).toBe(false); // covers: AC-202-2
     expect(m.upsertCount()).toBe(1); // covers: AC-202-2 — un solo upsert per event id
+  });
+});
+
+describe('BIL-502 POST /api/billing/webhook — applica la retrocessione morbida', () => {
+  const canceledEvent: SubscriptionEvent = {
+    ...activatedEvent,
+    event_id: 'evt_cancel',
+    type: 'subscription_canceled',
+    status: 'canceled',
+  };
+
+  // covers: AC-502-1
+  it('evento di decadenza per account con 3 siti pubblicati => 2 eccedenti offline, 1 resta, 2xx', async () => {
+    admin.publications.set('s1', { site_id: 's1', account_id: 'acc-A', is_published: true });
+    admin.publications.set('s2', { site_id: 's2', account_id: 'acc-A', is_published: true });
+    admin.publications.set('s3', { site_id: 's3', account_id: 'acc-A', is_published: true });
+    providerHolder.current = fakePaymentProvider({ webhookEvent: canceledEvent });
+
+    const res = await POST(webhookRequest(JSON.stringify({ id: 'evt_cancel' }), 'valid'));
+
+    expect(res.status).toBe(200); // covers: AC-502-1
+    const published = [...admin.publications.values()]
+      .filter((p) => p.is_published)
+      .map((p) => p.site_id);
+    expect(published).toEqual(['s1']); // covers: AC-502-1 — 2 eccedenti offline, 1 resta pubblicato
+    expect(admin.publications.size).toBe(3); // covers: AC-502-1 — nessuna riga cancellata (dato intatto)
   });
 });
