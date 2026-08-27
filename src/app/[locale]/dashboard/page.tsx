@@ -146,7 +146,10 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
 
   return (
     <AppShell
-      navItems={[{ href: `/${locale}/dashboard`, label: tNav('dashboard') }]}
+      navItems={[
+        { href: `/${locale}/dashboard`, label: tNav('dashboard') },
+        { href: `/${locale}/billing`, label: tNav('subscription') },
+      ]}
     >
       <div className="mx-auto flex max-w-2xl flex-col gap-lg">
         <h1 className="text-lg font-semibold text-foreground">{t('title')}</h1>

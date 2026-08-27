@@ -13,7 +13,8 @@
     "dashboard": "Panel",
     "sites": "Sitios",
     "settings": "Ajustes",
-    "signOut": "Cerrar sesión"
+    "signOut": "Cerrar sesión",
+    "subscription": "Suscripción"
   },
   "dashboard": {
     "title": "Panel de control",
@@ -291,5 +292,23 @@
     "replaceBlock": "Sustituir bloque",
     "uploadImage": "Foto",
     "uploadPhoto": "Subir foto"
+  },
+  "billing": {
+    "title": "Suscripción",
+    "currentPlanLabel": "Plan actual",
+    "statusLabel": "Estado",
+    "plan": {
+      "free": "Free",
+      "pro": "Pro"
+    },
+    "freeSummary": "Estás en el plan Free: 1 sitio publicado, insignia Ulaba y SEO básico.",
+    "proSummary": "Estás en el plan Pro: hasta 5 sitios, sin insignia, SEO avanzado y dominio propio.",
+    "upgradeCta": "Pasa a Pro",
+    "manageCta": "Gestionar suscripción",
+    "status": {
+      "active": "Activa",
+      "pastDue": "Aún activa — regulariza el pago",
+      "canceled": "Cancelada"
+    }
   }
 }

@@ -13,7 +13,8 @@
     "dashboard": "Dashboard",
     "sites": "Siti",
     "settings": "Impostazioni",
-    "signOut": "Esci"
+    "signOut": "Esci",
+    "subscription": "Abbonamento"
   },
   "dashboard": {
     "title": "Pannello di controllo",
@@ -291,5 +292,23 @@
     "replaceBlock": "Sostituisci blocco",
     "uploadImage": "Foto",
     "uploadPhoto": "Carica foto"
+  },
+  "billing": {
+    "title": "Abbonamento",
+    "currentPlanLabel": "Piano attuale",
+    "statusLabel": "Stato",
+    "plan": {
+      "free": "Free",
+      "pro": "Pro"
+    },
+    "freeSummary": "Sei sul piano Free: 1 sito pubblicato, badge Ulaba e SEO di base.",
+    "proSummary": "Sei sul piano Pro: fino a 5 siti, niente badge, SEO avanzato e dominio personalizzato.",
+    "upgradeCta": "Passa a Pro",
+    "manageCta": "Gestisci abbonamento",
+    "status": {
+      "active": "Attivo",
+      "pastDue": "Ancora attivo — regolarizza il pagamento",
+      "canceled": "Disdetto"
+    }
   }
 }

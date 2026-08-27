@@ -3,11 +3,15 @@ import { createServerSupabaseClient } from '@/data/supabase-ssr';
 import { resolveOwnAccountId } from '@/data/account';
 import {
   resolveEntitlement,
+  FREE_ENTITLEMENT,
   type Entitlement,
   type Plan,
   type Subscription,
   type SubscriptionStatus,
 } from '@/domain/billing/entitlement';
+
+/** Il client SSR legato alla sessione (RLS attiva), come restituito dal costruttore. */
+type SessionClient = Awaited<ReturnType<typeof createServerSupabaseClient>>;
 
 /** La porzione di riga subscriptions che determina l'entitlement (plan/status/period). */
 export type SubscriptionRow = {
@@ -45,29 +49,83 @@ export function entitlementFromRow(row: SubscriptionRow | null, now: Date): Enti
 const TABLE = 'subscriptions';
 
 /**
- * Ritorna l'entitlement effettivo dell'account: legge la sua subscription sotto RLS (client
- * di sessione) e la risolve con resolveEntitlement e il `now` corrente. Nessuna riga o
- * guasto di lettura => piano free (fail-safe).
+ * Legge la (porzione della) riga subscriptions dell'account sotto RLS (client di SESSIONE),
+ * o null se assente. Un guasto di lettura NON-fatale => null (fail-safe: chi legge il piano
+ * degrada a free, mai un piano superiore per errore, e non rilancia). maybeSingle non lancia
+ * sul "nessuna riga". Estratto (BIL-401) perche' condiviso da getAccountEntitlement e
+ * getAccountBillingState: una sola query, un solo punto dove vive il fail-safe della lettura.
  */
-export async function getAccountEntitlement(accountId: string): Promise<Entitlement> {
-  const supabase = await createServerSupabaseClient();
-
+async function readSubscriptionRow(
+  supabase: SessionClient,
+  accountId: string,
+): Promise<SubscriptionRow | null> {
   const { data, error } = await supabase
     .from(TABLE)
     .select('plan, status, current_period_end')
     .eq('account_id', accountId)
     .maybeSingle();
 
+  if (error) return null;
+  return (data as SubscriptionRow | null) ?? null;
+}
+
+/**
+ * Ritorna l'entitlement effettivo dell'account: legge la sua subscription sotto RLS (client
+ * di sessione) e la risolve con resolveEntitlement e il `now` corrente. Nessuna riga o
+ * guasto di lettura => piano free (fail-safe).
+ */
+export async function getAccountEntitlement(accountId: string): Promise<Entitlement> {
+  const supabase = await createServerSupabaseClient();
+  const row = await readSubscriptionRow(supabase, accountId);
   // now al CONFINE (call-site del dominio puro): preso una volta e passato a resolveEntitlement.
+  return entitlementFromRow(row, new Date());
+}
+
+/**
+ * Lo stato di billing per la UI (BIL-401/402): l'entitlement RISOLTO (il piano effettivo servito,
+ * per decidere la CTA) PIU' lo stato GREZZO della subscription (status + fine periodo, per
+ * etichettare active/past_due/canceled). I due non coincidono di proposito: un past_due nel
+ * periodo e' entitlement 'pro' (grazia, BIL-D6) ma status 'past_due'; un canceled e' entitlement
+ * 'free' ma status 'canceled' (la UI offre il ri-abbonamento). `subscription` null = nessuna
+ * subscription (o guasto di lettura): la UI mostra il solo piano Free.
+ */
+export type AccountBillingState = {
+  entitlement: Entitlement;
+  subscription: { status: SubscriptionStatus; current_period_end: string | null } | null;
+};
+
+/**
+ * Legge lo stato di billing dell'account sotto RLS (client di sessione) e ne deriva
+ * l'entitlement risolto + lo stato grezzo della subscription. Nessuna riga o guasto di
+ * lettura => { free, subscription: null } (fail-safe, mai pro per errore).
+ */
+export async function getAccountBillingState(accountId: string): Promise<AccountBillingState> {
+  const supabase = await createServerSupabaseClient();
+  const row = await readSubscriptionRow(supabase, accountId);
   const now = new Date();
+  return {
+    entitlement: entitlementFromRow(row, now),
+    subscription: row
+      ? { status: row.status, current_period_end: row.current_period_end }
+      : null,
+  };
+}
 
-  // Guasto di lettura non-fatale => free (fail-safe): non regaliamo pro per un errore, e non
-  // rilanciamo sul reader (chi legge il piano non deve rompersi per un guasto del DB).
-  if (error) {
-    return entitlementFromRow(null, now);
+/**
+ * Lo stato di billing dell'account POSSEDUTO dall'utente (BIL-401/402): risolve l'account
+ * dall'identita' (owner_id = auth.uid()), poi delega a getAccountBillingState. Client di
+ * SESSIONE (RLS), mai service_role. Fail-safe: nessun account risolvibile o guasto =>
+ * { free, subscription: null }. Usato dalla pagina "Abbonamento".
+ */
+export async function getOwnBillingState(userId: string): Promise<AccountBillingState> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const accountId = await resolveOwnAccountId(supabase, userId);
+    if (accountId === null) return { entitlement: FREE_ENTITLEMENT, subscription: null };
+    return await getAccountBillingState(accountId);
+  } catch {
+    return { entitlement: FREE_ENTITLEMENT, subscription: null };
   }
-
-  return entitlementFromRow(data ?? null, now);
 }
 
 /**
