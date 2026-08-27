@@ -9,8 +9,8 @@
 |---|---|
 | **Progetto** | Ulaba/Belora — P5 Fase 1 (nucleo billing) |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase Cloud EU) |
-| **Ultimo aggiornamento** | 2026-08-27 (session-end del BUILD `billing-ui`) |
-| **Sessione corrente** | BUILD `billing-ui` — CHIUSA + **MERGIATO** su `main` (`5e2b1aa`, `--no-ff`; checkpoint 4/4 verde; mutazione 5/5; gate visivo APPROVATO; e2e Chromium 37/37; deploy coupled avviato su ulaba.net) |
+| **Ultimo aggiornamento** | 2026-08-27 (session-end del BUILD `downgrade-lifecycle`) |
+| **Sessione corrente** | BUILD `downgrade-lifecycle` — CHIUSA + **MERGIATO** su `main` (`749017c`, `--no-ff`; checkpoint 4/4 verde; mutazione 5/5; e2e Chromium 37/37; deploy coupled avviato su ulaba.net). **Fase 1 COMPLETA — DAG chiuso.** |
 
 ---
 
@@ -22,20 +22,21 @@
 |---|---|---|---|
 | `entitlement-core` (BIL-101/102/103) | **done** | verde 4/4 (2026-08-25) | — |
 | `stripe-checkout-webhook` (BIL-201/202/203) | **done** | verde 4/4 (2026-08-25) | `entitlement-core` ✅ |
-| `plan-gates` (BIL-301/302/303/304) | **done** | **verde 4/4** (2026-08-27) | `entitlement-core` ✅ |
-| `billing-ui` (BIL-401/402) | **done** | **verde 4/4** (2026-08-27) | `entitlement-core` ✅, `stripe-checkout-webhook` ✅ |
-| `downgrade-lifecycle` (BIL-501/502) | todo | — | `entitlement-core` ✅, `stripe-checkout-webhook` ✅ |
+| `plan-gates` (BIL-301/302/303/304) | **done** | verde 4/4 (2026-08-27) | `entitlement-core` ✅ |
+| `billing-ui` (BIL-401/402) | **done** | verde 4/4 (2026-08-27) | `entitlement-core` ✅, `stripe-checkout-webhook` ✅ |
+| `downgrade-lifecycle` (BIL-501/502) | **done** | **verde 4/4** (2026-08-27) | `entitlement-core` ✅, `stripe-checkout-webhook` ✅ |
 
-**Build order (DAG):** `entitlement-core ✅ → {stripe-checkout-webhook ✅, plan-gates ✅} → {billing-ui ✅, downgrade-lifecycle}`.
+**Build order (DAG):** `entitlement-core ✅ → {stripe-checkout-webhook ✅, plan-gates ✅} → {billing-ui ✅, downgrade-lifecycle ✅}` — **DAG CHIUSO, Fase 1 COMPLETA**.
 
 ## 2. Macrotask corrente
 
-- **Prossimo (ULTIMO di Fase 1)**: `downgrade-lifecycle` (BIL-501/502) — dipendenze verdi
-  (`entitlement-core` + `stripe-checkout-webhook`). Retrocessione **morbida con grazia**:
-  `applyDowngrade` puro (badge torna, siti eccedenti → non-pubblicati **mai cancellati**,
-  `past_due` servito Pro fino a fine grazia) + applicazione idempotente scatenata dal webhook.
-  Chiude la Fase 1 (Fase 2 `custom-domains` = blueprint separato).
-- Alla ripresa: aprire `prompts/session-start.md`, leggere questo file, scegliere il macrotask e il branch.
+- **NESSUNO** — tutti i 5 macrotask (14 task atomici) della Fase 1 sono `done` e mergiati su `main`.
+  Alla fine della Fase 1 **si incassa già**: Pro sblocca niente-badge + SEO avanzato + 5 siti + cap AI
+  ampio (GEO in Free), l'entitlement lo muove solo il webhook, la retrocessione è **morbida con grazia**.
+- **Prossimo workstream**: **Fase 2 `custom-domains`** — **blueprint SEPARATO** (`DomainProvider` +
+  host-routing, solo connessione non vendita; Vercel/Cloudflare al build). Va **bootstrappato** a parte,
+  non è un macrotask di questo blueprint (BIL-D7: i domini custom sono fuori dalla Fase 1).
+- **NB**: il polish estetico dell'area autenticata resta in coda a TUTTO il piano (non ora).
 
 ## 3. Stato git
 
@@ -43,72 +44,67 @@
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `trueline/build/billing-ui` (da `main` pulito `55d1d6c`) |
-| Commit del macrotask | `9e79f47` (10 file: pagina + BillingPanel + billing-calls + reader + dashboard-nav + i18n it/es + 3 test) |
-| Stato merge su `main` | ✅ **FATTO** — merge `--no-ff` `5e2b1aa` + push `origin/main` (`55d1d6c..5e2b1aa`) dopo il "vai" umano → deploy coupled avviato su ulaba.net. Verifica locale PASSATA: vitest 1811/1812, lint 0, next build, **e2e Chromium 37/37**. |
+| Branch di lavoro | `trueline/build/downgrade-lifecycle` (da `main` pulito `cb9963c`) |
+| Commit del macrotask | `4770380` (7 file, +393/−3: `applyDowngrade` dominio puro + `applySoftDowngrade` data + aggancio webhook + 2 target test + fake admin `site_publications` nel test webhook + re-baseline igiene) |
+| Stato merge su `main` | ✅ **FATTO** — merge `--no-ff` `749017c` + push `origin/main` (`cb9963c..749017c`) dopo il "vai" umano → deploy coupled avviato su ulaba.net. Verifica locale PASSATA: vitest 1820/1821, lint 0, next build, **e2e Chromium 37/37**. |
 | Deploy-coupling | **coupled** — confermato. |
 
 ## 4. Baseline & budget
 
 - **Baseline di sicurezza** (C2): **verde**, invariata. Nessun finding nuovo ≥ HIGH:
   `gitleaks:3` (baseline), `osv:2` (baseline), `semgrep:0`, `rls:1` (il preesistente `site_publications`,
-  baseline). billing-ui non aggiunge superficie di rischio: la pagina legge sotto RLS di sessione (nessun
-  `service_role`), il client `billing-calls` fa POST same-origin body `{}` agli endpoint già guardati
-  (`_guard`), il redirect è a una url del provider validata nella forma. L'HIGH resta il preesistente.
-- **Baseline d'igiene** (C1): **verde SENZA ri-baseline**. `dup 227` (**invariata**, **0 nuovi**),
-  `dead-code 0`, `cycle 0`, `twin 0`. Il potenziale clone della query subscriptions (reader di sessione
-  vs billing-state) è stato evitato alla radice estraendo `readSubscriptionRow` in `src/data/subscriptions.ts`
-  (una sola query condivisa da `getAccountEntitlement` + `getAccountBillingState`); `getAccountEntitlement`
-  rifattorizzato a usarla, comportamento invariato (test runtime RLS `billing-get-account-entitlement` 5/5).
-  L'export `AccountBillingState` non ha prodotto dead-code (usato dalla pagina via `getOwnBillingState`).
-- **Budget consumato**: 4 macrotask (12 task atomici Fase 1). Nessun loop di fix (C1/C2 verdi al primo colpo).
-  Un artefatto EOL su `onboarding-generation-regression.test.ts.snap` (LF→CRLF, 0 righe) ripristinato
-  con `git checkout` (file NON del macrotask, contenuto identico): il diff finale è circoscritto ai 10 file.
+  baseline). downgrade-lifecycle non aggiunge superficie di rischio: dominio puro (nessun DB/rete) +
+  applicazione nel percorso del webhook già confinato (service_role fuori dal percorso utente, A01/R7),
+  che riusa la porta iniettabile e `unpublish` NON distruttivo (mai DELETE). Nessuna nuova migrazione.
+- **Baseline d'igiene** (C1): **verde con re-baseline ONESTA 225→227** (`.trueline/hygiene-baseline.json`).
+  I 2 fingerprint aggiunti (`a67e8781…`, `dfe884de…`) sono **entrambi su `eval/reference-app/src/app/
+  [locale]/dashboard/page.tsx`** — file ESTRANEO al macrotask: pura riorganizzazione dei cluster jscpd
+  (jscpd non è stabile fra macrotask vicini). **Contro-prova diretta jscpd@4** (`--min-tokens 50 --mode
+  strict`): **0 cloni** toccano i file del macrotask (`downgrade.ts`, `subscription-downgrade.ts`,
+  `webhook/route.ts`) su 129 totali in `src`. `dead-code 0`, `cycle 0`, `twin 0`. `DowngradeOutcome` reso
+  NON esportato (return type locale) per non introdurre dead-code.
+- **Budget consumato**: 5 macrotask (14 task atomici Fase 1) — **DAG completo**. Nessun loop di fix
+  (C1/C2 verdi; il rosso C1 iniziale era la re-baseline onesta di riorganizzazione, non un difetto).
+  Artefatto EOL su `onboarding-generation-regression.test.ts.snap` (LF→CRLF, 0 righe di contenuto)
+  ripristinato con `git checkout` (file NON del macrotask): il diff finale è circoscritto ai 7 file.
 
 ## 5. Esiti dell'ultima sessione (framing onesto)
 
-- **`billing-ui` COSTRUITO test-first, 4/4 task verdi + gate visivo APPROVATO** — la superficie utente del
-  billing, che riusa gli endpoint di `stripe-checkout-webhook` e riflette l'entitlement server-side (BIL-D2:
-  la UI non decide il piano):
-  - **BIL-401** — pannello "Abbonamento" (`src/ui/billing/BillingPanel.tsx`, client): mostra il piano
-    corrente (Free/Pro) letto server-side; se Free, CTA "Passa a Pro" che apre il Checkout via
-    `/api/billing/checkout` e reindirizza; se Pro nessuna CTA di upgrade. Target `billing-plan-panel.test.tsx`
-    (AC-401-1/2/3), stringhe dai cataloghi REALI.
-  - **BIL-402** — gestione: "Gestisci abbonamento" via `/api/billing/portal` (⟺ sub viva: active/trialing/
-    past_due); stati esposti con etichette i18n; **past_due = "Ancora attivo — regolarizza il pagamento"**
-    (grazia BIL-D6, MAI "scaduto"); canceled = "Disdetto" + CTA ri-abbonarsi. Target `billing-manage-portal.test.tsx`
-    (AC-402-1/2/3, anti-tautologia: il pannello non contiene "scadut").
-- **Dati (additivo, RLS di sessione)**: `readSubscriptionRow` privato condiviso (de-dup root-cause) +
-  `getAccountBillingState`/`getOwnBillingState` che espongono lo STATO GREZZO della subscription (status +
-  fine periodo) OLTRE all'entitlement risolto — i due non coincidono di proposito (past_due→pro in grazia,
-  canceled→free). Fail-safe totale (guasto/assenza → free, subscription null). `getAccountEntitlement`
-  rifattorizzato su `readSubscriptionRow` (comportamento invariato). Reader supporto `billing-account-state.test.ts` (5/5).
-- **Confine client `billing-calls.ts`**: unico punto che conosce le rotte; POST same-origin body vuoto
-  (accountId derivato dal server, mai dal client — cross-account impossibile), redirect a url validata nella
-  forma, iniettabile (`navigate` prop) per i test. Nessun dato di carta da noi (PCI).
-- **Pagina `[locale]/billing/page.tsx`** (glue, coperta da next build + e2e): getUser + redirect-a-login se
-  assente (difesa in profondità); `getOwnBillingState(user.id)`; monta il pannello; voce nav "Abbonamento"
-  agganciata nella dashboard (l'hub). i18n `billing.*` + `nav.subscription` it/es (parità verde).
-- **Checkpoint 4/4 VERDE**: C1 igiene (dup 227, 0 nuovi), C2 sicurezza (0 nuovi ≥ HIGH), C3 regressioni
-  (vitest **1811/1812**; unico rosso `scaffold.test.ts` per il **TS2589 PREESISTENTE** in `e2e/effects.spec.ts`,
-  NON del macrotask; `next build` verde, lint 0; **e2e Chromium 37/37**), C4 conformità (6 AC tracciati con covers).
+- **`downgrade-lifecycle` COSTRUITO test-first, 4/4 task verdi** — la rete di sicurezza del cliente
+  (BIL-D6: il sito non si spegne mai di colpo), che riusa `resolveEntitlement` e `unpublishSite`:
+  - **BIL-501** — `applyDowngrade(subscription, sites, now)` PURO (`src/domain/billing/downgrade.ts`):
+    riusa `resolveEntitlement` → **una sola definizione di grazia** (`current_period_end`, no `graceDays`
+    separato). `past_due` entro il periodo resta pro (nessuna azione); a fine grazia o `canceled` decade
+    a free, `badgeRestored = !limits.no_badge` (deriva dai limiti), `sitesToUnpublish` = i siti PUBBLICATI
+    oltre `max_sites` free (=1), tenendo i primi. **Mai una cancellazione** (il contratto non ha campo
+    delete). Target `billing-apply-downgrade.test.ts` (AC-501-1..4, 5 test).
+  - **BIL-502** — `applySoftDowngrade(accountId, subscription, now, store)` (`src/data/subscription-
+    downgrade.ts`): applica l'esito nel percorso del webhook. Porta `SiteDowngradeStore` iniettabile
+    (gemella di `SubscriptionStore`), default `service_role` confinato; `unpublishSite` NON distruttivo
+    (solo `is_published=false`). **Idempotente** (solo i pubblicati contano → seconda esecuzione no-op),
+    riattivando Pro i dati sono intatti. **Agganciato in `webhook/route.ts`** dopo `applySubscriptionEvent`
+    (Subscription costruita dall'event, `now` al confine, sempre chiamato → robusto ai retry). Target
+    `billing-downgrade-apply.test.ts` (AC-502-1..3, 3 test) + test comportamentale dell'aggancio nel
+    `billing-webhook-route.test.ts` (fake admin esteso a `site_publications`).
+- **Checkpoint 4/4 VERDE**: C1 igiene (0 nuovi, re-baseline onesta §4), C2 sicurezza (0 nuovi ≥ HIGH),
+  C3 regressioni (vitest **1820/1821**; unico rosso `scaffold.test.ts` per il **TS2589 PREESISTENTE** in
+  `e2e/effects.spec.ts`, NON del macrotask, 0 errori TS nei file miei; `next build` verde, lint 0;
+  **e2e Chromium 37/37**), C4 conformità (7 AC tracciati con covers, target test 9/9).
 - **Batteria di mutazione 5/5** (backup+sha256, ripristini bit-identici, mai `git checkout` sul macrotask
-  uncommitted): showUpgrade=true (CTA a Pro) → AC-401-3 rosso; past_due→active → AC-402-2 rosso;
-  showManage=false → AC-402-1 rosso; checkout→portal → AC-401-2 rosso; reader subscription sempre null → reader-status rosso.
-- **Gate visivo APPROVATO**: 4 stati (Free / Pro attivo / Pro past_due / canceled) resi via preview isolata
-  temporanea + next dev + screenshot; coerenti coi token del design system. La route di preview è stata
-  RIMOSSA prima del commit (non committata). L'estetica dell'area autenticata resta in coda a tutto il piano
-  ([[polish-estetico-a-fine-piano]]).
+  uncommitted): (1) grazia ignorata → AC-501-1 rosso; (2) `.slice(0)` conteggio eccedenti → AC-501-3
+  rosso; (3) `badgeRestored=false` → AC-501-2 rosso; (4) filtro pubblicati rimosso (non idempotente) →
+  AC-502-2 rosso; (5) applicazione disattivata (no unpublish) → AC-502-1 + webhook rosso.
+- **Nessun gate visivo** (macrotask senza UI: dominio + data + aggancio webhook server-side).
 
 ## 6. Prossimi passi
 
-- **Merge su `main`**: ✅ **FATTO** — merge `--no-ff` `5e2b1aa` + push `origin/main` (`55d1d6c..5e2b1aa`)
-  dopo il "vai" umano; deploy coupled avviato su ulaba.net. Verifica locale completa e verde
-  (vitest 1811/1812, lint 0, next build, e2e Chromium 37/37).
-- **Prossimo macrotask (ULTIMO di Fase 1)**: `downgrade-lifecycle` (BIL-501/502) — retrocessione morbida
-  con grazia (`applyDowngrade` puro + applicazione idempotente scatenata dal webhook). Chiude la Fase 1.
-- **Config di deploy (non blueprint)**: env Vercel `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` /
-  `STRIPE_PRICE_PRO` / `NEXT_PUBLIC_APP_URL`; registrare l'endpoint webhook su Stripe. La pagina
-  `/[locale]/billing` è ora live ma le CTA restano inerti finché gli endpoint non hanno le chiavi Stripe in env.
-- **Migrazioni cloud**: nessuna nuova (billing-ui è solo UI + reader su tabelle esistenti). `subscriptions`
-  + `billing_webhook_events` già applicate (2026-08-27).
+- **Merge su `main`**: ✅ **FATTO** — merge `--no-ff` `749017c` + push `origin/main`
+  (`cb9963c..749017c`) dopo il "vai" umano; deploy coupled avviato su ulaba.net.
+- **Fase 1 COMPLETA**: nucleo billing pronto. **Prossimo = Fase 2 `custom-domains`** (blueprint separato
+  da bootstrappare, BIL-D7) — NON un macrotask di questo blueprint.
+- **Config di deploy (non blueprint, prereq go-live)**: env Vercel `STRIPE_SECRET_KEY` /
+  `STRIPE_WEBHOOK_SECRET` / `STRIPE_PRICE_PRO` / `NEXT_PUBLIC_APP_URL`; registrare l'endpoint webhook su
+  Stripe. Le CTA billing e il ciclo checkout→webhook→(entitlement/downgrade) restano inerti finché le
+  chiavi Stripe non sono in env Vercel. Prereq infrastruttura: Vercel Pro + Supabase Pro (~$45/mo).
+- **Migrazioni cloud**: nessuna nuova (downgrade-lifecycle è dominio puro + applicazione su tabelle
+  esistenti `subscriptions`/`site_publications`, già applicate).
