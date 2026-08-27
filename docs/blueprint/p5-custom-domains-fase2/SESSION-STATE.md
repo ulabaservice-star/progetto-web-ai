@@ -110,3 +110,38 @@
   `VERCEL_TEAM_ID` (se team), `NEXT_PUBLIC_APEX_DOMAIN`/target dei record. Collegamento reale inerte
   finché le chiavi non sono in env (DOM-D9), come le CTA Stripe di Fase 1.
 - **Debito**: pianificare il fix di `TS2589` in `e2e/effects.spec.ts` (typecheck verde) a parte.
+
+## 7. Carry-over & copertura dichiarata
+
+**Copertura di `domain-schema` (DOM-101/102):**
+- `tests/site-domains-rls-owner.test.ts` copre **AC-101-1..4** (catalogo: RLS on + insieme esatto policy
+  authenticated {SELECT,INSERT,DELETE} senza UPDATE + predicati `is_account_member`; owner legge; cross-tenant
+  vuoto; UPDATE authenticated negata 42501). `tests/site-domains-rls-public.test.ts` copre **AC-102-1..3**
+  (anon vede solo attivi; token/account_id/scrittura negati 42501; una sola policy anon `status='active'`).
+  Tutti **runtime** su Supabase locale con client reali + oracolo indipendente service_role (anti-placebo).
+- **Mutazioni 4/4 uccise**: UPDATE-policy-authenticated → AC-101-1/4 rosso; anon `USING(true)` → AC-102-1/3 rosso.
+- **Gate visivo**: N/A (nessuna UI in questo macrotask; il gate umano scatta a `domain-ui`, DOM-501).
+- **NON coperto (per design, out_of_scope del macrotask)**: reader owner-side (DOM-221) e writer di stato
+  service_role (DOM-222) → `domain-store`; reader pubblico applicativo host→slug (DOM-401) e middleware
+  (DOM-402) → `domain-routing`. La conferma comportamentale per-tenant della RLS è demandata al DB-test
+  (l'euristica statica `rls_check` lo dichiara), qui soddisfatta.
+
+**Carry-over — lezioni nuove di questa sessione:**
+- **Ambiguità DoD vs AC**: se l'elenco colonne di un DoD e un AC divergono, la fonte è l'AC/decision-ledger
+  (qui `public_slug` da DOM-102/DOM-401/DOM-D6). Risolvere leggendo i macrotask a valle, non indovinare.
+- **FP RLS004 su superfici anon globali**: ogni policy `to anon` senza predicato di tenancy (routing/serving
+  pubblico) fa scattare `RLS004_MISSING_TENANT_PREDICATE` (l'euristica vede `account_id` sulla tabella). È
+  il pattern gemello di `site_publications_select_anon`: assorbire nel baseline SOLO con conferma DB-test
+  (anon vede solo il consentito, colonne di tenancy negate), mai sopprimere a mano.
+- **jscpd sui docs blueprint**: i `.md` di `prompts/`+`VISION` sono strutturalmente simili tra fasi → cloni
+  jscpd "nuovi" rispetto a un baseline d'igiene catturato prima del BOOTSTRAP. Re-baseline onesto coi
+  fingerprint (i `.test.ts` sono esclusi da jscpd; il `.sql` non ha cloni).
+- **TLS CA cloud** (vedi [[supabase-cloud-migrations]]): su Node recente `ssl:true` fallisce
+  (`SELF_SIGNED_CERT_IN_CHAIN`); pinnare la `Supabase Root 2021 CA` estratta dalla catena, mai
+  `rejectUnauthorized:false`.
+- **Gotcha per i prossimi macrotask** (dal blueprint, da non riscoprire): verifica DNS **prima**
+  dell'attivazione (DOM-D4, la transizione ad `active` la muove solo il server); host-routing
+  **non-regressione** (`tests/auth-middleware.test.ts`, il caso host-custom va PRIMA di locale/guardia auth,
+  non toccare `/s/*`); **fake `DomainProvider`** nei test (inerte senza env, DOM-D9); **reserved-domains**
+  bloccati nel dominio puro (DOM-112/DOM-D7); **idempotenza** del downgrade (`applySoftDomainDowngrade`,
+  mai delete, DOM-D8).
