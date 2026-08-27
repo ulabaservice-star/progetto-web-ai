@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { createServerSupabaseClient, getUser } from '@/data/supabase-ssr';
+import { resolveOwnAccountId } from '@/data/account';
 import { guardMutatingRequest, jsonError } from '@/app/api/_shared/request-guard';
 
 // BIL-203 (macrotask stripe-checkout-webhook, p5-billing-fase1) — Preambolo condiviso dei due
@@ -50,16 +51,12 @@ async function resolveBillingActor(request: NextRequest): Promise<BillingActor> 
   }
 
   const supabase = await createServerSupabaseClient();
-  const { data: account, error } = await supabase
-    .from('accounts')
-    .select('id')
-    .eq('owner_id', user.id)
-    .single();
-  if (error || !account) {
+  const accountId = await resolveOwnAccountId(supabase, user.id);
+  if (accountId === null) {
     return { ok: false, response: jsonError(500, 'unavailable') };
   }
 
-  return { ok: true, accountId: account.id as string };
+  return { ok: true, accountId };
 }
 
 /**

@@ -4,6 +4,8 @@ import { parseDocument } from '@/domain/generation/document';
 import { themeFor } from '@/domain/generation/themes';
 import { SiteView } from '@/ui/site/SiteView';
 import { readPublishedSite } from '@/data/public-site';
+import { getPublicSiteEntitlement } from '@/data/public-site-entitlement';
+import { FREE_ENTITLEMENT } from '@/domain/billing/entitlement';
 import { BeloraBadge } from '@/app/s/[slug]/Badge';
 import { extractBusinessInfo, seoTitle, seoDescription } from '@/domain/generation/site-seo';
 import { buildLocalBusinessJsonLd, serializeJsonLdSafe } from '@/domain/generation/jsonld';
@@ -74,6 +76,16 @@ export async function generateMetadata({ params }: PublicSitePageProps): Promise
   // og:image SOLO per un hero uploaded, costruito dall'asset_id: mai un token del tema ne testo libero.
   const image = info.heroAssetId !== undefined ? assetPublicUrl(info.heroAssetId) : undefined;
 
+  // BIL-303 (plan-gates) — SEO BASE per TUTTI (Free incluso): title, description, canonical E
+  // openGraph completo. openGraph controlla l'ANTEPRIMA SOCIAL del link condiviso (WhatsApp/Instagram/
+  // ...), il canale di acquisizione dei micro-business: non si degrada al Free. AVANZATI (Pro-only,
+  // seo_advanced): twitter card qui + JSON-LD LocalBusiness nel render. Fail-safe: reader non
+  // risolvibile => free => solo base (mai un campo avanzato per errore). Entitlement server-side
+  // (l'account del sito non e' ricavabile dal documento ne leggibile da anon): reader confinato,
+  // cache()d, condiviso con la page.
+  const entitlement = await getPublicSiteEntitlement(site.public_slug).catch(() => FREE_ENTITLEMENT);
+  const seoAdvanced = entitlement.limits.seo_advanced;
+
   const metadata: Metadata = {
     title,
     ...(description !== undefined ? { description } : {}),
@@ -86,7 +98,7 @@ export async function generateMetadata({ params }: PublicSitePageProps): Promise
       locale: site.locale,
       ...(image !== undefined ? { images: [image] } : {}),
     },
-    twitter: { card: 'summary_large_image' },
+    ...(seoAdvanced ? { twitter: { card: 'summary_large_image' } } : {}),
   };
   return metadata;
 }
@@ -119,7 +131,14 @@ export default async function PublicSitePage({ params }: PublicSitePageProps) {
   // Storage costruito dall'id (P2-D12), mai testo libero; assente se non c'e' un hero uploaded.
   const info = extractBusinessInfo(document);
   const heroImage = info.heroAssetId !== undefined ? assetPublicUrl(info.heroAssetId) : undefined;
-  const jsonLd = serializeJsonLdSafe(buildLocalBusinessJsonLd(info, { image: heroImage }));
+  // BIL-302/303 (plan-gates) — entitlement dell'account del sito (reader confinato server-side,
+  // fail-safe => free): governa il JSON-LD (SEO avanzato) e il badge (no_badge). cache()d: stessa
+  // risoluzione gia' fatta da generateMetadata nello stesso render.
+  const entitlement = await getPublicSiteEntitlement(site.public_slug).catch(() => FREE_ENTITLEMENT);
+  // JSON-LD LocalBusiness = campo SEO AVANZATO: reso SOLO se seo_advanced, altrimenti null (assente).
+  const jsonLd = entitlement.limits.seo_advanced
+    ? serializeJsonLdSafe(buildLocalBusinessJsonLd(info, { image: heroImage }))
+    : null;
 
   // SiteView e' un Server Component ASINCRONO: lo si esegue e si incorpora l'albero gia' pronto, come
   // nell'anteprima. Locale = quello della RIGA (site.locale), mai del browser. Read-only (editable
@@ -130,14 +149,17 @@ export default async function PublicSitePage({ params }: PublicSitePageProps) {
   // (fratello del <main>, mai dentro SiteView). Non e' ne rimovibile ne spoofabile dal documento;
   // href e attributi sono costanti statiche, il testo e' nel locale della RIGA. Server Component
   // asincrono: eseguito e incorporato come elemento gia' pronto, come SiteView.
-  const badge = await BeloraBadge({ locale: site.locale });
+  // BIL-302 (plan-gates) — il badge e' CONDIZIONALE sul piano: montato SOLO se il piano non concede
+  // no_badge (Free => badge; Pro => niente badge). Fail-safe: in dubbio (reader => free) il badge C'E'
+  // — mai assente per errore.
+  const badge = entitlement.limits.no_badge ? null : await BeloraBadge({ locale: site.locale });
 
   return (
     <>
       <main className="site-public">{view}</main>
       {/* JSON-LD LocalBusiness: figlio TESTUALE gia' escaped (T-410), mai innerHTML grezzo. Fuori
           dall'albero del documento (fratello del <main>), come il badge. */}
-      <script type="application/ld+json">{jsonLd}</script>
+      {jsonLd !== null ? <script type="application/ld+json">{jsonLd}</script> : null}
       {badge}
     </>
   );

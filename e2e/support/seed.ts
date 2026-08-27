@@ -23,6 +23,35 @@ export function adminClient(): SupabaseClient {
   });
 }
 
+/**
+ * Una subscription per l'account dell'e2e (setup). BIL-302/303 (plan-gates): la serving pubblica
+ * gate-a il JSON-LD/openGraph (SEO avanzato) e il badge sull'entitlement dell'account. Gli e2e
+ * esercitano il MECCANISMO (JSON-LD ostile escaped, rendering), quindi l'utente e2e e' Pro: il SEO
+ * avanzato e' reso. Il GATE free/Pro (assenza per Free, fail-safe) e' provato dai plan-gate test
+ * (vitest). Upsert idempotente su account_id (PK). Periodo lungo cosi' la sub resta attiva.
+ */
+export async function seedSubscription(opts: {
+  accountId: string;
+  plan: 'free' | 'pro';
+}): Promise<void> {
+  const periodEnd = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+  const { error } = await adminClient()
+    .from('subscriptions')
+    .upsert(
+      {
+        account_id: opts.accountId,
+        plan: opts.plan,
+        status: 'active',
+        provider: 'stripe',
+        provider_subscription_id: `sub_e2e_${opts.accountId.slice(0, 8)}`,
+        provider_customer_id: `cus_e2e_${opts.accountId.slice(0, 8)}`,
+        current_period_end: periodEnd,
+      },
+      { onConflict: 'account_id' },
+    );
+  if (error) throw new Error(`seedSubscription fallito: ${error.message}`);
+}
+
 /** Un sito dell'account. Ritorna il suo id. */
 export async function seedSite(opts: {
   accountId: string;

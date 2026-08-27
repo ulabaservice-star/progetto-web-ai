@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import type { z } from 'zod';
 import { getUser } from '@/data/supabase-ssr';
+import { getAccountEntitlementForUser } from '@/data/subscriptions';
 import { guardMutatingRequest } from '@/app/api/_shared/request-guard';
 import { guardOwnedSite, loadRouteBrief } from '@/app/api/_shared/route-guards';
 import { createAiUsagePort } from '@/data/ai-usage';
@@ -117,7 +118,16 @@ export function aiEndpoint<S extends z.ZodTypeAny>(config: AiEndpointConfig<S>):
     let decision: AiBudgetDecision;
     try {
       usagePort = await createAiUsagePort();
-      decision = await checkAiBudget(usagePort, siteId, now, DEFAULT_AI_BUDGET_LIMITS);
+      // BIL-304 (plan-gates) — la SOGLIA del cap deriva dal PIANO dell'account (ai_monthly_cap), non
+      // da una costante: Pro ottiene un cap ampio, Free il base. Il rate-limit (finestra) NON dipende
+      // dal piano, resta il default. Entitlement dell'account dell'utente (proprietario gia' verificato
+      // al punto 3), sotto RLS, fail-safe => free (in dubbio il cap piu' stretto, mai piu' ampio).
+      const entitlement = await getAccountEntitlementForUser(user.id);
+      const budgetLimits = {
+        ...DEFAULT_AI_BUDGET_LIMITS,
+        maxTotal: entitlement.limits.ai_monthly_cap,
+      };
+      decision = await checkAiBudget(usagePort, siteId, now, budgetLimits);
     } catch (error) {
       console.error(`[${config.logTag}] controllo budget fallito:`, error);
       return jsonError(500, 'unavailable');

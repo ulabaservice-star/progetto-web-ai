@@ -2,6 +2,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import './env';
 import { createTestUser, accountFor, captureSessionCookies } from './auth';
+import { seedSubscription } from './seed';
 import { AUTH_DIR, STORAGE_STATE, USER_FILE, type TestUser } from './paths';
 
 // T-240 (macrotask generation-e2e, P2) — GLOBAL SETUP di Playwright. Provisiona UN utente di test,
@@ -15,6 +16,11 @@ export default async function globalSetup(): Promise<void> {
 
   const user = await createTestUser(email, password);
   const accountId = await accountFor(user.id);
+  // BIL-302/303 (plan-gates): l'utente e2e e' Pro, cosi' la serving pubblica /s/<slug> rende il SEO
+  // avanzato (JSON-LD/openGraph) che public-hostile esercita coi campi ostili. Nessun e2e cattura
+  // screenshot (workers=1, no toHaveScreenshot), quindi il badge assente in Pro non impatta i visual;
+  // il gate free/Pro e' provato dai plan-gate test (vitest).
+  await seedSubscription({ accountId, plan: 'pro' });
   const cookies = await captureSessionCookies(email, password);
 
   mkdirSync(AUTH_DIR, { recursive: true });
