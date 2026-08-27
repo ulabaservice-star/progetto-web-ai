@@ -9,8 +9,8 @@
 |---|---|
 | **Progetto** | Ulaba/Belora — P5 Fase 1 (nucleo billing) |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase Cloud EU) |
-| **Ultimo aggiornamento** | 2026-08-25 (session-end del BUILD `stripe-checkout-webhook`) |
-| **Sessione corrente** | BUILD `stripe-checkout-webhook` — CHIUSA (checkpoint 4/4 verde; **commit di branch `2b62108`**; merge su `main` **FATTO** (`6ea0572`, `--no-ff`) — deploy coupled avviato) |
+| **Ultimo aggiornamento** | 2026-08-27 (session-end del BUILD `plan-gates`) |
+| **Sessione corrente** | BUILD `plan-gates` — CHIUSA (checkpoint 4/4 verde; mutazione 5/5; **commit di branch `01d822e` + e2e `bf5843e`**; merge su `main` **PENDING** — human-gate deploy-coupled) |
 
 ---
 
@@ -21,22 +21,19 @@
 | Macrotask | Stato | Checkpoint | Dip |
 |---|---|---|---|
 | `entitlement-core` (BIL-101/102/103) | **done** | verde 4/4 (2026-08-25) | — |
-| `stripe-checkout-webhook` (BIL-201/202/203) | **done** | **verde 4/4** (2026-08-25) | `entitlement-core` ✅ |
-| `plan-gates` (BIL-301/302/303/304) | todo | — | `entitlement-core` ✅ |
+| `stripe-checkout-webhook` (BIL-201/202/203) | **done** | verde 4/4 (2026-08-25) | `entitlement-core` ✅ |
+| `plan-gates` (BIL-301/302/303/304) | **done** | **verde 4/4** (2026-08-27) | `entitlement-core` ✅ |
 | `billing-ui` (BIL-401/402) | todo | — | `entitlement-core` ✅, `stripe-checkout-webhook` ✅ |
 | `downgrade-lifecycle` (BIL-501/502) | todo | — | `entitlement-core` ✅, `stripe-checkout-webhook` ✅ |
 
-**Build order (DAG):** `entitlement-core ✅ → {stripe-checkout-webhook ✅, plan-gates} → {billing-ui, downgrade-lifecycle}`.
+**Build order (DAG):** `entitlement-core ✅ → {stripe-checkout-webhook ✅, plan-gates ✅} → {billing-ui, downgrade-lifecycle}`.
 
 ## 2. Macrotask corrente
 
-- **Prossimo**: `plan-gates` (BIL-301/302/303/304) — unica dipendenza `entitlement-core` verde;
-  consuma `getAccountEntitlement`/`PLAN_LIMITS` (pronti). Con `stripe-checkout-webhook` ora chiuso,
-  si sbloccano anche `billing-ui` e `downgrade-lifecycle` (che dipendono da entrambi): il DAG li
-  mette dopo. La scelta naturale è `plan-gates` (enforcement dell'entitlement letto dal DB), poi
-  `billing-ui`/`downgrade-lifecycle`.
-- **Prerequisito operativo per `plan-gates` in produzione**: la migrazione `subscriptions`
-  (`20260825000100`) va applicata al cloud (vedi §6); sul locale è già applicata.
+- **Prossimo**: `billing-ui` (BIL-401/402) oppure `downgrade-lifecycle` (BIL-501/502) — entrambi con le
+  dipendenze verdi (`entitlement-core` + `stripe-checkout-webhook`). `billing-ui` porta la pagina
+  "Passa a Pro" (gate VISIVO umano); `downgrade-lifecycle` la retrocessione morbida. La scelta è
+  libera nel DAG; naturale `billing-ui` (chiude il ciclo utente: incassa → applica → mostra/vende).
 - Alla ripresa: aprire `prompts/session-start.md`, leggere questo file, scegliere il macrotask e il branch.
 
 ## 3. Stato git
@@ -45,78 +42,75 @@
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `trueline/build/stripe-checkout-webhook` (da `main` pulito `ef19cc0`) |
-| Commit del macrotask | `2b62108` (branch) — 18 file, +1520/-14 |
-| Stato merge su `main` | **MERGIATO** (`6ea0572`, `--no-ff`) dopo il "vai" umano; push su `origin/main` -> deploy coupled avviato. Verifica locale passata prima del merge (vitest 1781 pass, `next build` verde). |
+| Branch di lavoro | `trueline/build/plan-gates` (da `main` pulito `ed0fdcc`) |
+| Commit del macrotask | `01d822e` (16 file, +900/-40) + `bf5843e` (e2e, 2 file, +35) |
+| Stato merge su `main` | **PENDING** — human-gate (deploy-coupling **coupled**: push su `main` = deploy su ulaba.net). Verifica locale PASSATA: vitest 1800/1801, lint 0, next build verde, **e2e Chromium 37/37** (public-hostile adattato al contratto SEO Pro-only). |
 | Deploy-coupling | **coupled** — confermato. |
 
 ## 4. Baseline & budget
 
-- **Baseline di sicurezza** (C2): invariata nella sostanza. Nessun finding nuovo ≥ HIGH: `gitleaks`
-  vede solo i 3 secret già in baseline (le chiavi-fake dei test non scattano); `osv` nessun nuovo
-  HIGH introdotto da `stripe` (aggiunge solo `stripe` + deps di `qs`); `semgrep` 0 (il webhook usa
-  service_role confinato senza pattern vietati); `rls_check` pulito sul nuovo ledger
-  `billing_webhook_events` (RLS abilitata + deny esplicito `authenticated using(false)` + GRANT solo
-  service_role → `RLS002` risolto). L'unico HIGH resta il preesistente `site_publications` (baseline).
-- **Baseline d'igiene** (C1): `224 → 225` fingerprint. **Ri-baseline onesta di +1**: un solo
-  fingerprint di **dup-reshuffle** (`SESSION-STATE.md` ↔ `VISION-AND-CONSTRAINTS.md`, la tabella di
-  metadati boilerplate) su **doc NON toccati dal branch** (entrambi dal bootstrap `93676f4`). Misura
-  diretta `jscpd@4 --mode strict`: **0 cloni toccano il codice del macrotask** (i due endpoint
-  checkout/portal sono stati de-duplicati con `billingActionRoute`, e `jsonError` è riusato da
-  `request-guard` invece di ridefinirlo). `dead-code:0` (i type/funzioni interne di `_guard.ts` resi
-  locali). `cycle:0`.
-- **Budget consumato**: 2 macrotask (6 task atomici). Nessun loop di fix di sicurezza (C2 verde al
-  primo colpo). Un ciclo di fix d'igiene C1 (de-dup + dead-code + ratchet reshuffle).
+- **Baseline di sicurezza** (C2): **verde**, invariata nella sostanza. Nessun finding nuovo ≥ HIGH:
+  `gitleaks:3` (baseline), `osv:2` (baseline), `semgrep:0` (il reader admin `getPublicSiteEntitlement`
+  usa service_role **confinato** server-side senza pattern vietati; query tipate `.eq`, mai `.or/.filter`),
+  `rls:1` (il preesistente `site_publications`, baseline). L'HIGH resta il preesistente.
+- **Baseline d'igiene** (C1): **verde SENZA ri-baseline**. `dup 229 → 227` (**MIGLIORA**), `dead-code 0`,
+  `cycle 0`, `twin 0`, **0 nuovi**. Il driver aveva flaggato 1 dup "nuovo" su `billing/_guard.ts` — era
+  il **reshuffle** del clone preesistente `createSite ↔ _guard.ts` (pattern "account da owner_id"),
+  acuito dal 3° call-site introdotto (`getAccountEntitlementForUser`). **Fix root-cause (non ri-baseline):**
+  estratto l'helper condiviso `resolveOwnAccountId` (`src/data/account.ts`) usato da createSite + _guard.ts
+  + reader cap AI → 3 copie ridotte a 1, clone eliminato alla radice. Misura diretta `jscpd@4 --min-tokens 50
+  --mode strict`: 0 cloni sui file del macrotask.
+- **Budget consumato**: 3 macrotask (10 task atomici Fase 1). Un ciclo di fix d'igiene (de-dup root-cause),
+  nessun loop di fix di sicurezza (C2 verde al primo colpo). Regressioni da cambio-contratto risolte
+  (SEO Pro-only, gate site-limit) aggiornando i test del meccanismo, non mascherando.
 
 ## 5. Esiti dell'ultima sessione (framing onesto)
 
-- **`stripe-checkout-webhook` COSTRUITO test-first, 3/3 task verdi:**
-  - **BIL-201** — porta `PaymentProvider` (dominio puro `src/domain/billing/payment-port.ts`: solo
-    tipi, `createCheckout`/`openBillingPortal`/`parseWebhook`) + `SubscriptionEvent` normalizzato
-    (`event_id` incluso, chiave d'idempotenza) + adattatore Stripe `src/data/payment/stripe.ts`
-    (`server-only`, client **lazy iniettabile** come `anthropic.ts`; `constructEvent` verifica la firma
-    HMAC → firma invalida `throw`; mappa `checkout.session.completed`/`customer.subscription.updated|
-    deleted`/`invoice.payment_failed`) + **fake iniettabile** `tests/helpers/fake-payment-provider.ts`.
-    `Plan`/`SubscriptionStatus` ora **esportati** da `entitlement.ts` (consumati dalla porta → esce il
-    carry-over "li riesporterà plan-gates"). Test `payment-provider-stripe.test.ts` (8): firma
-    valida/invalida (via `generateTestHeaderString`, zero rete) + mappatura eventi.
-  - **BIL-202** — `POST /api/billing/webhook`: raw body (`request.text()`), **niente
-    `guardMutatingRequest`** (server-to-server), firma verificata via la porta (invalida ⇒ 400),
-    `applySubscriptionEvent` (`src/data/subscriptions-write.ts`, **store iniettabile**, default
-    service_role via `createAdminClient`) con **dedup per event id** contro il nuovo ledger
-    `billing_webhook_events` — 2xx solo ad avvenuta registrazione, catch che **logga** + 500 (mai 2xx
-    opaco). Test `billing-webhook-route.test.ts` (8): route end-to-end su admin-client in-memory
-    (osserva lo stato di subscriptions) + idempotenza diretta.
-  - **BIL-203** — `POST /api/billing/{checkout,portal}`: preambolo condiviso `_guard.ts`
-    (`resolveBillingActor` + `billingActionRoute`) = `guardMutatingRequest` + `getUser` (401) + body
-    `z.object({}).strict()` (un `account_id` iniettato ⇒ **403**) + **accountId DERIVATO** da
-    `accounts.owner_id === auth.uid()` (mai dal client). Fase 1 vende **solo Pro** (piano fisso). Test
-    `billing-checkout-portal-route.test.ts` (6): account derivato, non-auth ⇒ 401, body-injection ⇒
-    403, cross-origin ⇒ 403.
-- **Checkpoint 4/4 VERDE** (driver decomposto `bil-checkpoint` per C1+C2; C3+C4 via vitest/build):
-  C1 igiene verde (dopo de-dup + dead-code + ratchet reshuffle), C2 sicurezza verde, C3 regressioni
-  (vitest **1781 pass**; l'unico rosso è `scaffold.test.ts` perché `npm run typecheck` fallisce su un
-  **TS2589 PREESISTENTE** in `e2e/effects.spec.ts` — un generico Playwright, **provato identico su
-  main `ef19cc0`**, NON introdotto da questo macrotask; `next build` **verde**, le 3 route billing nel
-  manifest), C4 conformità (22 target test, **10/10 AC** tracciati con `covers:`).
-- **Batteria di mutazione 4/4** (backup+sha256, ripristini bit-identici, mai `git checkout` sul
-  macrotask uncommitted): firma saltata → AC-201-2 rosso; dedup rimosso → AC-202-2 rosso; body
-  non-strict (accountId dal client) → AC-203-2 rosso; segreto Stripe hardcoded → gitleaks rosso.
-- **Framing onesto**: il codice fa ciò che i task chiedevano, senza morto nuovo, senza vuln nuove
-  ≥ HIGH, senza regressioni nuove — **NON** "il billing è completo/sicuro in assoluto". Questo è il
-  canale che *incassa* (webhook = sorgente di verità, checkout/portal = azioni utente); i **gate** che
-  *applicano* l'entitlement (plan-gates) e la retrocessione (downgrade-lifecycle) arrivano dopo.
-- **NON coperto, dichiarato (L-COL-006)**: l'idempotenza + l'upsert sono provati **in-memory** (nessun
-  test runtime del webhook contro il DB); `createCheckout`/`openBillingPortal` **reali** (rete Stripe)
-  non sono testati a unità (il verde usa il **fake** iniettato); le chiavi Stripe (secret + signing +
-  price id) sono **config di deploy** (env Vercel), non nel verde. La RLS di `subscriptions` e del ledger `billing_webhook_events` è ora verificata **anche a runtime sul cloud** (2026-08-27, migrazioni applicate): owner-only, deny esplicito, `anon` assente, entrambe in `schema_migrations`. Il resolver del customer id per il billing portal reale è iniettabile ma non cablato a un
-  reader dedicato (openBillingPortal reale non esercitato nei test).
+- **`plan-gates` COSTRUITO test-first, 4/4 task verdi** — l'ENFORCEMENT dell'entitlement, server-side e
+  **fail-safe verso Free** (in dubbio: badge presente, SEO base, cap stretto — mai un piano superiore per
+  errore):
+  - **BIL-301** — gate creazione sito in `createSite`: legge `getAccountEntitlement` + conta i siti
+    dell'account vs `limits.max_sites`; alla soglia `{ ok:false, status:403 }`, **nessun insert** (free=1,
+    pro=5); guasto del conteggio ⇒ 500 (mai bypass). Test runtime `plan-gate-site-limit` (RLS reale).
+  - **BIL-302** — badge condizionale in `/s/<slug>`: monta `BeloraBadge` solo se `!no_badge`. Il serving è
+    **anon** e non può leggere `account_id`/`subscriptions` ⇒ **reader server-side confinato**
+    `getPublicSiteEntitlement` (`src/data/public-site-entitlement.ts`, `createAdminClient`, `cache()`d,
+    try/catch ⇒ free). `.catch(()=>FREE_ENTITLEMENT)` nel serving = "mai assente per errore".
+  - **BIL-303** — SEO avanzato gated in `generateMetadata` + render: **insieme avanzato esplicito e chiuso**
+    = `{openGraph completo, twitter, JSON-LD LocalBusiness}` solo se `seo_advanced`; **base per tutti** =
+    `{title, description, canonical, sitemap}` (il canonical resta base: è igiene anti-duplicato).
+  - **BIL-304** — cap AI parametrico in `_shared/ai-endpoint.ts`: la soglia di `checkAiBudget` deriva da
+    `limits.ai_monthly_cap` (`getAccountEntitlementForUser`, fail-safe totale ⇒ free), **non più una
+    costante**; rate-limit (finestra) invariato; 429 al cap del piano. Spia sul `checkAiBudget` REALE.
+- **Dominio/dati**: `FREE_ENTITLEMENT` esportato; `entitlementFromRow` (mapping riga→Entitlement condiviso
+  tra reader di sessione e admin); `resolveOwnAccountId` (`account.ts`, de-dup). La guardia statica di
+  `billing-get-account-entitlement` resta verde (subscriptions.ts non importa `supabase-admin` — il reader
+  admin è nel file separato `public-site-entitlement.ts`).
+- **Checkpoint 4/4 VERDE**: C1 igiene (dup 227, de-dup root-cause), C2 sicurezza (0 nuovi ≥ HIGH), C3
+  regressioni (vitest **1800/1801**; l'unico rosso è `scaffold.test.ts` perché `tsc` fallisce su un
+  **TS2589 PREESISTENTE** in `e2e/effects.spec.ts`, **provato non nel diff**, NON del macrotask; `next
+  build` verde, lint 0), C4 conformità (5 target test, ogni AC tracciato con `covers:`).
+- **Batteria di mutazione 5/5** (backup+sha256, ripristini bit-identici, mai `git checkout` sul macrotask
+  uncommitted): gate off ⇒ site-limit rosso; badge-sempre ⇒ AC-302-2 rosso; seoAdvanced=true ⇒ AC-303-1/3
+  rossi; costante al posto del cap ⇒ AC-304-2/3 rossi; fail-OPEN del reader ⇒ public-site-entitlement rosso.
+- **Cambio di contratto dichiarato (BIL-303)**: il **SEO avanzato passa da free-tier a Pro-only**. I test
+  del *meccanismo* (`seo-metadata`, `jsonld-localbusiness`, e2e `public-hostile`) fissano il piano a **Pro**
+  per esercitare il campo; il *gate* free/Pro è nei `plan-gate` test. `sites-actions` (T-101): seed Pro per
+  esercitare la creazione multi-sito. **Il free-tier non ha più openGraph/JSON-LD** — decisione di prodotto
+  allineata al blueprint ("Free ⇒ solo SEO base"), da confermare col titolare del prodotto se indesiderata.
+- **NON coperto, dichiarato (L-COL-006)**: `getPublicSiteEntitlement` reale (rete admin) è provato con
+  fake iniettato (fail-safe) + serving mockato; l'e2e Chromium completo (**37/37 verde**) esercita il
+  serving reale su `/s/` con account Pro. Il cap AI resta **per-sito totale** come oggi (out-of-scope): parametrizzo
+  solo il valore dalla mappa del piano, non la granularità (per-sito vs per-account, "total" vs "mensile").
 
 ## 6. Prossimi passi
 
-- **Merge su `main`**: ✅ **FATTO** — merge `--no-ff` `6ea0572` + push `origin/main` (`ef19cc0..515aab8`, incl. docs); deploy coupled avviato su ulaba.net.
-- **✅ Migrazioni al cloud — APPLICATE (2026-08-27)**: `subscriptions` (`20260825000100`) + `billing_webhook_events` (`20260825000200`) via `supabase db push` autonomo (dry-run poi apply); **RLS/GRANT verificati a runtime** (owner-only su subscriptions; deny + solo service_role sul ledger; `anon` assente). **Autonomia migrazioni cloud RIPRISTINATA** (`SUPABASE_DB_PASSWORD` in `.env.local`, URL Session pooler `aws-1-eu-west-1` percent-encoded; dettaglio + trappole in memoria). Sul **locale**: `subscriptions` già applicata; `billing_webhook_events` NON ancora (non serve al verde; `db reset` quando servirà un test runtime).
-- **Prossimo macrotask**: `plan-gates` (poi `billing-ui`/`downgrade-lifecycle`).
+- **Merge su `main`**: **PENDING human-gate** (deploy-coupling coupled). Verifica locale COMPLETA e verde
+  (vitest/lint/build/e2e 37/37). Al "vai": `git checkout main && git merge --no-ff trueline/build/plan-gates`
+  + push (⇒ deploy su ulaba.net).
+- **Prossimo macrotask**: `billing-ui` (poi `downgrade-lifecycle`) — Fase 2 (`custom-domains`) blueprint separato.
 - **Config di deploy (non blueprint)**: env Vercel `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` /
-  `STRIPE_PRICE_PRO` / `NEXT_PUBLIC_APP_URL` (documentate in `.env.example`); registrare l'endpoint
-  webhook su Stripe. Vanno impostate prima che il billing sia operativo, non prima del merge.
+  `STRIPE_PRICE_PRO` / `NEXT_PUBLIC_APP_URL`; registrare l'endpoint webhook su Stripe. Prima che il billing
+  sia operativo, non prima del merge.
+- **Migrazioni cloud**: `subscriptions` + `billing_webhook_events` **già applicate** (2026-08-27). plan-gates
+  NON aggiunge migrazioni (solo enforcement applicativo su tabelle esistenti).
