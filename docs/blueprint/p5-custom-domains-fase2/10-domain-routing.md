@@ -67,7 +67,7 @@
     - id: AC-402-3
       given: "una richiesta con Host custom sconosciuto 'attaccante.example' (nessuna riga attiva)"
       when: "il middleware la processa"
-      then: "NON viene servito alcun sito (nessun rewrite arbitrario); degrada sicuro"
+      then: "NON viene emesso alcun rewrite host-custom: la richiesta prosegue nel flusso di piattaforma esistente e nessun sito viene servito (fail-closed)"
     - id: AC-402-4
       given: "una richiesta con Host custom attivo e querystring '?utm=x'"
       when: "il middleware fa il rewrite"
