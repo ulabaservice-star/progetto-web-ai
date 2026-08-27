@@ -9,8 +9,8 @@
 |---|---|
 | **Progetto** | Ulaba/Belora — P5 Fase 2 (domini custom) |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase Cloud EU) |
-| **Ultimo aggiornamento** | 2026-08-27 (BOOTSTRAP — blueprint generato) |
-| **Sessione corrente** | BOOTSTRAP — blueprint `p5-custom-domains-fase2` creato (**12 macrotask, 22 task atomici**). Granularità fine (BUILD sessione-per-sessione). Nessun codice prodotto. |
+| **Ultimo aggiornamento** | 2026-08-27 (session-end del BOOTSTRAP) |
+| **Sessione corrente** | BOOTSTRAP — **CHIUSO**. Blueprint `p5-custom-domains-fase2` creato (**12 macrotask, 22 task atomici**) + committato+pushato su `main` (`d082224`, docs-only). Strutturale `validate_blueprint` **verde 5/5**. Nessun codice prodotto. **Prossima sessione: BUILD `domain-schema`.** |
 
 ---
 
@@ -50,9 +50,9 @@ completo è in `00-INDEX.md` §Build order.
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | — (nessun branch di build ancora; il blueprint si crea/commit su un branch docs) |
-| Ultimo commit | — (blueprint non ancora committato) |
-| Stato merge su `main` | n/a (BOOTSTRAP: nessun codice) |
+| Branch di lavoro | — (BOOTSTRAP docs-only committato direttamente su `main`, come la prassi del progetto per i `.md`; il primo branch di build sarà `trueline/build/domain-schema`) |
+| Ultimo commit | `d082224` (docs-only: 18 file blueprint, +1427; `6b689fb..d082224`) + questo session-end |
+| Stato merge su `main` | ✅ **committato+pushato** su `origin/main` — solo `docs/` (fuori da `src/`), nessun impatto sul build/deploy Vercel; nessuna verifica vitest/e2e dovuta (nessun codice) |
 | Deploy-coupling | **coupled** — ereditato e confermato dalla Fase 1 (push su `main` = deploy su ulaba.net → verifica locale prima del merge). `main_deploy_coupled: true`. |
 
 ## 4. Baseline & budget
@@ -82,13 +82,17 @@ completo è in `00-INDEX.md` §Build order.
 - **Self-check semantico**: presentato (punti 6–10); rilievi R1 (doppia sorgente DNS: comporre
   `dnsInstructionsFor` con `verification[]` del provider in DOM-302) e R2 (densità) portati in nota nei
   moduli. R3 (auto-www) **risolto** con i task DOM-121/DOM-303. Nessun codice prodotto.
+- **BOOTSTRAP committato+pushato** su `origin/main` (`d082224`, 18 file docs, +1427; `6b689fb..d082224`).
+  Memorie di progetto aggiornate (nuovo topic `p5-custom-domains-project`, indice `MEMORY.md`, riferimenti
+  "da bootstrappare" in `p5-billing-project` risolti). BOOTSTRAP **CHIUSO**.
 
 ## 6. Prossimi passi
 
-- **Chiudere il BOOTSTRAP**: strutturale **verde** ✅ + self-check semantico presentato → conferma umana
-  → commit del blueprint su un branch docs.
-- **Prima sessione BUILD**: `domain-schema` (migrazione + RLS). Preparare il branch
-  `trueline/build/domain-schema` da `main` pulito.
+- **BOOTSTRAP chiuso** ✅ — strutturale verde, semantico presentato, conferma umana ricevuta, blueprint
+  committato+pushato su `main` (`d082224`).
+- **Prima sessione BUILD**: `domain-schema` (migrazione `site_domains` + RLS gestione owner-only + SELECT
+  anon-active). Preparare il branch `trueline/build/domain-schema` da `main` pulito; al confine
+  applicare la migrazione al cloud (POOLER) e verificare RLS/GRANT prima del merge.
 - **Config di deploy (prereq go-live, non blueprint)**: env Vercel `VERCEL_TOKEN`, `VERCEL_PROJECT_ID`,
   `VERCEL_TEAM_ID` (se team), `NEXT_PUBLIC_APEX_DOMAIN`/target dei record. Collegamento reale inerte
   finché le chiavi non sono in env (DOM-D9), come le CTA Stripe di Fase 1.
