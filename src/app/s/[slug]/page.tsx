@@ -76,11 +76,13 @@ export async function generateMetadata({ params }: PublicSitePageProps): Promise
   // og:image SOLO per un hero uploaded, costruito dall'asset_id: mai un token del tema ne testo libero.
   const image = info.heroAssetId !== undefined ? assetPublicUrl(info.heroAssetId) : undefined;
 
-  // BIL-303 (plan-gates) — i campi SEO AVANZATI (openGraph completo, twitter card; il JSON-LD e' nel
-  // render) sono inclusi SOLO se il piano dell'account del sito li concede (seo_advanced). Il SEO
-  // BASE — title, description, canonical — resta per TUTTI. Fail-safe: reader non risolvibile => free
-  // => solo base (mai i campi avanzati per errore). Entitlement server-side (l'account del sito non e'
-  // ricavabile dal documento ne leggibile da anon): reader confinato, cache()d, condiviso con la page.
+  // BIL-303 (plan-gates) — SEO BASE per TUTTI (Free incluso): title, description, canonical E
+  // openGraph completo. openGraph controlla l'ANTEPRIMA SOCIAL del link condiviso (WhatsApp/Instagram/
+  // ...), il canale di acquisizione dei micro-business: non si degrada al Free. AVANZATI (Pro-only,
+  // seo_advanced): twitter card qui + JSON-LD LocalBusiness nel render. Fail-safe: reader non
+  // risolvibile => free => solo base (mai un campo avanzato per errore). Entitlement server-side
+  // (l'account del sito non e' ricavabile dal documento ne leggibile da anon): reader confinato,
+  // cache()d, condiviso con la page.
   const entitlement = await getPublicSiteEntitlement(site.public_slug).catch(() => FREE_ENTITLEMENT);
   const seoAdvanced = entitlement.limits.seo_advanced;
 
@@ -88,19 +90,15 @@ export async function generateMetadata({ params }: PublicSitePageProps): Promise
     title,
     ...(description !== undefined ? { description } : {}),
     alternates: { canonical },
-    ...(seoAdvanced
-      ? {
-          openGraph: {
-            title,
-            ...(description !== undefined ? { description } : {}),
-            type: 'website',
-            url: canonical,
-            locale: site.locale,
-            ...(image !== undefined ? { images: [image] } : {}),
-          },
-          twitter: { card: 'summary_large_image' },
-        }
-      : {}),
+    openGraph: {
+      title,
+      ...(description !== undefined ? { description } : {}),
+      type: 'website',
+      url: canonical,
+      locale: site.locale,
+      ...(image !== undefined ? { images: [image] } : {}),
+    },
+    ...(seoAdvanced ? { twitter: { card: 'summary_large_image' } } : {}),
   };
   return metadata;
 }

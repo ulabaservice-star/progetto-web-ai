@@ -43,9 +43,10 @@ const { readHolder, readPublishedSiteSpy } = vi.hoisted(() => {
 });
 vi.mock('@/data/public-site', () => ({ readPublishedSite: readPublishedSiteSpy }));
 
-// BIL-303 (plan-gates): i campi SEO avanzati (openGraph/twitter) sono ora Pro-only. Questo oracolo
-// verifica la CORRETTEZZA di quei campi, quindi fissa il piano dell'account a Pro (seo_advanced) — il
-// GATE free/Pro (assenza per Free, fail-safe) e' provato in tests/plan-gate-seo-advanced.test.ts.
+// BIL-303 (plan-gates): openGraph e' BASE (per tutti, Free incluso); la twitter card e' avanzata
+// (Pro-only). Questo oracolo verifica la CORRETTEZZA di openGraph/canonical/twitter, quindi fissa il
+// piano a Pro (seo_advanced) cosi' anche la twitter card e' resa — il GATE free/Pro (twitter/JSON-LD
+// assenti per Free) e' provato in tests/plan-gate-seo-advanced.test.ts.
 vi.mock('@/data/public-site-entitlement', () => ({
   getPublicSiteEntitlement: async () => ({ plan: 'pro', limits: PLAN_LIMITS.pro }),
 }));

@@ -77,8 +77,9 @@
     `getPublicSiteEntitlement` (`src/data/public-site-entitlement.ts`, `createAdminClient`, `cache()`d,
     try/catch ⇒ free). `.catch(()=>FREE_ENTITLEMENT)` nel serving = "mai assente per errore".
   - **BIL-303** — SEO avanzato gated in `generateMetadata` + render: **insieme avanzato esplicito e chiuso**
-    = `{openGraph completo, twitter, JSON-LD LocalBusiness}` solo se `seo_advanced`; **base per tutti** =
-    `{title, description, canonical, sitemap}` (il canonical resta base: è igiene anti-duplicato).
+    = `{twitter card, JSON-LD LocalBusiness}` solo se `seo_advanced`; **base per tutti** = `{title,
+    description, canonical, openGraph completo, sitemap}`. **openGraph è BASE** (anteprima social del link
+    condiviso su WhatsApp/Instagram — canale di acquisizione dei micro-business, non si degrada al Free).
   - **BIL-304** — cap AI parametrico in `_shared/ai-endpoint.ts`: la soglia di `checkAiBudget` deriva da
     `limits.ai_monthly_cap` (`getAccountEntitlementForUser`, fail-safe totale ⇒ free), **non più una
     costante**; rate-limit (finestra) invariato; 429 al cap del piano. Spia sul `checkAiBudget` REALE.
@@ -93,11 +94,11 @@
 - **Batteria di mutazione 5/5** (backup+sha256, ripristini bit-identici, mai `git checkout` sul macrotask
   uncommitted): gate off ⇒ site-limit rosso; badge-sempre ⇒ AC-302-2 rosso; seoAdvanced=true ⇒ AC-303-1/3
   rossi; costante al posto del cap ⇒ AC-304-2/3 rossi; fail-OPEN del reader ⇒ public-site-entitlement rosso.
-- **Cambio di contratto dichiarato (BIL-303)**: il **SEO avanzato passa da free-tier a Pro-only**. I test
-  del *meccanismo* (`seo-metadata`, `jsonld-localbusiness`, e2e `public-hostile`) fissano il piano a **Pro**
-  per esercitare il campo; il *gate* free/Pro è nei `plan-gate` test. `sites-actions` (T-101): seed Pro per
-  esercitare la creazione multi-sito. **Il free-tier non ha più openGraph/JSON-LD** — decisione di prodotto
-  allineata al blueprint ("Free ⇒ solo SEO base"), da confermare col titolare del prodotto se indesiderata.
+- **Cambio di contratto dichiarato (BIL-303)**: gli avanzati **twitter card + JSON-LD LocalBusiness** passano
+  a Pro-only; **openGraph resta BASE** (anteprima social per tutti, Free incluso — scelta di prodotto del
+  titolare, 2026-08-27: non si degrada il canale WhatsApp/Instagram). I test del *meccanismo* (`seo-metadata`,
+  `jsonld-localbusiness`, e2e `public-hostile`) fissano il piano a **Pro**; il *gate* free/Pro è nei `plan-gate`
+  test. `sites-actions` (T-101): seed Pro per esercitare la creazione multi-sito.
 - **NON coperto, dichiarato (L-COL-006)**: `getPublicSiteEntitlement` reale (rete admin) è provato con
   fake iniettato (fail-safe) + serving mockato; l'e2e Chromium completo (**37/37 verde**) esercita il
   serving reale su `/s/` con account Pro. Il cap AI resta **per-sito totale** come oggi (out-of-scope): parametrizzo
