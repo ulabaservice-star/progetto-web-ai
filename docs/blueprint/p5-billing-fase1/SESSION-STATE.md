@@ -10,7 +10,7 @@
 | **Progetto** | Ulaba/Belora — P5 Fase 1 (nucleo billing) |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase Cloud EU) |
 | **Ultimo aggiornamento** | 2026-08-27 (session-end del BUILD `plan-gates`) |
-| **Sessione corrente** | BUILD `plan-gates` — CHIUSA (checkpoint 4/4 verde; mutazione 5/5; **commit di branch `01d822e` + e2e `bf5843e`**; merge su `main` **PENDING** — human-gate deploy-coupled) |
+| **Sessione corrente** | BUILD `plan-gates` — CHIUSA + **MERGIATO** su `main` (`e7e7422`, `--no-ff`; checkpoint 4/4 verde; mutazione 5/5; deploy coupled avviato su ulaba.net) |
 
 ---
 
@@ -44,7 +44,7 @@
 |---|---|
 | Branch di lavoro | `trueline/build/plan-gates` (da `main` pulito `ed0fdcc`) |
 | Commit del macrotask | `01d822e` (16 file, +900/-40) + `bf5843e` (e2e, 2 file, +35) |
-| Stato merge su `main` | **PENDING** — human-gate (deploy-coupling **coupled**: push su `main` = deploy su ulaba.net). Verifica locale PASSATA: vitest 1800/1801, lint 0, next build verde, **e2e Chromium 37/37** (public-hostile adattato al contratto SEO Pro-only). |
+| Stato merge su `main` | ✅ **FATTO** — merge `--no-ff` `e7e7422` + push `origin/main` (`ed0fdcc..e7e7422`) dopo il "vai" umano → deploy coupled avviato su ulaba.net. Verifica locale PASSATA: vitest 1800/1801, lint 0, next build, **e2e Chromium 37/37**. |
 | Deploy-coupling | **coupled** — confermato. |
 
 ## 4. Baseline & budget
@@ -106,9 +106,8 @@
 
 ## 6. Prossimi passi
 
-- **Merge su `main`**: **PENDING human-gate** (deploy-coupling coupled). Verifica locale COMPLETA e verde
-  (vitest/lint/build/e2e 37/37). Al "vai": `git checkout main && git merge --no-ff trueline/build/plan-gates`
-  + push (⇒ deploy su ulaba.net).
+- **Merge su `main`**: ✅ **FATTO** — merge `--no-ff` `e7e7422` + push `origin/main` (`ed0fdcc..e7e7422`) dopo
+  il "vai" umano; deploy coupled avviato su ulaba.net. Verifica locale completa e verde (vitest/lint/build/e2e 37/37).
 - **Prossimo macrotask**: `billing-ui` (poi `downgrade-lifecycle`) — Fase 2 (`custom-domains`) blueprint separato.
 - **Config di deploy (non blueprint)**: env Vercel `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` /
   `STRIPE_PRICE_PRO` / `NEXT_PUBLIC_APP_URL`; registrare l'endpoint webhook su Stripe. Prima che il billing
