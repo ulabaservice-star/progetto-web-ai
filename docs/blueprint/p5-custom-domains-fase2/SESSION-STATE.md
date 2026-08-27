@@ -9,8 +9,8 @@
 |---|---|
 | **Progetto** | Ulaba/Belora — P5 Fase 2 (domini custom) |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase Cloud EU) |
-| **Ultimo aggiornamento** | 2026-08-27 (session-end del BOOTSTRAP) |
-| **Sessione corrente** | BOOTSTRAP — **CHIUSO**. Blueprint `p5-custom-domains-fase2` creato (**12 macrotask, 22 task atomici**) + committato+pushato su `main` (`d082224`, docs-only). Strutturale `validate_blueprint` **verde 5/5**. Nessun codice prodotto. **Prossima sessione: BUILD `domain-schema`.** |
+| **Ultimo aggiornamento** | 2026-08-28 (session-end BUILD `domain-schema`) |
+| **Sessione corrente** | BUILD `domain-schema` (DOM-101/102) — **CHIUSO+MERGIATO** (`2788894`, pushato su `origin/main`). Tabella `public.site_domains` + RLS (gestione owner-only, NO UPDATE authenticated; routing anon-active column-level). Checkpoint **4/4 verde**, batteria di mutazione **4/4** (M1→AC-101-1/4 rosso, M2→AC-102-1/3 rosso), `next build` ok, migrazione `20260827000100` **applicata al cloud** (POOLER) e RLS/GRANT **verificati** via node pg (CA Supabase pinnata). **1/12 macrotask done. Prossimo eleggibile: `domain-hostname` / `domain-port` / `domain-store` / `domain-routing`.** |
 
 ---
 
@@ -20,7 +20,7 @@
 
 | # | Macrotask | Stato | Checkpoint | Dip |
 |---|---|---|---|---|
-| 01 | `domain-schema` (DOM-101/102) | **todo** | — | — |
+| 01 | `domain-schema` (DOM-101/102) | **done** | 4/4 ✅ (`2788894`) | — |
 | 02 | `domain-hostname` (DOM-111/112) | **todo** | — | — |
 | 03 | `domain-companion` (DOM-121) | **todo** | — | `domain-hostname` |
 | 04 | `domain-dns` (DOM-131) | **todo** | — | `domain-hostname` |
@@ -33,16 +33,18 @@
 | 11 | `domain-ui` (DOM-501/502) | **todo** | — | `domain-verify-disconnect` |
 | 12 | `domain-downgrade` (DOM-601/602) | **todo** | — | `domain-schema`, `domain-store` |
 
-**Primi eleggibili (nessuna dipendenza):** `domain-schema`, `domain-hostname`, `domain-port`. Il DAG
-completo è in `00-INDEX.md` §Build order.
+**Eleggibili ora (dipendenze verdi):** `domain-hostname`, `domain-port` (senza dipendenze), più
+`domain-store` e `domain-routing` (sbloccati da `domain-schema` done). Il DAG completo è in
+`00-INDEX.md` §Build order.
 
 ## 2. Macrotask corrente
 
-- **NESSUNO ancora selezionato** — BOOTSTRAP appena concluso. Alla prossima sessione il dispatch
-  risolve **BUILD**.
-- **Suggerito**: iniziare da **`domain-schema`** (fonda la tabella `site_domains` + le due superfici
-  RLS su cui poggia tutto), poi `domain-hostname` e `domain-port` (entrambi senza dipendenze, dominio
-  puro / tipi). Ogni macrotask è piccolo (1–3 micro-task): una sessione leggera.
+- **NESSUNO in corso** — `domain-schema` chiuso e mergiato. Alla prossima sessione il dispatch risolve
+  **BUILD** sul prossimo eleggibile.
+- **Suggerito**: `domain-hostname` (dominio puro: `normalizeHostname` + `classifyHostname` apex/subdomain
+  + reserved) o `domain-port` (porta `DomainProvider` + fake) — entrambi puri/tipi, sessioni leggere e
+  senza tocco DB. In alternativa `domain-store` (reader/writer su `site_domains`, ora che lo schema c'è)
+  o `domain-routing` (reader pubblico host→slug + middleware, consuma la policy anon-active di DOM-102).
 
 ## 3. Stato git
 
@@ -50,50 +52,61 @@ completo è in `00-INDEX.md` §Build order.
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | — (BOOTSTRAP docs-only committato direttamente su `main`, come la prassi del progetto per i `.md`; il primo branch di build sarà `trueline/build/domain-schema`) |
-| Ultimo commit | `d082224` (docs-only: 18 file blueprint, +1427; `6b689fb..d082224`) + questo session-end |
-| Stato merge su `main` | ✅ **committato+pushato** su `origin/main` — solo `docs/` (fuori da `src/`), nessun impatto sul build/deploy Vercel; nessuna verifica vitest/e2e dovuta (nessun codice) |
-| Deploy-coupling | **coupled** — ereditato e confermato dalla Fase 1 (push su `main` = deploy su ulaba.net → verifica locale prima del merge). `main_deploy_coupled: true`. |
+| Branch di lavoro | `trueline/build/domain-schema` (mergiato in `main` con `--no-ff`; non cancellato — delete branch è distruttivo, mai autonomo) |
+| Ultimo commit | `2788894` (merge domain-schema in main) — commit atomico `c43aba0` (feat: migrazione + 2 test + baseline igiene) + `cc4cf74` (fix blueprint AC-402-3) |
+| Stato merge su `main` | ✅ **mergiato+pushato** su `origin/main` (`658eccd..2788894`, 5 file, +624). Deploy Vercel innescato; codice senza nuove rotte/UI (macrotask solo-schema) → nessun cambio di comportamento runtime; migrazione già sul cloud |
+| Deploy-coupling | **coupled** — confermato (push su `main` = deploy su ulaba.net). Verifica locale fatta PRIMA del merge (vitest, `next build` ok) + cloud RLS/GRANT verificati. `main_deploy_coupled: true`. |
 
 ## 4. Baseline & budget
 
-- **Baseline di sicurezza** (C2): ereditata dalla Fase 1 — `gitleaks:3` (baseline), `osv:2` (baseline),
-  `semgrep:0`, `rls:1` (preesistente `site_publications`, baseline). La Fase 2 aggiungerà `site_domains`
-  (RLS: gestione owner-only + una SELECT anon-active, nessuna UPDATE authenticated) e l'adattatore
-  Vercel (segreti via env, `import 'server-only'`): il checkpoint di ogni macrotask ri-valida. Attesa
-  **1 nuova migrazione** (`site_domains`, macrotask `domain-schema`).
-- **Baseline d'igiene** (C1): `.trueline/hygiene-baseline.json` ereditata; ogni macrotask ri-baseline
-  onestamente se necessario (jscpd non stabile fra macrotask vicini).
+- **Baseline di sicurezza** (C2): ora `gitleaks:3`, `osv:2`, `semgrep:0`, **`rls:2`** — aggiunto in
+  `.trueline/checkpoint-baseline.json` (locale, gitignored) il **gemello** RLS004 su
+  `site_domains_select_active_anon` (`status='active'`): falso-positivo statico della superficie di
+  routing globale per-design (DOM-D6), identico a `site_publications_select_anon`, confermato innocuo dal
+  DB-test (`tests/site-domains-rls-public.test.ts` AC-102-1/2: anon vede solo attivi, `account_id`/token
+  negati). Migrazione `site_domains` applicata a locale **e cloud**.
+- **Baseline d'igiene** (C1): `.trueline/hygiene-baseline.json` (versionata) — **+4 fingerprint** dei
+  cloni jscpd pre-esistenti nei docs BOOTSTRAP (`prompts/session-start.md`, `session-end.md`,
+  `VISION-AND-CONSTRAINTS.md`), NON toccati da questo macrotask (`.test.ts` esclusi da jscpd, `.sql`
+  senza cloni). Re-baseline onesto (227→231).
 - **Budget**: **12 macrotask (22 task atomici)**. Un macrotask alla volta; loop di fix con tetto in
   `references/oracles/thresholds.md`. Granularità fine per sessioni leggere.
 
 ## 5. Esiti dell'ultima sessione (framing onesto)
 
-- **BOOTSTRAP concluso** — blueprint `p5-custom-domains-fase2` generato in stile-utente: `00-INDEX`,
-  `VISION-AND-CONSTRAINTS`, 12 moduli (`01`–`12`), i 3 prompt di lifecycle, questa `SESSION-STATE`.
-  **11 decisioni bloccate** nel decision ledger (DOM-D1…DOM-D11).
-- **Decisioni umane raccolte** (non inventate): provider **Vercel Domains API** dietro `DomainProvider`
-  (scelto su analisi costi vs Cloudflare for SaaS: $0 marginale vs $0.10/host/mese oltre 100); **apex +
-  sottodominio**; **auto-www** (DOM-D11, connettere l'apex collega anche il www); **scollegamento in
-  downgrade INCLUSO** (chiude BIL-D7); **granularità fine** (12 macrotask piccoli per BUILD
-  sessione-per-sessione, su richiesta utente).
-- **Self-check strutturale**: `validate_blueprint.mjs` sulla dir — **verde 5/5** (`ok:true`, 22 task,
-  REQUIRED_FIELDS / AC_COVERAGE / DAG_VALID / UNIQUE_IDS / MACROTASK_OWNERSHIP tutti OK).
-- **Self-check semantico**: presentato (punti 6–10); rilievi R1 (doppia sorgente DNS: comporre
-  `dnsInstructionsFor` con `verification[]` del provider in DOM-302) e R2 (densità) portati in nota nei
-  moduli. R3 (auto-www) **risolto** con i task DOM-121/DOM-303. Nessun codice prodotto.
-- **BOOTSTRAP committato+pushato** su `origin/main` (`d082224`, 18 file docs, +1427; `6b689fb..d082224`).
-  Memorie di progetto aggiornate (nuovo topic `p5-custom-domains-project`, indice `MEMORY.md`, riferimenti
-  "da bootstrappare" in `p5-billing-project` risolti). BOOTSTRAP **CHIUSO**.
+- **BUILD `domain-schema` (DOM-101/102) concluso e mergiato** (`2788894`). Migrazione
+  `20260827000100_site_domains.sql`: tabella con ciclo di vita del collegamento, `kind`
+  (apex/subdomain), `status` (pending/verifying/active/suspended/error), UNIQUE su
+  `normalized_hostname`, FK `account_id→accounts` + **FK composita** `(account_id,site_id)→sites`
+  (difesa cross-tenant), `public_slug` **denormalizzato** per il routing anon (risolta l'ambiguità:
+  DOM-101 non lo elencava, ma DOM-102/DOM-401/DOM-D6 lo esigono).
+- **RLS a due superfici**: gestione owner-only (SELECT/INSERT/DELETE `to authenticated` su
+  `is_account_member`, **nessuna UPDATE authenticated** = anti self-activation) + routing (una SELECT
+  `to anon` su `status='active'` + GRANT column-level `normalized_hostname,public_slug`; token/account_id
+  negati). Provata **a runtime** con client reali + oracolo indipendente service_role (anti-placebo).
+- **Checkpoint 4/4 verde**; **batteria di mutazione 4/4** (M1 policy UPDATE authenticated → AC-101-1/4
+  rosso; M2 anon `USING(true)` → AC-102-1/3 rosso; DB-level, sha256 migrazione invariato). `next build`
+  ok. Cloud: migrazione applicata via POOLER, RLS/GRANT verificati via node pg con **CA Supabase
+  pinnata** (Root 2021 CA estratta dalla catena + verificata) — RLS on, 4 policy attese, GRANT corretti.
+- **Fix blueprint** (`cc4cf74`): AC-402-3 aveva il token vago bannato "sicuro" → floor
+  `ac_observability_check` rosso → riformulato osservabile ("nessun rewrite host-custom emesso;
+  fail-closed"). Nessun cambio di semantica.
+- **Debito pre-esistente rilevato, NON introdotto qui** (decisione utente: **lasciare tracciato**):
+  `npm run typecheck` (`tsc --noEmit` su tutto, incluso e2e) fallisce con **`TS2589`** in
+  `e2e/effects.spec.ts:103` (inferenza tipi Playwright `evaluateAll<…>`, codice dal commit `9c7b0ed`).
+  Provato pre-esistente (fallisce sull'albero senza i miei file); **non blocca `next build`** (staging
+  live lo conferma) → rende rosso solo il meta-test `tests/scaffold.test.ts` sul typecheck. Da
+  affrontare in una sessione dedicata, fuori dallo scope di questo macrotask.
 
 ## 6. Prossimi passi
 
-- **BOOTSTRAP chiuso** ✅ — strutturale verde, semantico presentato, conferma umana ricevuta, blueprint
-  committato+pushato su `main` (`d082224`).
-- **Prima sessione BUILD**: `domain-schema` (migrazione `site_domains` + RLS gestione owner-only + SELECT
-  anon-active). Preparare il branch `trueline/build/domain-schema` da `main` pulito; al confine
-  applicare la migrazione al cloud (POOLER) e verificare RLS/GRANT prima del merge.
+- **`domain-schema` chiuso** ✅ (1/12). Prossimo BUILD: un eleggibile fra `domain-hostname`,
+  `domain-port` (puri, sessioni leggere), `domain-store` o `domain-routing` (ora sbloccati). Il
+  session-start risolve il dispatch.
+- **`domain-routing` (DOM-401/402)** consuma la policy anon-active di DOM-102: il reader
+  `src/data/public-domain.ts` proietta `{ public_slug }` da `site_domains` come anon (gemello di
+  `public-site.ts`).
 - **Config di deploy (prereq go-live, non blueprint)**: env Vercel `VERCEL_TOKEN`, `VERCEL_PROJECT_ID`,
   `VERCEL_TEAM_ID` (se team), `NEXT_PUBLIC_APEX_DOMAIN`/target dei record. Collegamento reale inerte
   finché le chiavi non sono in env (DOM-D9), come le CTA Stripe di Fase 1.
-- **Aggiornare le memorie di progetto** con l'apertura del workstream Fase 2 (blueprint bootstrappato).
+- **Debito**: pianificare il fix di `TS2589` in `e2e/effects.spec.ts` (typecheck verde) a parte.
