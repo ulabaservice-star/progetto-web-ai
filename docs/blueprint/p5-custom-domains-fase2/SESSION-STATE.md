@@ -9,8 +9,8 @@
 |---|---|
 | **Progetto** | Ulaba/Belora — P5 Fase 2 (domini custom) |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase Cloud EU) |
-| **Ultimo aggiornamento** | 2026-08-28 (session-end BUILD `domain-hostname`) |
-| **Sessione corrente** | BUILD `domain-hostname` (DOM-111/112) — **CHIUSO+MERGIATO** (`e497b8a`, pushato su `origin/main`). Dominio **PURO**: `normalizeHostname(raw)` (forma canonica: trim/lowercase, schema http(s):// rimosso con scarto path/porta/userinfo, IDN→punycode via `node:url domainToASCII`, rifiuto porta/path/wildcard/spazi/non-FQDN) + `classifyHostname(normalized, reserved)` (apex=eTLD+1 registrabile vs subdomain via **tldts** — PSL bundlata, corretto su `.co.uk`/`.com.br`; reserved `ulaba.net/*`,`*.vercel.app`,`localhost` e non-FQDN → `reserved`, DOM-D7 anti-hijack). Nuova dep **`tldts`** (puro/offline). Checkpoint **4/4** (C1 verde dopo **ratchet additivo onesto** del fingerprint clone DDL `.sql` PRE-ESISTENTE di `domain-schema`; C2 verde; C3 verde salvo debito TS2589; C4 **10/10**), batteria di mutazione **4/4**, `next build` ok. **2/12 macrotask done. Prossimo eleggibile: `domain-companion`/`domain-dns` (da hostname), `domain-port`, `domain-store`, `domain-routing`.** |
+| **Ultimo aggiornamento** | 2026-08-28 (session-end BUILD `domain-companion`) |
+| **Sessione corrente** | BUILD `domain-companion` (DOM-121) — **CHIUSO+MERGIATO** (`817fea5`, pushato su `origin/main`). Dominio **PURO** auto-www (DOM-D11): `companionHostname(normalized, kind)` → apex ⇒ `{ hostname:'www.<apex>', kind:'subdomain' }`; subdomain ⇒ `null` (nessun auto-apex, niente catene). Nessun DB/rete/orologio; tipo di esito **interno** (no export orfano). Checkpoint **4/4** (C1 igiene verde **senza ratchet** — nessun clone/dead-code nuovo, baseline 232 invariata; C2 verde; C3 verde salvo debito TS2589; C4 **3/3** AC-121-1..3 + trace covers), batteria di mutazione **4/4** (guardia apex, prefisso www, kind ritorno, impurità Date), `next build` ok. **3/12 macrotask done. Prossimo eleggibile: `domain-dns` (da hostname), `domain-port`, `domain-store`, `domain-routing`.** |
 
 ---
 
@@ -22,7 +22,7 @@
 |---|---|---|---|---|
 | 01 | `domain-schema` (DOM-101/102) | **done** | 4/4 ✅ (`2788894`) | — |
 | 02 | `domain-hostname` (DOM-111/112) | **done** | 4/4 ✅ (`e497b8a`) | — |
-| 03 | `domain-companion` (DOM-121) | **todo** | — | `domain-hostname` |
+| 03 | `domain-companion` (DOM-121) | **done** | 4/4 ✅ (`817fea5`) | `domain-hostname` |
 | 04 | `domain-dns` (DOM-131) | **todo** | — | `domain-hostname` |
 | 05 | `domain-port` (DOM-201/202) | **todo** | — | — |
 | 06 | `domain-vercel` (DOM-211) | **todo** | — | `domain-port` |
@@ -33,18 +33,20 @@
 | 11 | `domain-ui` (DOM-501/502) | **todo** | — | `domain-verify-disconnect` |
 | 12 | `domain-downgrade` (DOM-601/602) | **todo** | — | `domain-schema`, `domain-store` |
 
-**Eleggibili ora (dipendenze verdi):** `domain-companion` e `domain-dns` (sbloccati da `domain-hostname`
-done), `domain-port` (senza dipendenze), più `domain-store` e `domain-routing` (da `domain-schema` done).
-Il DAG completo è in `00-INDEX.md` §Build order.
+**Eleggibili ora (dipendenze verdi):** `domain-dns` (sbloccato da `domain-hostname` done), `domain-port`
+(senza dipendenze), più `domain-store` e `domain-routing` (da `domain-schema` done). `domain-connect`
+resta bloccato finché `domain-port` e `domain-store` non sono verdi. Il DAG completo è in `00-INDEX.md`
+§Build order.
 
 ## 2. Macrotask corrente
 
-- **NESSUNO in corso** — `domain-hostname` chiuso e mergiato. Alla prossima sessione il dispatch risolve
+- **NESSUNO in corso** — `domain-companion` chiuso e mergiato. Alla prossima sessione il dispatch risolve
   **BUILD** sul prossimo eleggibile.
 - **Suggerito**: `domain-port` (porta `DomainProvider` + fake in-memory, dominio puro/tipi, sessione
-  leggera senza tocco DB) o `domain-companion` (auto-www puro `companionHostname`, da `domain-hostname`).
-  In alternativa `domain-store` (reader/writer su `site_domains`, lo schema c'è) o `domain-routing`
-  (reader pubblico host→slug + middleware, consuma la policy anon-active di DOM-102 e ora `normalizeHostname`).
+  leggera senza tocco DB) o `domain-dns` (istruzioni DNS pure `dnsInstructionsFor` dal `kind`, da
+  `domain-hostname`). In alternativa `domain-store` (reader/writer su `site_domains`, lo schema c'è) o
+  `domain-routing` (reader pubblico host→slug + middleware, consuma la policy anon-active di DOM-102 e
+  `normalizeHostname`).
 
 ## 3. Stato git
 
@@ -52,10 +54,10 @@ Il DAG completo è in `00-INDEX.md` §Build order.
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `trueline/build/domain-hostname` (mergiato in `main` con `--no-ff`; non cancellato — delete branch è distruttivo, mai autonomo) |
-| Ultimo commit | `e497b8a` (merge domain-hostname in main) — commit atomico `905d363` (feat: `hostname.ts` + 2 test + ratchet `hygiene-baseline` + dep `tldts`) |
-| Stato merge su `main` | ✅ **mergiato+pushato** su `origin/main` (`27ba64a..e497b8a`, 6 file, +201/−9). Deploy Vercel innescato; dominio puro **non importato dall'app** → nessun cambio di comportamento runtime |
-| Deploy-coupling | **coupled** — confermato (push su `main` = deploy su ulaba.net). Verifica locale PRIMA del merge: vitest (1837 pass), `next build` ok. Nessun file runtime dell'app toccato → e2e Chromium non impattati. `main_deploy_coupled: true`. |
+| Branch di lavoro | `trueline/build/domain-companion` (mergiato in `main` con `--no-ff`; non cancellato — delete branch è distruttivo, mai autonomo) |
+| Ultimo commit | `817fea5` (merge domain-companion in main) — commit atomico `e54dcf0` (feat: `companion.ts` + `tests/domain-companion.test.ts`, 2 file +59) |
+| Stato merge su `main` | ✅ **mergiato+pushato** su `origin/main` (`883d827..817fea5`, 2 file, +59). Deploy Vercel innescato; dominio puro **non importato dall'app** → nessun cambio di comportamento runtime |
+| Deploy-coupling | **coupled** — confermato (push su `main` = deploy su ulaba.net). Verifica locale PRIMA del merge: vitest (1840 pass), `next build` ok. Nessun file runtime dell'app toccato → e2e Chromium non impattati. `main_deploy_coupled: true`. |
 
 ## 4. Baseline & budget
 
@@ -65,43 +67,35 @@ Il DAG completo è in `00-INDEX.md` §Build order.
   routing globale per-design (DOM-D6), identico a `site_publications_select_anon`, confermato innocuo dal
   DB-test (`tests/site-domains-rls-public.test.ts` AC-102-1/2: anon vede solo attivi, `account_id`/token
   negati). Migrazione `site_domains` applicata a locale **e cloud**.
-- **Baseline d'igiene** (C1): `.trueline/hygiene-baseline.json` (versionata) — **231→232** in
-  `domain-hostname`: **+1 fingerprint** (`e895fc68…`) del clone DDL boilerplate **PRE-ESISTENTE** della
-  migrazione `20260827000100_site_domains.sql` (introdotta da `domain-schema`, che formava 2 cloni ≥50
-  token con `20260818000100`/`20260806000300` ma NON li catturò — la nota "`.sql` senza cloni" del
-  session-end precedente era imprecisa). **Provato indipendente** da questo macrotask: con i file di
-  `domain-hostname` rimossi il set dup resta **234 identico**; `hostname.ts` non forma cloni, i
-  `.test.ts` sono esclusi da jscpd. Ratchet **additivo e monotono** (append del solo hash verificato,
-  231 entries preservate byte-per-byte), stesso code-path del checkpoint (`control1Hygiene`). I 4
-  fingerprint docs restano.
-- **Baseline di sicurezza** (C2): invariata (`gitleaks:3`, `osv:2`, `semgrep:0`, `rls:2`); la nuova dep
-  `tldts` **non introduce CVE** (osv verde), nessun segreto nel sorgente.
+- **Baseline d'igiene** (C1): `.trueline/hygiene-baseline.json` (versionata) — **INVARIATA a 232** in
+  `domain-companion`: **nessun ratchet**. Il checkpoint C1 è verde senza append (`dead-code:0 dup:234
+  cycle:0 twin:0`, nessuna regressione NUOVA): `companion.ts` non forma cloni ≥ soglia e i `.test.ts`
+  sono esclusi da jscpd. La disciplina del ratchet si applica **solo** quando un clone nuovo è provato
+  pre-esistente/indipendente — qui non ce n'è, quindi il baseline resta byte-per-byte quello di
+  `domain-hostname`.
+- **Baseline di sicurezza** (C2): invariata (`gitleaks:3`, `osv:2`, `semgrep:0`, `rls:2`); nessuna nuova
+  dep in `domain-companion` (solo dominio puro), nessun segreto nel sorgente.
 - **Budget**: **12 macrotask (22 task atomici)**. Un macrotask alla volta; loop di fix con tetto in
   `references/oracles/thresholds.md`. Granularità fine per sessioni leggere.
 
 ## 5. Esiti dell'ultima sessione (framing onesto)
 
-- **BUILD `domain-hostname` (DOM-111/112) concluso e mergiato** (`e497b8a`). Modulo `src/domain/domains/
-  hostname.ts`, dominio **PURO** (nessun DB/rete/DNS/orologio):
-  - `normalizeHostname(raw)` → `{ok:true,normalized}|{ok:false,'invalid_format'}`: trim/lowercase, schema
-    `http(s)://` rimosso (con scarto di path/query/fragment, porta, userinfo — è un URL), IDN→punycode via
-    `node:url domainToASCII`, rimozione trailing dot; rifiuto per caratteri illegali (`:` porta, `/?#`
-    path, `*` wildcard, spazi, `_`, `\`, `@`) e per forma non-FQDN (regex sintattica, non PSL).
-  - `classifyHostname(normalized, reserved=RESERVED_DOMAINS)` → `{ok:true,kind:'apex'|'subdomain'}|
-    {ok:false,'reserved'}`: apex=eTLD+1 registrabile via **`tldts`** (PSL bundlata → corretto su
-    `.co.uk`/`.com.br`), reserved (match esatto o suffisso `.r`) e non-FQDN → `reserved` (DOM-D7,
-    A01:2025 anti-hijack, respinto **prima** di qualunque scrittura/provider).
-- **Decisione utente**: provider PSL = **`tldts`** (dep runtime pura/offline) scelto su lista curata
-  inline, per correttezza sui TLD multi-livello dei mercati IT/ES/LATAM. Tipi di esito e
-  `RESERVED_DOMAINS` tenuti **interni** (nessun consumatore ancora → nessun export orfano; C1 dead-code
-  verde) — si esporteranno con `domain-connect`/`domain-routing`.
-- **Checkpoint 4/4**: C1 igiene **verde dopo ratchet additivo onesto** (§4: assorbito il fingerprint del
-  clone DDL `.sql` pre-esistente di `domain-schema`, provato indipendente); C2 sicurezza **verde**
-  (gitleaks/osv/semgrep/rls; `tldts` senza CVE); C3 regressioni **verde salvo debito** (unico rosso =
-  `scaffold.test.ts`, vedi sotto); C4 conformità **verde 10/10** (AC-111-1..4 + AC-112-1..4). **Batteria
-  di mutazione 4/4**: M1 reserved neutralizzato→AC-112-3 rosso; M2 `Date` in normalize→AC-111-4 rosso;
-  M3 `Date` in classify→AC-112-4 rosso; M4 forma FQDN aperta→AC-111-2 rosso. Ripristino **bit-identico**
-  (sha256 invariato). `next build` ok.
+- **BUILD `domain-companion` (DOM-121) concluso e mergiato** (`817fea5`). Modulo `src/domain/domains/
+  companion.ts`, dominio **PURO** (nessun DB/rete/orologio) — parte pura dell'auto-www (DOM-D11):
+  - `companionHostname(normalized, kind)` → `{ hostname, kind:'subdomain' } | null`: `kind 'apex'` ⇒
+    `{ hostname:'www.<apex>', kind:'subdomain' }` (companion www); `kind 'subdomain'` ⇒ `null` (nessun
+    companion; **niente auto-apex**, niente catene sorprendenti). Deterministica.
+  - Guardia `if (kind !== 'apex') return null` — solo un apex genera companion. Tipo di esito `Companion`
+    tenuto **interno** (nessun consumatore ancora → nessun export orfano; C1 dead-code verde), si
+    esporterà con `domain-connect` (DOM-303). Il companion **non è validato qui**: l'endpoint DOM-303 lo
+    ri-passa da `normalizeHostname`/`classifyHostname` prima di collegarlo (security_note del macrotask).
+- **Checkpoint 4/4**: C1 igiene **verde senza ratchet** (§4: nessun clone/dead-code nuovo, baseline 232
+  invariata); C2 sicurezza **verde** (gitleaks/osv/semgrep/rls; nessuna nuova dep); C3 regressioni
+  **verde salvo debito** (1840 pass; unico rosso = `scaffold.test.ts`, vedi sotto); C4 conformità
+  **verde 3/3** (AC-121-1..3, target test tracciato coi tag `covers:`). **Batteria di mutazione 4/4**:
+  M1 guardia apex rimossa→AC-121-2 rosso; M2 prefisso `'www.'`→`'ww.'`→AC-121-1 rosso; M3 kind ritorno
+  `'subdomain'`→`'apex'`→AC-121-1 rosso; M4 impurità `new Date()`→AC-121-3/1 rosso. Ripristino
+  **bit-identico** (sha256 `51fec40c…` invariato). `next build` ok.
 - **Debito pre-esistente, NON introdotto qui** (decisione utente: **lasciare tracciato**): `npm run
   typecheck` fallisce con **`TS2589`** in `e2e/effects.spec.ts:103` (codice dal commit `9c7b0ed`).
   Provato pre-esistente (l'unico errore `tsc`, assente dai miei file); **non blocca `next build`** →
@@ -110,11 +104,11 @@ Il DAG completo è in `00-INDEX.md` §Build order.
 
 ## 6. Prossimi passi
 
-- **`domain-hostname` chiuso** ✅ (2/12). Prossimo BUILD: un eleggibile fra `domain-port` (puro,
-  sessione leggera), `domain-companion`/`domain-dns` (da hostname), `domain-store` o `domain-routing`.
-  Il session-start risolve il dispatch.
-- **`domain-companion` (DOM-121)** e **`domain-dns` (DOM-131)** ora sbloccati: entrambi consumano
-  `normalizeHostname`/`classifyHostname` (companion apex⇒www; istruzioni DNS dal `kind`).
+- **`domain-companion` chiuso** ✅ (3/12). Prossimo BUILD: un eleggibile fra `domain-port` (puro,
+  sessione leggera), `domain-dns` (da hostname), `domain-store` o `domain-routing`. Il session-start
+  risolve il dispatch.
+- **`domain-dns` (DOM-131)** ancora sbloccato: consuma `classifyHostname` (istruzioni DNS dal `kind`:
+  A/ALIAS apex, CNAME subdomain, TXT verifica).
 - **`domain-routing` (DOM-401/402)** consuma la policy anon-active di DOM-102: il reader
   `src/data/public-domain.ts` proietta `{ public_slug }` da `site_domains` come anon (gemello di
   `public-site.ts`).
@@ -124,6 +118,17 @@ Il DAG completo è in `00-INDEX.md` §Build order.
 - **Debito**: pianificare il fix di `TS2589` in `e2e/effects.spec.ts` (typecheck verde) a parte.
 
 ## 7. Carry-over & copertura dichiarata
+
+**Copertura di `domain-companion` (DOM-121):**
+- `tests/domain-companion.test.ts` copre **AC-121-1..3** (apex ⇒ `{hostname:'www.iltuobar.it',
+  kind:'subdomain'}`; subdomain ⇒ `null`; purezza indipendente dall'orologio con fake-timers 2020 vs
+  2030). Attese **letterali** (mai binding importato → asserzioni non tautologiche); ogni AC tracciato
+  col tag `covers:`. **3/3** verdi; **mutazione 4/4** (guardia apex, prefisso www, kind ritorno,
+  impurità Date — tutte uccise).
+- **Gate visivo**: N/A (nessuna UI; il gate umano scatta a `domain-ui`, DOM-501).
+- **NON coperto (out_of_scope del macrotask)**: la creazione effettiva dei due collegamenti apex+www
+  (DOM-303, endpoint `domain-connect`) e la ri-validazione del companion. `companionHostname` è **orfana
+  a livello app** finché `domain-connect` non la importa (come le funzioni di `hostname.ts`).
 
 **Copertura di `domain-hostname` (DOM-111/112):**
 - `tests/domain-hostname-normalize.test.ts` copre **AC-111-1..4** (URL schema/case/path→host canonico;
@@ -149,7 +154,18 @@ Il DAG completo è in `00-INDEX.md` §Build order.
   (DOM-402) → `domain-routing`. La conferma comportamentale per-tenant della RLS è demandata al DB-test
   (l'euristica statica `rls_check` lo dichiara), qui soddisfatta.
 
-**Carry-over — lezioni nuove di questa sessione (`domain-hostname`):**
+**Carry-over — lezioni nuove (`domain-companion`):**
+- **Ratchet solo su debito provato, mai di default**: un macrotask di dominio puro può chiudere con C1
+  verde **senza toccare** `hygiene-baseline.json` (qui `companion.ts` non forma cloni ≥ soglia, i
+  `.test.ts` sono esclusi da jscpd). Il ratchet additivo è un rimedio a un clone **pre-esistente provato
+  indipendente** (vedi `domain-hostname`), non un passo rituale: se il checkpoint è già verde, il
+  baseline resta byte-per-byte com'era.
+- **Batteria di mutazione = power-check fatto a mano**: per un dominio puro non serve il ramo
+  `assertionPower` dell'oracolo (che eseguirebbe anche i DB-test in-scope, richiedendo Supabase su); i
+  4 mutanti (uno per AC + purezza) provano che ogni asserzione può fallire, con ripristino verificato per
+  sha256.
+
+**Carry-over — lezioni da `domain-hostname`:**
 - **Debito di baseline d'igiene ereditato**: un macrotask che aggiunge un file può creare cloni jscpd
   che il suo re-baseline NON cattura (qui il `.sql` di `domain-schema`); il debito **si manifesta al
   primo checkpoint successivo** come "dup NUOVO" con path normalizzato `eval/reference-app/…`. Rimedio
