@@ -22,8 +22,11 @@ const PROVIDER = 'vercel';
 
 export type SiteDomainKind = 'apex' | 'subdomain';
 
-/** Le transizioni di stato che muove SOLO il server (mai il client): post-creazione. */
-export type SiteDomainStatus = 'active' | 'suspended' | 'error';
+/** Le transizioni di stato che muove SOLO il server (mai il client): post-creazione.
+ *  'verifying' e' la transizione intermedia scritta da verify (DOM-311) quando la verifica DNS del
+ *  provider e' ancora 'pending'; 'active' solo a DNS confermato (DOM-D4). Il CHECK di site_domains
+ *  (DOM-101) ammette tutti questi valori. */
+export type SiteDomainStatus = 'verifying' | 'active' | 'suspended' | 'error';
 
 /** La riga 'pending' che il writer crea all'avvio del collegamento. */
 export type SiteDomainPendingInsert = {
