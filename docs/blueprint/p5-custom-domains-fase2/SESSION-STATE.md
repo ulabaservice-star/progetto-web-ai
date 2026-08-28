@@ -9,8 +9,8 @@
 |---|---|
 | **Progetto** | Ulaba/Belora — P5 Fase 2 (domini custom) |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase Cloud EU) |
-| **Ultimo aggiornamento** | 2026-08-28 (session-end BUILD `domain-dns`) |
-| **Sessione corrente** | BUILD `domain-dns` (DOM-131) — **CHIUSO+MERGIATO** (`af70a7a`, pushato su `origin/main`). Dominio **PURO** `dnsInstructionsFor(normalized, kind, target, token?)` → lista **ordinata** di `{ type, name, value }`: apex ⇒ `A` (target IPv4) / `ALIAS` (hostname), name `@`; subdomain ⇒ `CNAME`, name = etichetta (via `tldts`); `token` ⇒ `TXT '_ulaba-verify'` value=token, assente ⇒ nessun TXT. `target`/`token` **INIETTATI** dal call-site (A02:2025, nessuna lettura env). Ordine stabile primario-poi-TXT; tipo `DnsRecord` **interno** (no export orfano). Checkpoint **4/4** (C1 igiene verde baseline 232 invariata **senza ratchet**; C2 verde; C3 verde salvo debito TS2589; C4 **3/3** AC-131-1..3 + trace covers), batteria di mutazione **5/5** (uno per AC + target injection + purezza-orologio, ripristino bit-identico sha256), `next build` ok. **4/12 macrotask done. Prossimo eleggibile: `domain-port`, `domain-store`, `domain-routing`.** |
+| **Ultimo aggiornamento** | 2026-08-28 (session-end BUILD `domain-port`) |
+| **Sessione corrente** | BUILD `domain-port` (DOM-201/202) — **CHIUSO+MERGIATO** (`92f4377`, atomico `120b976`, pushato su `origin/main`). Porta **PURA** `DomainProvider` (solo tipi: `addDomain(normalized)→{providerDomainId, verification: VerificationRequirement[]}`, `getVerificationStatus(normalized)→{state: VerificationState, detail?}`, `removeDomain(normalized)→void`; tipi neutri `VerificationState 'verified'|'pending'|'misconfigured'` + `VerificationRequirement {type,domain,value,reason?}`) — gemella di `payment-port.ts`, **zero import** SDK/HTTP/segreto (A01:2025). Fake in-memory `createFakeDomainProvider(seed?)` in `tests/helpers/fake-domain-provider.ts` (**entry** knip come `fake-payment-provider.ts` → mai dead): seed host→stato, `addDomain` registra `'pending'` + `verification[]` non vuoto, `getVerificationStatus` **lancia** per host sconosciuto (osservabile per la rimozione), `removeDomain` rimuove davvero; **deterministico** (no random/orologio, DOM-D9); registro `calls` ispezionabile. Checkpoint **4/4** (C1 igiene verde `dead-code:0 dup:234 cycle:0 twin:0`, baseline invariata **senza ratchet**; C2 verde `gitleaks:3 osv:2 semgrep:0 rls:2`, **nessuna nuova dep**; C3 verde 1850 pass salvo debito TS2589; C4 **verde** AC-201-1..3 + AC-202-1..3, 10/10 target + trace covers), batteria di mutazione **6/6** (import-rete/porta, stato-iniziale, verification-vuoto, seed-ignorato, remove-noop, union-ridotta/tsc; ripristino bit-identico sha256), `next build` ok. **5/12 macrotask done. Prossimo eleggibile: `domain-vercel` (ora sbloccato), `domain-store`, `domain-routing`.** |
 
 ---
 
@@ -24,7 +24,7 @@
 | 02 | `domain-hostname` (DOM-111/112) | **done** | 4/4 ✅ (`e497b8a`) | — |
 | 03 | `domain-companion` (DOM-121) | **done** | 4/4 ✅ (`817fea5`) | `domain-hostname` |
 | 04 | `domain-dns` (DOM-131) | **done** | 4/4 ✅ (`af70a7a`) | `domain-hostname` |
-| 05 | `domain-port` (DOM-201/202) | **todo** | — | — |
+| 05 | `domain-port` (DOM-201/202) | **done** | 4/4 ✅ (`92f4377`) | — |
 | 06 | `domain-vercel` (DOM-211) | **todo** | — | `domain-port` |
 | 07 | `domain-store` (DOM-221/222) | **todo** | — | `domain-schema` |
 | 08 | `domain-connect` (DOM-301/302/303) | **todo** | — | `domain-hostname`, `domain-companion`, `domain-port`, `domain-store` |
@@ -33,19 +33,22 @@
 | 11 | `domain-ui` (DOM-501/502) | **todo** | — | `domain-verify-disconnect` |
 | 12 | `domain-downgrade` (DOM-601/602) | **todo** | — | `domain-schema`, `domain-store` |
 
-**Eleggibili ora (dipendenze verdi):** `domain-port` (senza dipendenze), `domain-store` e
-`domain-routing` (da `domain-schema` done). `domain-dns` è ora **done**. `domain-vercel` resta bloccato
-finché `domain-port` non è verde; `domain-connect` finché `domain-port` e `domain-store` non lo sono. Il
-DAG completo è in `00-INDEX.md` §Build order.
+**Eleggibili ora (dipendenze verdi):** `domain-vercel` (**ora sbloccato** da `domain-port` done),
+`domain-store` e `domain-routing` (da `domain-schema` done). `domain-port` è ora **done**.
+`domain-connect` resta bloccato finché `domain-store` non è verde (ha già `hostname`/`companion`/`port`);
+`domain-verify-disconnect` finché `domain-connect`/`domain-vercel` non lo sono. Il DAG completo è in
+`00-INDEX.md` §Build order.
 
 ## 2. Macrotask corrente
 
-- **NESSUNO in corso** — `domain-dns` chiuso e mergiato. Alla prossima sessione il dispatch risolve
+- **NESSUNO in corso** — `domain-port` chiuso e mergiato. Alla prossima sessione il dispatch risolve
   **BUILD** sul prossimo eleggibile.
-- **Suggerito**: `domain-port` (porta `DomainProvider` + fake in-memory, dominio puro/tipi, sessione
-  leggera senza tocco DB) — sblocca poi `domain-vercel`. In alternativa `domain-store` (reader/writer su
-  `site_domains`, lo schema c'è) o `domain-routing` (reader pubblico host→slug + middleware, consuma la
-  policy anon-active di DOM-102 e `normalizeHostname`).
+- **Suggerito**: `domain-vercel` (DOM-211, adattatore reale `src/data/domain/vercel.ts` che implementa
+  `DomainProvider` contro l'API Vercel con `import 'server-only'` + client LAZY su config iniettabile —
+  gemello di `payment/stripe.ts`; mappa `verification[]`/stato nativi ai tipi neutri della porta; inerte
+  senza env, DOM-D9). In alternativa `domain-store` (reader/writer su `site_domains`, lo schema c'è) o
+  `domain-routing` (reader pubblico host→slug + middleware, consuma la policy anon-active di DOM-102 e
+  `normalizeHostname`).
 
 ## 3. Stato git
 
@@ -53,10 +56,10 @@ DAG completo è in `00-INDEX.md` §Build order.
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `trueline/build/domain-dns` (mergiato in `main` con `--no-ff`; non cancellato — delete branch è distruttivo, mai autonomo) |
-| Ultimo commit | `af70a7a` (merge domain-dns in main) — commit atomico `800c0c9` (feat: `dns-instructions.ts` + `tests/domain-dns-instructions.test.ts`, 2 file +98) |
-| Stato merge su `main` | ✅ **mergiato+pushato** su `origin/main` (`5b65611..af70a7a`, 2 file, +98). Deploy Vercel innescato; dominio puro **non importato dall'app** → nessun cambio di comportamento runtime |
-| Deploy-coupling | **coupled** — confermato (push su `main` = deploy su ulaba.net). Verifica locale PRIMA del merge: vitest (1844 pass), `next build` ok. Nessun file runtime dell'app toccato → e2e Chromium non impattati. `main_deploy_coupled: true`. |
+| Branch di lavoro | `trueline/build/domain-port` (mergiato in `main` con `--no-ff`; non cancellato — delete branch è distruttivo, mai autonomo) |
+| Ultimo commit | `92f4377` (merge domain-port in main) — commit atomico `120b976` (feat: `domain-port.ts` + `tests/helpers/fake-domain-provider.ts` + 2 test, 4 file +251) |
+| Stato merge su `main` | ✅ **mergiato+pushato** su `origin/main` (`9859c28..92f4377`, 4 file, +251). Deploy Vercel innescato; porta+fake **non importati dall'app** (fake in `tests/`) → nessun cambio di comportamento runtime |
+| Deploy-coupling | **coupled** — confermato (push su `main` = deploy su ulaba.net). Verifica locale PRIMA del merge: vitest (1850 pass), `next build` ok. Nessun file runtime dell'app toccato → e2e Chromium non impattati. `main_deploy_coupled: true`. |
 
 ## 4. Baseline & budget
 
@@ -67,38 +70,47 @@ DAG completo è in `00-INDEX.md` §Build order.
   DB-test (`tests/site-domains-rls-public.test.ts` AC-102-1/2: anon vede solo attivi, `account_id`/token
   negati). Migrazione `site_domains` applicata a locale **e cloud**.
 - **Baseline d'igiene** (C1): `.trueline/hygiene-baseline.json` (versionata) — **INVARIATA a 232** anche
-  in `domain-dns`: **nessun ratchet**. Il checkpoint C1 è verde senza append (`dead-code:0 dup:234
-  cycle:0 twin:0`, nessuna regressione NUOVA): `dns-instructions.ts` non forma cloni ≥ soglia e i
-  `.test.ts` sono esclusi da jscpd. Ratchet **solo** su clone nuovo provato pre-esistente/indipendente —
-  qui non ce n'è, il baseline resta byte-per-byte quello di `domain-hostname`.
-- **Baseline di sicurezza** (C2): invariata (`gitleaks:3`, `osv:2`, `semgrep:0`, `rls:2`); nessuna nuova
-  dep in `domain-dns` (riusa `tldts`, già in `hostname.ts`; solo dominio puro), nessun segreto nel sorgente.
+  in `domain-port`: **nessun ratchet**. Il checkpoint C1 è verde senza append (`dead-code:0 dup:234
+  cycle:0 twin:0`, nessuna regressione NUOVA): `domain-port.ts`/il fake non formano cloni ≥ soglia, i
+  `.test.ts` sono esclusi da jscpd e `tests/helpers/**` è **entry** knip (il fake NON è dead anche se
+  importato solo dai test — come `fake-payment-provider.ts`). Ratchet **solo** su clone nuovo provato
+  pre-esistente/indipendente — qui non ce n'è.
+- **Baseline di sicurezza** (C2): invariata (`gitleaks:3`, `osv:2`, `semgrep:0`, `rls:2`); **nessuna nuova
+  dep** in `domain-port` (porta = zero import; fake importa solo tipi interni), nessun segreto nel sorgente.
 - **Budget**: **12 macrotask (22 task atomici)**. Un macrotask alla volta; loop di fix con tetto in
   `references/oracles/thresholds.md`. Granularità fine per sessioni leggere.
 
 ## 5. Esiti dell'ultima sessione (framing onesto)
 
-- **BUILD `domain-dns` (DOM-131) concluso e mergiato** (`af70a7a`). Modulo `src/domain/domains/
-  dns-instructions.ts`, dominio **PURO** (nessun DB/rete/DNS/orologio) — istruzioni DNS attese:
-  - `dnsInstructionsFor(normalized, kind, target, token?)` → `readonly DnsRecord[]` ordinata: `kind
-    'apex'` ⇒ `{ type: IPV4?'A':'ALIAS', name:'@', value:target }` (A verso IP letterale, ALIAS verso
-    hostname — all'apex il CNAME è vietato, "A o ALIAS secondo target"); `kind 'subdomain'` ⇒
-    `{ type:'CNAME', name: parse(normalized).subdomain||normalized, value:target }` (etichetta via
-    `tldts`); `token` fornito ⇒ append `{ type:'TXT', name:'_ulaba-verify', value:token }`, assente ⇒
-    nessun TXT. Ordine stabile **primario-poi-TXT**. Deterministica.
-  - `target`/`token` **INIETTATI** dal call-site (`NEXT_PUBLIC_APEX_DOMAIN`/target Vercel da env): mai
-    letti/hardcoded dentro il dominio puro (A02:2025). Tipo di esito `DnsRecord` tenuto **interno**
-    (nessun consumatore ancora → nessun export orfano; C1 dead-code verde), si esporterà con
-    `domain-connect`/`domain-ui`. La composizione coi record-challenge reali del provider
-    (`verification[]` di `addDomain`, DOM-211) vive nell'endpoint connect (DOM-302, R1), non qui.
+- **BUILD `domain-port` (DOM-201/202) concluso e mergiato** (`92f4377`). Due file di scope + due test:
+  - **Porta** `src/domain/domains/domain-port.ts` — **solo tipi** (dominio puro, **zero import**):
+    `type DomainProvider` con `addDomain(normalized)→{providerDomainId, verification: VerificationRequirement[]}`,
+    `getVerificationStatus(normalized)→{state: VerificationState, detail?}`, `removeDomain(normalized)→void`;
+    tipi neutri `VerificationState = 'verified'|'pending'|'misconfigured'` e `VerificationRequirement =
+    {type,domain,value,reason?}` (forma neutra del record-challenge). Gemella di `payment-port.ts`: i
+    segreti vivono solo nell'adattatore reale (DOM-211, `server-only`), mai nella porta (A01:2025).
+  - **Fake** `tests/helpers/fake-domain-provider.ts` — `createFakeDomainProvider(seed?)` in-memory,
+    **senza rete**: `seed` registra host→stato; `addDomain` registra `'pending'` + `verification[]` non
+    vuoto e ritorna `providerDomainId` deterministico; `getVerificationStatus` ritorna lo stato o
+    **lancia** per host sconosciuto (rende osservabile la rimozione); `removeDomain` rimuove davvero.
+    **Deterministico** (no `Math.random`/`Date`, DOM-D9): `providerDomainId`/`verification[]` derivano
+    dall'host. Registro `calls` ispezionabile (gemello di `fake-payment-provider.ts`).
 - **Checkpoint 4/4**: C1 igiene **verde senza ratchet** (§4: nessun clone/dead-code nuovo, baseline 232
-  invariata; `dns-instructions.ts` non forma cloni ≥ soglia); C2 sicurezza **verde** (gitleaks/osv/
-  semgrep/rls; `tldts` già presente, nessuna nuova dep); C3 regressioni **verde salvo debito** (1844
-  pass; unico rosso = `scaffold.test.ts`, vedi sotto); C4 conformità **verde 3/3** (AC-131-1..3, target
-  test tracciato coi tag `covers:`). **Batteria di mutazione 5/5** (ripristino **bit-identico**, sha256
-  `3f48352e…` invariato): M1 TXT emesso sempre→AC-131-2 rosso; M2 `value` costante (non da target
-  iniettato)→AC-131-1 rosso; M3 CNAME name = host intero (non etichetta)→AC-131-2 rosso; M4 ordine
-  invertito (TXT prima)→AC-131-3 rosso; M5 impurità `new Date()`→AC-131-3 rosso. `next build` ok.
+  invariata; `tests/helpers/**` è entry knip → il fake non è dead); C2 sicurezza **verde** (gitleaks/osv/
+  semgrep/rls; **nessuna nuova dep**); C3 regressioni **verde** (1850 pass; unico rosso = `scaffold.test.ts`
+  typecheck, vedi sotto); C4 conformità **verde** (AC-201-1..3 + AC-202-1..3, **10/10** target coi tag
+  `covers:`). **Batteria di mutazione 6/6** (ripristino **bit-identico**, sha256 di porta+fake invariati):
+  M1 import di rete nella porta→AC-201-1 rosso; M2 stato iniziale `'verified'`→AC-202-2 rosso; M3
+  `verification[]` vuoto→AC-202-2 rosso; M4 seed ignorato→AC-202-1 rosso; M5 `removeDomain` no-op→AC-202-3
+  rosso; M6 union ridotta (rimosso `'misconfigured'`)→AC-201-3 rosso via **tsc** (AC di tipo). `next build` ok.
+- **Regressioni intercettate e chiuse nel loop di fix (framing onesto)**: la prima suite completa ha
+  segnalato **3 rossi NUOVI** miei — (a) `test-harness-auth` T-005 perché il commento della porta citava
+  letteralmente `tests/helpers/…` (la guardia "nessun `src/**` menziona gli helper di test" è **testuale**,
+  cattura anche i commenti) → rimosso il path dal commento (come `payment-port.ts`); (b/c) `scaffold`
+  `npm run lint` per **6** parametri inline non usati nei test (`no-unused-vars`, regola repo `args:
+  'after-used'`, il prefisso `_` NON basta su un unico arg) → omessi i parametri (TS accetta impl con
+  meno parametri della firma normalizzata). Post-fix: `lint` 0 errori, suite **1850 pass**, unico rosso
+  residuo = il debito TS2589.
 - **Debito pre-esistente, NON introdotto qui** (decisione utente: **lasciare tracciato**): `npm run
   typecheck` fallisce con **`TS2589`** in `e2e/effects.spec.ts:103` (codice dal commit `9c7b0ed`).
   Ri-verificato **unico** errore `tsc` (assente dai miei file); **non blocca `next build`** → rende
@@ -107,12 +119,13 @@ DAG completo è in `00-INDEX.md` §Build order.
 
 ## 6. Prossimi passi
 
-- **`domain-dns` chiuso** ✅ (4/12). Prossimo BUILD: un eleggibile fra `domain-port` (puro, sessione
-  leggera — sblocca poi `domain-vercel`), `domain-store` o `domain-routing`. Il session-start risolve il
-  dispatch.
-- **`domain-port` (DOM-201/202)**: porta `DomainProvider` (solo tipi, nessun SDK/segreto, come
-  `payment-port.ts`) + `createFakeDomainProvider()` in-memory per i test — è il pezzo che rende verde il
-  checkpoint degli endpoint senza chiavi Vercel reali (DOM-D9).
+- **`domain-port` chiuso** ✅ (5/12). Prossimo BUILD: un eleggibile fra `domain-vercel` (**ora sbloccato**),
+  `domain-store` o `domain-routing`. Il session-start risolve il dispatch.
+- **`domain-vercel` (DOM-211)**: adattatore reale `src/data/domain/vercel.ts` che implementa
+  `DomainProvider` contro l'API Vercel Domains, con `import 'server-only'` + client **LAZY** su config
+  iniettabile (`VERCEL_TOKEN`/`VERCEL_PROJECT_ID`/`VERCEL_TEAM_ID` da env) — gemello di `payment/stripe.ts`.
+  Mappa la risposta nativa (`verification[]`, stato) ai tipi neutri della porta; **inerte senza env**
+  (DOM-D9); nei test il **fake** (già pronto) sostituisce l'adattatore → verde senza chiavi reali.
 - **`domain-routing` (DOM-401/402)** consuma la policy anon-active di DOM-102: il reader
   `src/data/public-domain.ts` proietta `{ public_slug }` da `site_domains` come anon (gemello di
   `public-site.ts`).
@@ -122,6 +135,22 @@ DAG completo è in `00-INDEX.md` §Build order.
 - **Debito**: pianificare il fix di `TS2589` in `e2e/effects.spec.ts` (typecheck verde) a parte.
 
 ## 7. Carry-over & copertura dichiarata
+
+**Copertura di `domain-port` (DOM-201/202):**
+- `tests/domain-port.test.ts` copre **AC-201-1..3** (AC-201-1: ispezione del sorgente della porta ⇒ ogni
+  import è `import type` e nessun modulo di rete/SDK; AC-201-2: un oggetto conforme tipizza contro
+  `DomainProvider` e le forme di ritorno reggono a runtime; AC-201-3: lo stato è nell'insieme neutro
+  `{verified,pending,misconfigured}`, con gate **statico** dell'assegnazione a `VerificationState`).
+  `tests/domain-fake-provider.test.ts` copre **AC-202-1..3** (seed `'verified'`⇒`'verified'` senza rete +
+  fake senza import di rete; fake vuoto: `addDomain`⇒`'pending'` + `verification[]` non vuoto + registro
+  `calls`; `removeDomain` ⇒ `getVerificationStatus` **rifiuta**). Attese **letterali** (mai un binding
+  importato). **6/6** verdi; **mutazione 6/6** (import-rete/porta, stato-iniziale, verification-vuoto,
+  seed-ignorato, remove-noop, union-ridotta/tsc — tutte uccise, ripristino bit-identico).
+- **Gate visivo**: N/A (nessuna UI; il gate umano scatta a `domain-ui`, DOM-501).
+- **NON coperto (out_of_scope del macrotask)**: l'adattatore reale Vercel (DOM-211, `domain-vercel`) che
+  mappa `verification[]`/stato nativi ai tipi neutri; l'iniezione della porta negli endpoint
+  (`domain-connect`/`domain-verify-disconnect`) e nel downgrade. La porta e il fake sono **orfani a
+  livello app** finché quei macrotask non li importano (il fake resta comunque **entry** knip).
 
 **Copertura di `domain-dns` (DOM-131):**
 - `tests/domain-dns-instructions.test.ts` copre **AC-131-1..3** (apex+token ⇒ record A/ALIAS name `@`
@@ -169,6 +198,26 @@ DAG completo è in `00-INDEX.md` §Build order.
   service_role (DOM-222) → `domain-store`; reader pubblico applicativo host→slug (DOM-401) e middleware
   (DOM-402) → `domain-routing`. La conferma comportamentale per-tenant della RLS è demandata al DB-test
   (l'euristica statica `rls_check` lo dichiara), qui soddisfatta.
+
+**Carry-over — lezioni nuove (`domain-port`):**
+- **La guardia "src non menziona gli helper di test" è TESTUALE, non semantica**: `test-harness-auth`
+  (T-005) fa `readFileSync(src).includes('tests/helpers')` su ogni file di `src/**` — cattura anche i
+  **commenti**. Un commento della porta che citava il path del fake (`tests/helpers/fake-domain-provider.ts`)
+  l'ha fatta diventare rossa. Rimedio: nei sorgenti `src/**` riferirsi al fake in modo generico ("un fake
+  iniettato"), mai col path `tests/helpers/…` — esattamente ciò che fa `payment-port.ts`.
+- **`no-unused-vars` del repo = `args: 'after-used'`, il prefisso `_` NON esenta un unico arg**: un metodo
+  con un solo parametro non usato è segnalato anche se chiamato `_normalized` (il `_siteId` che passa in
+  `editor-integration.test.ts` regge solo perché **seguito** da un arg usato). Nelle impl inline di un test
+  conviene **omettere** i parametri non usati (TS accetta un metodo con meno parametri della firma target),
+  non rinominarli con `_`. `argsIgnorePattern` non è configurato in `eslint.config.mjs`.
+- **`lint` e `typecheck` sono gate di C3 via `scaffold.test.ts`, non solo pre-merge**: la suite completa
+  esegue `npm run lint`/`npm run typecheck` come meta-test. Un errore di lint nei propri file rende rosso
+  `scaffold` **dentro** la suite (oltre al pre-merge). Eseguire `npm run lint` in foreground **prima** del
+  checkpoint completo accorcia il loop (l'ho scoperto solo alla prima suite completa, non prima).
+- **AC di tipo ⇒ oracolo = build/tsc, non vitest**: AC-201-2/AC-201-3 sono proprietà del **tipo** (vitest,
+  che gira su esbuild, non type-checka). Il mutante che le uccide (union ridotta) va verificato con `tsc`
+  (errore NEL file di test), non con l'exit di vitest. Distinguere l'oracolo per-AC evita mutanti
+  "sopravvissuti" solo perché misurati con lo strumento sbagliato.
 
 **Carry-over — lezioni nuove (`domain-dns`):**
 - **Ambiguità "A o ALIAS secondo target" risolta deterministicamente**: il DoD lasciava la scelta A/ALIAS
