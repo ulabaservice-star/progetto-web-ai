@@ -5,15 +5,18 @@ import { normalizeHostname } from '@/domain/domains/hostname';
 /** Il client SSR legato alla sessione (RLS attiva), come restituito dal costruttore. */
 type SessionClient = Awaited<ReturnType<typeof createServerSupabaseClient>>;
 
-// DOM-221 (macrotask domain-store, p5-custom-domains-fase2) — il READER owner-side dei
-// collegamenti dominio<->sito. Legge site_domains col client Supabase legato alla SESSIONE
+// DOM-221 (macrotask domain-store, p5-custom-domains-fase2) — l'accesso owner-side ai
+// collegamenti dominio<->sito. Parla con site_domains col client Supabase legato alla SESSIONE
 // (RLS attiva), MAI la service_role (R7/A01:2025): l'isolamento per tenant lo garantisce la
-// RLS SELECT owner-only di DOM-101 (is_account_member(account_id)), non il codice qui. Il
-// writer di STATO (transizioni service_role dopo la verifica DNS) e' un modulo separato
-// (site-domains-write.ts): qui SOLO letture del proprietario.
+// RLS owner-only di DOM-101 (is_account_member(account_id)), non il codice qui. Il writer di
+// STATO (transizioni 'active'/'verifying'/... che la RLS VIETA ad authenticated) e' un modulo
+// separato service_role (site-domains-write.ts); qui vivono le operazioni che la RLS PERMETTE
+// all'owner: le LETTURE (SELECT owner-only) e la RIMOZIONE (DELETE owner-only, DOM-321), tutte
+// col client di sessione.
 //
-// FAIL-SAFE: un guasto di lettura non-fatale => insieme vuoto / null, mai un lancio nel
-// percorso utente. maybeSingle non lancia sul "nessuna riga".
+// FAIL-SAFE (letture): un guasto di lettura non-fatale => insieme vuoto / null, mai un lancio nel
+// percorso utente. maybeSingle non lancia sul "nessuna riga". La rimozione (mutazione) invece
+// PROPAGA l'errore: il chiamante lo traduce nel proprio esito.
 
 /** Ciclo di vita del collegamento (schema site_domains). */
 export type SiteDomainStatus = 'pending' | 'verifying' | 'active' | 'suspended' | 'error';
@@ -79,4 +82,20 @@ export async function getDomainByHost(host: string): Promise<SiteDomainSummary |
     .maybeSingle();
   if (error) return null;
   return (data as SiteDomainSummary | null) ?? null;
+}
+
+/**
+ * DOM-321 (macrotask domain-verify-disconnect) — rimuove il collegamento per host, sotto RLS
+ * (client di SESSIONE): la policy DELETE owner-only (site_domains_delete_member) cancella SOLO le
+ * righe del chiamante — un host di un altro tenant non tocca alcuna riga (0 righe, non un errore),
+ * quindi nessun service_role serve qui (R7). L'host grezzo e' NORMALIZZATO (DOM-111) prima del match
+ * esatto su normalized_hostname; un host invalido => no-op (nessun match possibile). A differenza
+ * delle letture (fail-safe), un guasto di DELETE e' PROPAGATO (throw): il chiamante lo traduce in 502.
+ */
+export async function deleteDomainByHost(host: string): Promise<void> {
+  const norm = normalizeHostname(host);
+  if (!norm.ok) return;
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.from(TABLE).delete().eq('normalized_hostname', norm.normalized);
+  if (error) throw new Error(`site_domains delete fallito: ${error.message}`);
 }

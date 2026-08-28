@@ -6,7 +6,7 @@
     "jscpd",
     "madge"
   ],
-  "captured_at": "2026-08-28",
+  "captured_at": "2026-08-28T19:49:46.278Z",
   "fingerprints": [
     "006f47343ff1206be4e0781fd4156ecc",
     "00c36d487e5650f604cc7bf84eea884e",
@@ -240,7 +240,11 @@
     "fbc1536818f082cc453f2c24b6a0f029",
     "fe068113115c384cd048f85b7acac4c6",
     "fe811ce3a4dc81b7a456c4fd19553c42",
-    "ff1845a28840b5f4298221bc9fa6248d"
+    "ff1845a28840b5f4298221bc9fa6248d",
+    "65638442f822cbc3b67ee3656daed279",
+    "0395507ce59a0bff17c1204e81d557ce",
+    "2c1f3a5ff4cf6950e3a9eee2a88878c1",
+    "7b4e8c8a901c0c832b2a6d31dc6c33b0"
   ],
-  "count": 233
+  "count": 237
 }
