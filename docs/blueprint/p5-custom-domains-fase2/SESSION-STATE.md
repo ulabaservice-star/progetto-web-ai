@@ -44,6 +44,12 @@
 
 - **NESSUNO in corso** — `domain-verify-disconnect` chiuso e mergiato. Alla prossima sessione il dispatch
   risolve **BUILD** sul prossimo eleggibile.
+- **⚡ METODO — cambio dalla PROSSIMA sessione (decisione utente 2026-08-28)**: si TORNA al **dynamic
+  workflow multi-agente** (chiusa la parentesi sessione-per-sessione di `domain-connect`/`domain-verify-disconnect`).
+  Per OGNI task: 1 builder + 1 verifier BLIND + 1 fixer, **tutti i task in parallelo**, poi **UN solo ciclo
+  di oracoli** (checkpoint 4/4 + mutazione) dell'orchestratore = unico giudice del verde. Workflow
+  **command-free** (subagenti solo Read/Write/Edit; l'orchestratore esegue tsc/vitest/knip/build/mutazione
+  in foreground). Dettaglio e vincoli nella memoria del metodo BUILD (`dynamic-workflow-build-method`).
 - **Suggerito**: `domain-routing` (DOM-401/402) — chiude l'anello che rende SERVIBILE un dominio attivo:
   reader pubblico host→slug `src/data/public-domain.ts` (proietta `{ public_slug }` da `site_domains`
   come **anon**, gemello di `public-site.ts`) + middleware host-custom PRIMA di locale/guardia auth (non
