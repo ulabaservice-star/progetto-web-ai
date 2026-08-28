@@ -41,10 +41,11 @@ export type SiteDomainPendingInsert = {
   provider_domain_id: string | null;
 };
 
-// Patch della transizione di stato. `detail` fa parte del contratto (diagnostica futura) ma lo
-// schema DOM-101 non ha ancora una colonna dedicata => oggi non e' persistito: si scrive solo
-// cio' che ha una colonna reale (status, verified_at).
-export type SiteDomainStatusPatch = { verified_at?: string; detail?: string };
+// Patch della transizione di stato. `detail` fa parte del contratto (diagnostica) ma DOM-101 non
+// ha ancora una colonna dedicata => non persistito. `public_slug` (Opzione A) DENORMALIZZA lo slug
+// pubblico del sito su site_domains all'attivazione: e' l'unica colonna, con normalized_hostname,
+// che anon puo' leggere per il routing (DOM-102/DOM-401).
+export type SiteDomainStatusPatch = { verified_at?: string; detail?: string; public_slug?: string };
 
 /** Porta di persistenza dello stato: insert 'pending' + update di stato (service_role). */
 export type SiteDomainWriteStore = {
@@ -77,6 +78,7 @@ function adminStore(): SiteDomainWriteStore {
         updated_at: new Date().toISOString(),
       };
       if (patch.verified_at !== undefined) update.verified_at = patch.verified_at;
+      if (patch.public_slug !== undefined) update.public_slug = patch.public_slug;
       const { error } = await admin
         .from(TABLE)
         .update(update)

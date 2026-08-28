@@ -2,6 +2,7 @@ import createMiddleware from 'next-intl/middleware';
 import { NextResponse, type NextRequest } from 'next/server';
 import { routing } from './i18n/routing';
 import { getUserFromRequest } from './data/supabase-ssr';
+import { readSiteSlugForHost } from './data/public-domain';
 
 // Middleware UNICO: compone il routing per locale di next-intl (T-080) con la
 // guardia auth di route (T-041). Il routing di locale NON viene mai
@@ -42,14 +43,13 @@ export const isPublicStandalonePath = (pathname: string): boolean =>
   pathname === PUBLIC_STANDALONE_PREFIX ||
   pathname.startsWith(`${PUBLIC_STANDALONE_PREFIX}/`);
 
-// La funzione NON è async: per le route non protette ritorna in modo SINCRONO la
-// response di next-intl (preserva il comportamento verificato in T-080). Solo per
-// le route protette delega alla guardia asincrona, che legge la sessione
-// server-side.
-export default function middleware(
+// Flusso di PIATTAFORMA (invariato da P4-D4/T-041): esclusione /s/*, guardia auth sulle route
+// protette, altrimenti routing di locale next-intl. Estratto come funzione perché il fallback
+// dell'host-routing (host custom NON risolto) lo riusa senza duplicare il comportamento.
+function platformFlow(
   request: NextRequest,
+  pathname: string,
 ): NextResponse | Promise<NextResponse> {
-  const { pathname } = request.nextUrl;
   // P4-D4: /s/* è pubblica e standalone → ESCLUSA dal routing per locale
   // (handleI18n NON viene invocato: nessun prefisso di locale, nessuna
   // negoziazione Accept-Language, nessun rewrite verso segmenti autenticati).
@@ -66,6 +66,82 @@ export default function middleware(
   // Route pubbliche (login, signup, callback, home, …) e asset esclusi dal
   // matcher: nessuna guardia, prosegue il routing di locale.
   return handleI18n(request);
+}
+
+// DOM-402 — host di PIATTAFORMA (allowlist da env): l'apex dell'app (NEXT_PUBLIC_APP_URL) e i suoi
+// sottodomini, piu' gli host tecnici locali/preview. Tutto il resto e' un dominio CUSTOM candidato
+// all'host-routing. FAIL-SAFE: se NEXT_PUBLIC_APP_URL manca, ogni host e' trattato come piattaforma
+// (nessun rewrite host-custom): mai servire un sito per un Host arbitrario in assenza di config.
+function platformAppHost(): string | null {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (!appUrl) return null;
+  try {
+    return new URL(appUrl).hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+function isPlatformHost(host: string): boolean {
+  if (host === 'localhost' || host === '127.0.0.1') return true;
+  if (host.endsWith('.vercel.app')) return true;
+  const appHost = platformAppHost();
+  if (!appHost) return true; // env assente => fail-safe: tutto piattaforma
+  return host === appHost || host.endsWith('.' + appHost);
+}
+
+// L'Host della richiesta, minuscolo e senza porta; null se assente. Un Host di piattaforma => null
+// (il chiamante prosegue nel flusso di piattaforma senza toccare il DB).
+function customHostname(request: NextRequest): string | null {
+  const raw = request.headers.get('host');
+  if (!raw) return null;
+  const host = raw.toLowerCase().split(':')[0];
+  return isPlatformHost(host) ? null : host;
+}
+
+// Path riservati che NON vanno mai riscritti verso /s/<slug> (no ricorsione del rewrite): il
+// prefisso pubblico standalone /s e le API /api.
+function isReservedRewritePath(pathname: string): boolean {
+  return (
+    isPublicStandalonePath(pathname) ||
+    pathname === '/api' ||
+    pathname.startsWith('/api/')
+  );
+}
+
+// DOM-402 — un Host custom risolto a uno slug ATTIVO viene servito come il sito standalone:
+// rewrite INTERNO verso /s/<slug> (nessun prefisso di locale, querystring preservata). Host non
+// risolto => degrada nel flusso di piattaforma (nessun sito servito, fail-closed A01:2025 contro
+// host-spoofing verso siti non collegati).
+async function routeCustomHost(
+  request: NextRequest,
+  host: string,
+  pathname: string,
+): Promise<NextResponse> {
+  const resolved = await readSiteSlugForHost(host);
+  if (!resolved) {
+    return platformFlow(request, pathname);
+  }
+  const url = request.nextUrl.clone();
+  url.pathname = `/s/${resolved.public_slug}`;
+  return NextResponse.rewrite(url);
+}
+
+// La funzione NON è async nel percorso di piattaforma: per le route non protette ritorna in modo
+// SINCRONO la response di next-intl (preserva il comportamento verificato in T-080). Solo per le
+// route protette delega alla guardia asincrona, che legge la sessione server-side. Il percorso
+// host-custom (DOM-402) è invece asincrono (lookup DB anon).
+export default function middleware(
+  request: NextRequest,
+): NextResponse | Promise<NextResponse> {
+  const { pathname } = request.nextUrl;
+  // DOM-402: un Host custom (non-piattaforma) su un path non riservato => tentativo di host-routing
+  // PRIMA del locale e della guardia auth. Gli host di piattaforma saltano del tutto la lookup DB.
+  const customHost = customHostname(request);
+  if (customHost && !isReservedRewritePath(pathname)) {
+    return routeCustomHost(request, customHost, pathname);
+  }
+  return platformFlow(request, pathname);
 }
 
 // Guardia server-side (A01:2025): nega l'accesso alle route protette senza

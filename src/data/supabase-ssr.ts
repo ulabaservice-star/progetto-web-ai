@@ -45,6 +45,24 @@ export async function createServerSupabaseClient(): Promise<SupabaseClient> {
   });
 }
 
+// Client anon PURO, SENZA cookie di sessione: opera SEMPRE come ruolo Postgres `anon`, mai
+// authenticated. Serve al routing pubblico host->slug (DOM-401), che gira sull'edge (middleware)
+// e NON deve dipendere dalla sessione del visitatore: un utente loggato che visita il proprio
+// dominio custom va instradato dalla STESSA vista anon (solo domini 'active', via RLS DOM-102),
+// mai vedere righe non attive per via del proprio JWT. Nessun next/headers => edge-compatibile
+// (come getUserFromRequest). MAI service_role (R7 / A01:2025).
+export function createAnonServerClient(): SupabaseClient {
+  const { url, anonKey } = ssrEnv();
+  return createServerClient(url, anonKey, {
+    cookies: {
+      getAll: () => [],
+      setAll: () => {
+        // Lettura anon pura: nessun cookie da scrivere.
+      },
+    },
+  });
+}
+
 // Identità server-side VALIDATA: usa supabase.auth.getUser(), che rivalida il
 // token contro l'auth server, invece di fidarsi del cookie non verificato
 // (getSession). Cattura ogni errore → null, non solleva mai.

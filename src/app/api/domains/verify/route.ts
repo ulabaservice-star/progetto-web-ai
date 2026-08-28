@@ -3,6 +3,7 @@ import { jsonError } from '@/app/api/_shared/request-guard';
 import { resolveOwnedDomainRequest } from '@/app/api/domains/_shared';
 import { getAccountEntitlement } from '@/data/subscriptions';
 import { setDomainStatus } from '@/data/site-domains-write';
+import { readPublishedSlugForSite } from '@/data/site-publications-read';
 import { getVercelDomainProvider } from '@/data/domain/vercel';
 
 // DOM-311 (macrotask domain-verify-disconnect, p5-custom-domains-fase2) — POST /api/domains/verify:
@@ -42,7 +43,16 @@ export async function POST(request: NextRequest): Promise<Response> {
     const result = await getVercelDomainProvider().getVerificationStatus(host);
     if (result.state === 'verified') {
       const verified_at = new Date().toISOString();
-      await setDomainStatus(host, 'active', { verified_at });
+      // Opzione A (domain-routing) — all'attivazione DENORMALIZZA lo slug pubblico del sito su
+      // site_domains.public_slug, l'unica colonna (con normalized_hostname) che anon legge per il
+      // routing (DOM-401). Letto owner-side sotto RLS di sessione (site del chiamante), mai dal body.
+      // Sito non ancora pubblicato => slug null => public_slug resta NULL (dominio active ma non
+      // instradabile finche' il sito non e' pubblicato): fail-closed a valle nel reader anon.
+      const public_slug = await readPublishedSlugForSite(record.site_id);
+      await setDomainStatus(host, 'active', {
+        verified_at,
+        ...(public_slug ? { public_slug } : {}),
+      });
       return NextResponse.json({ status: 'active', verified_at }, { status: 200 });
     }
     if (result.state === 'pending') {

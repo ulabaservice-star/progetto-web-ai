@@ -44,6 +44,13 @@ vi.mock('@/data/domain/vercel', () => ({
   getVercelDomainProvider: () => providerHolder.current,
 }));
 
+// Opzione A (domain-routing) — lo slug pubblico che verify DENORMALIZZA su site_domains
+// all'attivazione. `null` = sito mai pubblicato => public_slug NON deve finire nel patch.
+const { publishedSlugHolder } = vi.hoisted(() => ({ publishedSlugHolder: { current: null as string | null } }));
+vi.mock('@/data/site-publications-read', () => ({
+  readPublishedSlugForSite: async () => publishedSlugHolder.current,
+}));
+
 import { POST } from '@/app/api/domains/verify/route';
 
 const ORIGIN = 'http://localhost';
@@ -92,6 +99,7 @@ beforeEach(() => {
   authHolder.user = { id: 'user-a' };
   recordHolder.current = null;
   entitlementHolder.current = { limits: { custom_domain: true } };
+  publishedSlugHolder.current = null;
   setStatusSpy.mockClear();
   seedProvider('pending');
 });
@@ -174,5 +182,37 @@ describe('DOM-311 POST /api/domains/verify — transizione guidata dal provider'
 
     expect(res.status).toBe(403); // covers: AC-311-5 — gate server (falsifica un endpoint senza gate)
     expect(setStatusSpy).not.toHaveBeenCalled(); // covers: AC-311-5
+  });
+});
+
+describe('Opzione A — denormalizzazione slug all\'attivazione', () => {
+  it("provider 'verified' => setDomainStatus popola public_slug denormalizzato dal sito", async () => {
+    recordHolder.current = ownedRecord('pending');
+    publishedSlugHolder.current = 'il-tuo-bar';
+    seedProvider('verified');
+
+    const res = await POST(verifyRequest());
+
+    expect(res.status).toBe(200); // covers: Opzione-A denormalizzazione slug
+    expect(setStatusSpy).toHaveBeenCalledWith(
+      HOST,
+      'active',
+      expect.objectContaining({ verified_at: expect.any(String), public_slug: 'il-tuo-bar' }),
+    ); // covers: Opzione-A denormalizzazione slug
+  });
+
+  it("sito non ancora pubblicato (slug null) => 'active' ma NESSUN public_slug nel patch", async () => {
+    recordHolder.current = ownedRecord('pending');
+    publishedSlugHolder.current = null; // sito mai pubblicato => niente slug da denormalizzare
+    seedProvider('verified');
+
+    const res = await POST(verifyRequest());
+
+    expect(res.status).toBe(200); // covers: Opzione-A slug-null
+    expect(setStatusSpy).toHaveBeenCalledWith(
+      HOST,
+      'active',
+      expect.not.objectContaining({ public_slug: expect.anything() }),
+    ); // covers: Opzione-A slug-null — dominio active, public_slug resta NULL
   });
 });
