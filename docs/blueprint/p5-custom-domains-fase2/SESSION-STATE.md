@@ -9,9 +9,9 @@
 |---|---|
 | **Progetto** | Ulaba/Belora — P5 Fase 2 (domini custom) |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase Cloud EU) |
-| **Ultimo aggiornamento** | 2026-08-28 (session-end BUILD `domain-store`) |
-| **Sessione corrente (BUILD `domain-store`, DOM-221/222)** | **CHIUSO+MERGIATO** (`17f2d5e`, atomico `af9ba0d`, pushato su `origin/main`). **DOM-221** `src/data/site-domains.ts`: reader owner-side sotto RLS (client di SESSIONE, **mai service_role** R7/A01). `listSiteDomains(siteId)` + `getDomainByHost(host)` — host **normalizzato** (DOM-111) PRIMA del match esatto su `normalized_hostname`; fail-safe `[]`/`null`, mai un lancio. `ownerQuery` **SINCRONA** (riceve il client risolto e ritorna il builder: un `PostgrestFilterBuilder` e' **thenable**, awaitarlo lo ESEGUIREBBE — gotcha risolto, e rompe pure il self-clone client+from+select). **DOM-222** `src/data/site-domains-write.ts`: writer di STATO con **service_role CONFINATO** (fuori dal percorso utente) + store `SiteDomainWriteStore` **iniettabile** (gemello di `subscriptions-write`). `createPendingDomain` nasce SEMPRE `'pending'` col token e `provider_domain_id`; `setDomainStatus` muove active/suspended/error (`verified_at` all'attivazione). Nessun percorso authenticated di UPDATE (coerente con DOM-101). Target tests: **DB reali sotto RLS** (reader, anti-placebo service_role, mock di `supabase-ssr`+`signInAs`) + **store in-memory** deterministico (writer) + guardie statiche di non-bypass, tag `covers` AC-221-1..3 / AC-222-1..3. Checkpoint **4/4** (C1 igiene verde con **ratchet ADDITIVO 232→233** del clone **PRE-ESISTENTE** `vercel<->stripe` — provato presente su main SENZA questi file, i miei sono clone-free; C2 `gitleaks:3 osv:2 semgrep:0 rls:2`, **nessuna nuova dep**; C3 **1867 pass** salvo debito TS2589; C4 verde 12/12 target), mutazione **7/7** (MR1 no-normalizza, MR2 usa-admin, MW1 nasce-active, MW2 droppa-token, MW3 droppa-verified_at, MW4 ignora-status, MW5 usa-ssr; ripristino **bit-identico** sha256), `next build` ok. File **orfani a livello app** (li importera' `domain-connect`) → e2e non impattati. **7/12 macrotask done. Prossimo eleggibile: `domain-connect` (ora sbloccato), `domain-routing`, `domain-downgrade`.** |
-| **Sessione precedente (BUILD `domain-vercel`, DOM-211)** | **CHIUSO+MERGIATO** (`d6c6a2f`, atomico `6bd1eae`, pushato su `origin/main`). Adattatore reale `src/data/domain/vercel.ts` (gemello di `payment/stripe.ts`): `import 'server-only'` + client HTTP **LAZY** dietro config iniettabile (`createVercelDomainProvider(config)` / `getVercelDomainProvider()` cache da env). `VercelDomainConfig {token, projectId, teamId?, apexTarget, cnameTarget, fetchImpl?}`; **`fetchImpl` è il seam di mock** (nessuna rete nei test, default `fetch`). Mappa le risposte Vercel negli esiti neutri della porta (`verified`/`pending`/`misconfigured`; `verification[]`→`VerificationRequirement[]`); errori **TIPIZZATI** `VercelDomainError {code,status}` loggati **senza token**; `addDomain`/`getVerificationStatus`/`removeDomain` (404 idempotente). **Anti-SSRF**: solo l'endpoint fisso `api.vercel.com`, host utente solo nel path encodato. Senza env = no-op dichiarato (DOM-D9). Checkpoint **4/4** (C1 verde `dup:234` invariata, `src/data/**` è entry knip; C2 verde `gitleaks:3 osv:2 semgrep:0 rls:2` **nessuna nuova dep**; C3 verde 1855 pass salvo debito TS2589; C4 verde AC-211-1..4, 5/5 target), mutazione **6/6** (eager-import, mapState-no-verified, throw-opaco, log-espone-token, no-check-ok, token-hardcoded; ripristino bit-identico), `next build` ok. **6/12 macrotask done. Prossimo eleggibile: `domain-store`, `domain-routing`.** |
+| **Ultimo aggiornamento** | 2026-08-28 (session-end BUILD `domain-connect`) |
+| **Sessione corrente (BUILD `domain-connect`, DOM-301/302/303)** | **CHIUSO+MERGIATO** (`43b4aa8`, atomici `8863980` codice + `d2e9c1c` bonifica-FP, pushato su `origin/main`). L'endpoint `POST /api/domains/connect` (`src/app/api/domains/connect/route.ts`) in tre fette che compongono i pezzi verdi: **DOM-301 auth** — `guardMutatingRequest` (same-origin+byte) + `getUser` + `guardOwnedSite` (proprieta' site_id) + gate `custom_domain` letto DAL SERVER (`getAccountEntitlement`); **accountId DERIVATO dal sito** (nuovo `resolveSiteAccountId` in `account.ts`, gemello di `resolveOwnAccountId`, RLS di sessione), MAI dal body (no IDOR). Free/non-proprietario respinto PRIMA di ogni scrittura. **DOM-302 logica** — `normalizeHostname`+`classifyHostname` (invalid/reserved⇒422); **`addDomain` sulla porta PRIMA della scrittura** (anti-hijack: il provider e' la fonte dell'unicita' globale reale, un host altrui fallisce li' prima che l'upsert del writer tocchi una riga altrui); `createPendingDomain` (writer service_role confinato) col token `randomUUID`; 200 con istruzioni DNS (`dnsInstructionsFor` + nuovo `getPlatformDnsTargets` da env + `verification[]` del provider). **Idempotente** via `getDomainByHost` (RLS sessione): riga gia' del proprio sito ⇒ riuso, nessuna riscrittura. **DOM-303 auto-www** — un apex collega anche `companionHostname` (`www.<apex>`), ri-validato dalle stesse normalize/classify; un subdomain ⇒ nessun companion. Target tests: **fake `DomainProvider` iniettato** + store in-memory condiviso (idempotenza reale), tag `covers` AC-301-1..3 / AC-302-1..3 / AC-303-1..3. Checkpoint **4/4** (C1 igiene verde `dead-code:0 dup:235 cycle:0 twin:0` **nessun ratchet**, `src/app/api/**` route = entry Next; C2 verde `gitleaks:3 osv:2 semgrep:0 rls:2` **nessuna nuova dep** dopo **1 loop di fix** = bonifica FP gitleaks in SESSION-STATE; C3 **1879/1880** salvo debito TS2589; C4 verde **12/12** target), mutazione **7/7** (MG1 gate, MG2 proprieta, ML1 crea-pending, ML2 valida-reserved, ML3 idempotenza, MW1 companion, MW2 no-companion-subdomain; ripristino **bit-identico** sha256), `next build` ok (route `ƒ /api/domains/connect`), **e2e 37/37**. Reader/writer/porta ora **importati** dall'endpoint (non piu' orfani). **8/12 macrotask done. Prossimo eleggibile: `domain-verify-disconnect` (ora sbloccato), `domain-routing`, `domain-downgrade`.** |
+| **Sessione precedente (BUILD `domain-store`, DOM-221/222)** | **CHIUSO+MERGIATO** (`17f2d5e`, atomico `af9ba0d`). **DOM-221** `src/data/site-domains.ts`: reader owner-side sotto RLS (client di SESSIONE, mai service_role). `listSiteDomains(siteId)` + `getDomainByHost(host)` — host normalizzato (DOM-111) prima del match; fail-safe `[]`/`null`. `ownerQuery` SINCRONA (gotcha thenable: un `PostgrestFilterBuilder` awaitato si ESEGUE). **DOM-222** `src/data/site-domains-write.ts`: writer di STATO service_role CONFINATO + store `SiteDomainWriteStore` iniettabile. `createPendingDomain` nasce SEMPRE `'pending'`; `setDomainStatus` active/suspended/error. Nessun UPDATE authenticated (DOM-101). Checkpoint 4/4 (ratchet additivo 232→233 clone PRE-ESISTENTE `vercel↔stripe`), mutazione 7/7, `next build` ok. |
 
 ---
 
@@ -28,29 +28,27 @@
 | 05 | `domain-port` (DOM-201/202) | **done** | 4/4 ✅ (`92f4377`) | — |
 | 06 | `domain-vercel` (DOM-211) | **done** | 4/4 ✅ (`d6c6a2f`) | `domain-port` |
 | 07 | `domain-store` (DOM-221/222) | **done** | 4/4 ✅ (`17f2d5e`) | `domain-schema` |
-| 08 | `domain-connect` (DOM-301/302/303) | **todo** | — | `domain-hostname`, `domain-companion`, `domain-port`, `domain-store` |
+| 08 | `domain-connect` (DOM-301/302/303) | **done** | 4/4 ✅ (`43b4aa8`) | `domain-hostname`, `domain-companion`, `domain-port`, `domain-store` |
 | 09 | `domain-verify-disconnect` (DOM-311/321) | **todo** | — | `domain-connect`, `domain-vercel` |
 | 10 | `domain-routing` (DOM-401/402) | **todo** | — | `domain-schema` |
 | 11 | `domain-ui` (DOM-501/502) | **todo** | — | `domain-verify-disconnect` |
 | 12 | `domain-downgrade` (DOM-601/602) | **todo** | — | `domain-schema`, `domain-store` |
 
-**Eleggibili ora (dipendenze verdi):** `domain-connect` (DOM-301/302/303 — ora **sbloccato**: ha
-`hostname`+`companion`+`port`+`store` tutti verdi), `domain-routing` (da `domain-schema`) e
-`domain-downgrade` (DOM-601/602 — da `domain-schema`+`domain-store`, ora entrambi verdi).
-`domain-verify-disconnect` resta bloccato finché `domain-connect` non è verde (`domain-vercel` lo è già).
-Il DAG completo è in `00-INDEX.md` §Build order.
+**Eleggibili ora (dipendenze verdi):** `domain-verify-disconnect` (DOM-311/321 — ora **sbloccato**: ha
+`domain-connect`+`domain-vercel` verdi), `domain-routing` (da `domain-schema`) e `domain-downgrade`
+(DOM-601/602 — da `domain-schema`+`domain-store`). `domain-ui` (DOM-501/502) resta bloccato finché
+`domain-verify-disconnect` non è verde. Il DAG completo è in `00-INDEX.md` §Build order.
 
 ## 2. Macrotask corrente
 
-- **NESSUNO in corso** — `domain-store` chiuso e mergiato. Alla prossima sessione il dispatch risolve
+- **NESSUNO in corso** — `domain-connect` chiuso e mergiato. Alla prossima sessione il dispatch risolve
   **BUILD** sul prossimo eleggibile.
-- **Suggerito**: `domain-connect` (DOM-301/302/303 — l'endpoint che orchestra il collegamento: valida
-  l'entitlement `custom_domain`, normalizza+classifica l'host, chiama `DomainProvider.addDomain` via la
-  porta, genera il token e persiste il `pending` via `createPendingDomain`, con l'auto-www del
-  companion; ora ha TUTTI i pezzi: `hostname`/`companion`/`port`/`vercel`/`store`). In alternativa
-  `domain-routing` (DOM-401/402, reader pubblico host→slug `src/data/public-domain.ts` gemello di
-  `public-site.ts` + middleware host-custom) o `domain-downgrade` (DOM-601/602, `applyDomainDowngrade`
-  puro + aggancio nel webhook, gemello di `applyDowngrade`).
+- **Suggerito**: `domain-verify-disconnect` (DOM-311/321 — ora **sbloccato**: chiude il ciclo di vita del
+  collegamento. Verify: interroga `DomainProvider.getVerificationStatus` e SOLO su `verified` muove
+  `setDomainStatus('active', {verified_at})` server-side (DOM-D4) + popola `public_slug`; Disconnect:
+  `removeDomain` sulla porta + DELETE owner-side). In alternativa `domain-routing` (DOM-401/402, reader
+  pubblico host→slug `src/data/public-domain.ts` gemello di `public-site.ts` + middleware host-custom)
+  o `domain-downgrade` (DOM-601/602, `applyDomainDowngrade` puro + aggancio nel webhook).
 
 ## 3. Stato git
 
@@ -58,10 +56,10 @@ Il DAG completo è in `00-INDEX.md` §Build order.
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `trueline/build/domain-store` (mergiato in `main` con `--no-ff`; non cancellato — delete branch è distruttivo, mai autonomo). Branch precedenti (`domain-vercel`, `domain-port`…) idem conservati. |
-| Ultimo commit | `17f2d5e` (merge domain-store in main) — commit atomico `af9ba0d` (feat: `src/data/site-domains.ts` + `src/data/site-domains-write.ts` + i 2 test + ratchet baseline, 5 file +557/-1) |
-| Stato merge su `main` | ✅ **mergiato+pushato** su `origin/main` (`6f3878b..17f2d5e`, 5 file, +557/-1). Deploy Vercel innescato; reader/writer sono `server-only` in `src/data/` ma **non ancora importati da alcun percorso di rotta** (li importerà `domain-connect`) → nessun cambio di comportamento runtime |
-| Deploy-coupling | **coupled** — confermato (push su `main` = deploy su ulaba.net). Verifica locale PRIMA del merge: vitest (1867 pass salvo debito TS2589), `next build` ok. Nessun percorso di rotta/serving toccato → e2e Chromium **non impattati** (reader/writer orfani a livello app finché `domain-connect` non li importa). `main_deploy_coupled: true`. |
+| Branch di lavoro | `trueline/build/domain-connect` (mergiato in `main` con `--no-ff`; non cancellato — delete branch è distruttivo, mai autonomo). Branch precedenti (`domain-store`, `domain-vercel`…) idem conservati. |
+| Ultimo commit | `43b4aa8` (merge domain-connect in main) — atomici `8863980` (feat: `route.ts` + `account.ts` + `vercel.ts` + i 3 test, 6 file +582) + `d2e9c1c` (docs: bonifica FP gitleaks in SESSION-STATE, +4/-4) |
+| Stato merge su `main` | ✅ **mergiato+pushato** su `origin/main` (`39a0011..43b4aa8`, 7 file, +586/-4). Deploy Vercel innescato. L'endpoint `/api/domains/connect` è un **nuovo percorso di rotta** ma non esercitato da UI/e2e esistenti (la UI domini è DOM-501) → **e2e 37/37 invariati**. ⚠️ **Inerte in prod senza env Vercel** (`getVercelDomainProvider`/`getPlatformDnsTargets` lanciano senza `VERCEL_*`, DOM-D9). |
+| Deploy-coupling | **coupled** — confermato (push su `main` = deploy su ulaba.net). Verifica locale PRIMA del merge: vitest **1879/1880** (unico rosso: debito TS2589), `next build` ok, **e2e Chromium 37/37**. `main_deploy_coupled: true`. |
 
 ## 4. Baseline & budget
 
@@ -79,7 +77,9 @@ Il DAG completo è in `00-INDEX.md` §Build order.
   **clone-free**: l'unico auto-clone iniziale (`site-domains.ts` client+from+select ripetuto tra i due
   reader) l'ho **eliminato** estraendo `ownerQuery` sincrona. Ratchet fatto con `capture()`+`delta()`
   della skill, verificando che l'UNICO fingerprint nuovo fosse quel jscpd, poi append additivo (232
-  preservati). `src/data/**` è **entry** knip (reader/writer non dead anche se non ancora importati).
+  preservati). `src/data/**` è **entry** knip (reader/writer non dead anche se non ancora importati). In
+  `domain-connect` **NESSUN ratchet**: C1 verde con baseline **233 invariata**
+  (`dead-code:0 dup:235 cycle:0 twin:0`, 0 fingerprint nuovi; `src/app/api/**/route.ts` = entry Next).
 - **Baseline di sicurezza** (C2): invariata **dopo due loop di fix** (`gitleaks:3`, `osv:2`, `semgrep:0`,
   `rls:2`); **nessuna nuova dep** (reader/writer usano solo il client Supabase esistente). ⚠️ **Loop di fix
   gitleaks (1)**: un letterale di verifica assegnato nel test writer a una costante con keyword sensibile
@@ -89,55 +89,54 @@ Il DAG completo è in `00-INDEX.md` §Build order.
   in `.trueline/*.json` (es. `gl-report.json`) contenevano i secret in chiaro → gitleaks li ri-scansionava
   (`gitleaks 4→5`, 2 CRITICAL). Risolto **rimuovendo i report temporanei** prima del checkpoint (lezione:
   ripulire `.trueline/` dai report, non solo `scratchpad/`). Riverificato con lo stesso oracolo (config
-  custom) → `gitleaks 3`. Nessun segreto reale nel sorgente.
+  custom) → `gitleaks 3`. Nessun segreto reale nel sorgente. ⚠️ In `domain-connect` **1 loop di fix**:
+  2 CRITICAL gitleaks NUOVI (`generic-api-key`) nella **prosa del SESSION-STATE** (righe delle lezioni
+  di `domain-store` che riproducevano `const TOKEN='<valore>'`) — FP didattici **sfuggiti** al C2 di
+  domain-store perché il SESSION-STATE si scrive nel session-end, DOPO il checkpoint. Risolto
+  riscrivendo la prosa senza il pattern keyword+valore → `gitleaks 5→3` (baseline). **Nessuna nuova dep**.
 - **Budget**: **12 macrotask (22 task atomici)**. Un macrotask alla volta; loop di fix con tetto in
   `references/oracles/thresholds.md`. Granularità fine per sessioni leggere.
 
 ## 5. Esiti dell'ultima sessione (framing onesto)
 
-- **BUILD `domain-store` (DOM-221/222) concluso e mergiato** (`17f2d5e`). Due file di scope + due test:
-  - **Reader** `src/data/site-domains.ts` (DOM-221) — `import 'server-only'`, client di **SESSIONE**
-    (RLS), mai service_role. `listSiteDomains(siteId)` (proietta le colonne owner incl.
-    `verification_token`; fail-safe `[]`) + `getDomainByHost(host)` (**normalizza** l'host DOM-111 prima
-    del match esatto; `maybeSingle`; fail-safe `null`). `ownerQuery(supabase)` **sincrona** condivisa (un
-    `PostgrestFilterBuilder` è thenable: awaitarlo lo eseguirebbe — perciò l'helper non è `async`).
-  - **Writer** `src/data/site-domains-write.ts` (DOM-222) — `import 'server-only'` + `createAdminClient`
-    (service_role CONFINATO). Porta `SiteDomainWriteStore` iniettabile (default `adminStore` su upsert/
-    update, gemello di `subscriptions-write`). `createPendingDomain(accountId, siteId, normalized, kind,
-    token, providerDomainId)` nasce SEMPRE `'pending'` (provider `'vercel'`, DOM-D2); `setDomainStatus(host,
-    status, {verified_at?, detail?})` per active/suspended/error (`detail` nel contratto ma senza colonna:
-    non persistito). Nessun percorso authenticated di UPDATE (coerente con DOM-101).
-- **Checkpoint 4/4**: C1 igiene **verde con ratchet additivo 232→233** (clone PRE-ESISTENTE
-  `vercel↔stripe`, i miei file clone-free dopo aver estratto `ownerQuery`); C2 sicurezza **verde dopo
-  due loop di fix** (gitleaks:3, **nessuna nuova dep**); C3 regressioni **verde** (1867 pass; unico rosso =
-  `scaffold.test.ts` per il debito TS2589); C4 conformità **verde** (AC-221-1..3 + AC-222-1..3, **12/12**
-  target coi tag `covers:`). **Batteria di mutazione 7/7** (ripristino **bit-identico**, sha256 invariato):
-  MR1 reader salta la normalizzazione→AC-221-1 rosso; MR2 reader usa `createAdminClient`→AC-221-2 +
-  guardia statica rossi; MW1 `createPendingDomain` nasce `'active'`→AC-222-1 rosso; MW2 droppa il token→
-  AC-222-1 rosso; MW3 `setDomainStatus` scarta il patch→AC-222-2 rosso; MW4 ignora lo status→AC-222-2
-  rosso; MW5 writer usa `supabase-ssr`→guardia statica AC-222-3 rossa. `next build` ok.
-- **Due loop di fix intercettati e chiusi (framing onesto)**: (1) `gitleaks 3→4` — un letterale di verifica su una costante
-  con keyword sensibile nel test (regola **default** `generic-api-key`, keyword + valore): fix rinominando in
-  `PROOF` + valore placeholder. (2) `gitleaks 4→5` **AUTO-INFLITTO** — i miei report di debug
-  `.trueline/*.json` contenevano i secret in chiaro: fix **rimuovendoli** prima del checkpoint. C1 al primo
-  giro segnalava anche un **auto-clone** in `site-domains.ts` (le due funzioni ripetevano client+from+select):
-  fix estraendo `ownerQuery` sincrona (che ha rivelato il **gotcha thenable**, colto da tsc `TS2322` +
-  runtime). Riverificato tutto con gli oracoli → verde.
+- **BUILD `domain-connect` (DOM-301/302/303) concluso e mergiato** (`43b4aa8`). Un endpoint + 2 helper
+  additivi + 3 test:
+  - **Endpoint** `src/app/api/domains/connect/route.ts` (`POST`) in tre fette: **auth** (DOM-301):
+    `guardMutatingRequest` (same-origin+byte) + `getUser` + `guardOwnedSite` (proprietà) + gate
+    `custom_domain` dal server (`getAccountEntitlement`); **accountId dal sito** (`resolveSiteAccountId`),
+    mai dal body. **logica** (DOM-302): `normalizeHostname`+`classifyHostname` (invalid/reserved⇒422),
+    `addDomain` sulla porta PRIMA della scrittura (anti-hijack), `createPendingDomain` col token
+    `randomUUID`, 200 con `dnsInstructionsFor`+`getPlatformDnsTargets`+`verification[]`. Idempotente via
+    `getDomainByHost`. **auto-www** (DOM-303): apex⇒`www.<apex>` (companion ri-validato), subdomain⇒nessuno.
+  - **Helper additivi**: `resolveSiteAccountId(supabase, siteId)` in `account.ts` (RLS di sessione,
+    `maybeSingle`⇒null; gemello di `resolveOwnAccountId`); `getPlatformDnsTargets()` in `vercel.ts`
+    (target A/CNAME da env, throw senza env DOM-D9).
+- **Checkpoint 4/4**: C1 igiene **verde senza ratchet** (baseline 233 invariata, 0 fingerprint nuovi);
+  C2 sicurezza **verde dopo 1 loop di fix** (bonifica FP gitleaks in SESSION-STATE, `gitleaks 5→3`,
+  **nessuna nuova dep**); C3 **1879/1880** (unico rosso: `scaffold.test.ts` per il debito TS2589); C4
+  **12/12** target (AC-301/302/303, tag `covers:`). **Batteria di mutazione 7/7** (ripristino
+  **bit-identico** sha256): MG1 gate rimosso→AC-301-1; MG2 salta la proprietà→AC-301-2; ML1 no
+  `createPendingDomain`→AC-302-1; ML2 salta `classify`→AC-302-2; ML3 rimuove il check idempotenza→AC-302-3;
+  MW1 no companion→AC-303-1; MW2 companion anche per subdomain→AC-303-2. `next build` ok, **e2e 37/37**.
+- **1 loop di fix intercettato e chiuso (framing onesto)**: 2 CRITICAL gitleaks NUOVI (`generic-api-key`)
+  nella **prosa del SESSION-STATE** (righe 85/119, lezioni di `domain-store` che riproducevano il pattern
+  `const TOKEN='<valore>'`) — FP didattici **ereditati** dal session-end di domain-store, sfuggiti al suo
+  C2 (il SESSION-STATE si scrive DOPO il checkpoint) e comparsi come "nuovi" al mio. Risolto riscrivendo
+  la prosa senza il pattern keyword+valore → `gitleaks 5→3`. Il diff `.snap` di
+  `onboarding-generation-regression` (solo EOL LF↔CRLF) `git checkout`-ato prima del commit.
 - **Debito pre-esistente, NON introdotto qui**: `npm run typecheck` fallisce con **`TS2589`** in
-  `e2e/effects.spec.ts:103` (dal commit `9c7b0ed`). **Unico** errore `tsc` (assente dai miei file, resi
-  type-clean anche dopo il fix `TS2322` del writer test); **non blocca `next build`** → rende rosso solo
-  `tests/scaffold.test.ts`. Da affrontare in sessione dedicata.
+  `e2e/effects.spec.ts:103` (dal commit `9c7b0ed`). **Unico** errore `tsc` (assente dai miei file);
+  **non blocca `next build`** → rende rosso solo `tests/scaffold.test.ts`. Da affrontare in sessione dedicata.
 
 ## 6. Prossimi passi
 
-- **`domain-store` chiuso** ✅ (7/12). Prossimo BUILD: un eleggibile fra `domain-connect`,
+- **`domain-connect` chiuso** ✅ (8/12). Prossimo BUILD: un eleggibile fra `domain-verify-disconnect`,
   `domain-routing` o `domain-downgrade`. Il session-start risolve il dispatch.
-- **`domain-connect` (DOM-301/302/303)** — ora **sbloccato** (ha `hostname`/`companion`/`port`/`vercel`/
-  `store`): l'endpoint che valida l'entitlement `custom_domain` (Pro), normalizza+classifica l'host,
-  chiama `DomainProvider.addDomain` via la porta (fake nei test, inerte senza env), genera il token e
-  persiste il `pending` via `createPendingDomain` — con l'auto-www del companion (DOM-121). Guardie di
-  rotta condivise (`_shared/request-guard` + `route-guards`), nessun service_role nel percorso utente
-  (solo il writer confinato).
+- **`domain-verify-disconnect` (DOM-311/321)** — ora **sbloccato** (ha `connect`+`vercel`): l'endpoint
+  che interroga `DomainProvider.getVerificationStatus` e, SOLO su `verified`, muove
+  `setDomainStatus('active', {verified_at})` server-side (DOM-D4: la transizione ad active la muove solo il
+  server dopo la verifica DNS) + popola `public_slug`; disconnect: `removeDomain` sulla porta + DELETE
+  owner-side (RLS). Guardie condivise, provider fake nei test.
 - **`domain-routing` (DOM-401/402)** consuma la policy anon-active di DOM-102: il reader
   `src/data/public-domain.ts` proietta `{ public_slug }` da `site_domains` come anon (gemello di
   `public-site.ts`) + middleware host-custom PRIMA di locale/guardia auth (non toccare `/s/*`).
@@ -145,11 +144,51 @@ Il DAG completo è in `00-INDEX.md` §Build order.
   (gemello di `applyDowngrade`/BIL-501) + `applySoftDomainDowngrade` agganciato nel webhook dopo
   `applySoftDowngrade`, idempotente, riusa `setDomainStatus('suspended')`, mai delete.
 - **Config di deploy (prereq go-live, non blueprint)**: env Vercel `VERCEL_TOKEN`, `VERCEL_PROJECT_ID`,
-  `VERCEL_TEAM_ID?`, `VERCEL_APEX_TARGET`, `VERCEL_CNAME_TARGET` — l'adattatore li esige, inerte senza
-  (DOM-D9), come le CTA Stripe di Fase 1.
+  `VERCEL_TEAM_ID?`, `VERCEL_APEX_TARGET`, `VERCEL_CNAME_TARGET` — endpoint/adattatore li esigono, inerti
+  senza (DOM-D9), come le CTA Stripe di Fase 1. **L'endpoint `/api/domains/connect` è ora live ma inerte
+  senza queste env** (`getVercelDomainProvider`/`getPlatformDnsTargets` lanciano ⇒ 502, nessuna scrittura).
 - **Debito**: pianificare il fix di `TS2589` in `e2e/effects.spec.ts` (typecheck verde) a parte.
 
 ## 7. Carry-over & copertura dichiarata
+
+**Copertura di `domain-connect` (DOM-301/302/303):**
+- `tests/api-domains-connect-guard.test.ts` copre **AC-301-1..3** (+ contro-prova Pro⇒200): Free
+  proprietario⇒403 senza scrittura; non-proprietario⇒404 (`guardOwnedSite`); cross-origin⇒403,
+  Content-Length oltre il tetto⇒413, `Sec-Fetch-Site` assente⇒403 (request-guard). Fake `DomainProvider`
+  iniettato + `createPendingDomain` spy: ogni respinta NON scrive e NON chiama la porta.
+- `tests/api-domains-connect-logic.test.ts` copre **AC-302-1..3** (subdomain per isolare da DOM-303):
+  host valido⇒200 con record CNAME+TXT + una riga pending + `addDomain` chiamato; `ulaba.net`⇒422
+  `reserved` e `iltuobar`⇒422 `invalid_format`, nessuna scrittura; ri-invio dello stesso host⇒una sola
+  riga (idempotente, **store in-memory condiviso** fra `createPendingDomain` e `getDomainByHost`).
+- `tests/api-domains-connect-www.test.ts` copre **AC-303-1..3**: apex⇒DUE righe (`apex`+`www.<apex>`,
+  kind `apex`/`subdomain`); subdomain⇒UNA riga; apex già collegato⇒ri-invio senza duplicati. **Mutazione
+  7/7** (MG1..MW2). Attese **letterali** (status/host/record, chiamate spy), mai binding importati.
+- **NON coperto (out_of_scope)**: la transizione ad `active` e il disconnect (`domain-verify-disconnect`,
+  DOM-311/321); la correttezza contro l'**API Vercel reale** (env reali a go-live, DOM-D9); l'**hijack
+  cross-tenant reale** — il fake non simula `domain_already_in_use`, coperto **per costruzione**
+  dall'ordine addDomain-first (dichiarato, non testato con un caso); la UI (`domain-ui`, DOM-501).
+
+**Carry-over — lezioni nuove (`domain-connect`):**
+- **FP gitleaks ereditato dalla PROSA del SESSION-STATE**: le lezioni gitleaks di un macrotask, scritte
+  nel session-end DOPO il suo checkpoint, **sfuggono** al suo C2 ma compaiono al checkpoint SUCCESSIVO
+  come CRITICAL "nuovi" (il pattern `const TOKEN='<valore>'` in prosa scatta `generic-api-key`). Rimedio,
+  applicato a QUESTO stesso session-end: descrivere la lezione senza **riprodurre** il letterale
+  keyword+valore. Verificare con `gitleaks --config <skill>/scripts/oracles/gitleaks.toml`.
+- **Anti-hijack per ORDINE, non per query service_role**: l'unicità globale cross-tenant la garantisce il
+  PROVIDER (`addDomain` PRIMA della scrittura), non un reader service_role nel percorso utente
+  (violerebbe R7). L'upsert `onConflict: normalized_hostname` del writer resta ma non lo si raggiunge per
+  un host altrui perché `addDomain` fallisce prima (stesso progetto Vercel). Dichiarato nel commento.
+- **accountId dal SITO = `resolveSiteAccountId` + `guardOwnedSite`**: due letture (proprietà via
+  `listSites`, account via `sites.account_id` sotto RLS) è il prezzo della fedeltà al DoD (route-guards)
+  + derivazione-dal-sito anti-IDOR; accettabile per un endpoint a bassa frequenza. `resolveSiteAccountId`
+  è testato via mock a livello endpoint (non un unit dedicato: dettaglio d'implementazione degli AC).
+- **Idempotenza a livello endpoint via `getDomainByHost` (RLS sessione)**, non via l'upsert del writer:
+  riga già del proprio sito ⇒ riuso token, nessuna ri-chiamata al provider né scrittura.
+- **Reset del registro del fake tra invii ripetuti**: il fake è ricreato in `beforeEach` ma NON fra due
+  POST nello stesso test; per asserire "provider non ri-chiamato al 2° invio" azzera
+  `fake.calls.<m>.length = 0` prima del secondo POST (colto al 1° run rosso di AC-303-3).
+- **`.snap` modificato a fine suite = solo EOL** (già noto da `domain-dns`): `git checkout -- <snap>`
+  prima del commit (qui `onboarding-generation-regression.test.ts.snap`).
 
 **Copertura di `domain-store` (DOM-221/222):**
 - `tests/site-domains-reader.test.ts` copre **AC-221-1..3** su DB reale (RLS attiva, mock di
