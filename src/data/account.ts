@@ -26,3 +26,24 @@ export async function resolveOwnAccountId(
   if (error || !data) return null;
   return data.id as string;
 }
+
+// DOM-301 (macrotask domain-connect, p5-custom-domains-fase2) — l'account_id del SITO, sotto il
+// client di SESSIONE (RLS attiva), mai service_role. L'endpoint connect deriva l'account dal sito
+// POSSEDUTO (mai dal body: no IDOR, A01:2025) per il gate entitlement custom_domain. La RLS di
+// sites nasconde i siti altrui => un site_id non del chiamante (o inesistente) da' `null`,
+// indistinguibili (P1-D21). `maybeSingle` non lancia sul "nessuna riga"; un guasto di lettura =>
+// `null` (fail-safe, il call-site lo traduce nel proprio esito). Gemello di resolveOwnAccountId.
+
+/** L'id dell'account del sito (sotto RLS di sessione), o `null` se non proprio/inesistente o su guasto. */
+export async function resolveSiteAccountId(
+  supabase: SupabaseClient,
+  siteId: string,
+): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('sites')
+    .select('account_id')
+    .eq('id', siteId)
+    .maybeSingle();
+  if (error || !data) return null;
+  return data.account_id as string;
+}

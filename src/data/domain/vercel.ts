@@ -188,3 +188,21 @@ export function getVercelDomainProvider(): DomainProvider {
   cached ??= createVercelDomainProvider(configFromEnv());
   return cached;
 }
+
+/**
+ * I target DNS di PIATTAFORMA che l'utente deve puntare: `apexTarget` (record A/ALIAS all'apex),
+ * `cnameTarget` (CNAME al subdomain). Sono config di DEPLOY (env Vercel), MAI hardcoded qui
+ * (A02:2025) e MAI inviati a Vercel: l'endpoint connect (DOM-302) li compone con dnsInstructionsFor
+ * (DOM-131) per le istruzioni all'utente. Assenti => throw (DOM-D9, come configFromEnv): senza env
+ * il collegamento reale e' inerte, non un target segnaposto.
+ */
+export function getPlatformDnsTargets(): { readonly apexTarget: string; readonly cnameTarget: string } {
+  const apexTarget = process.env.VERCEL_APEX_TARGET;
+  const cnameTarget = process.env.VERCEL_CNAME_TARGET;
+  if (!apexTarget || !cnameTarget) {
+    throw new Error(
+      "Variabili d'ambiente Vercel mancanti: VERCEL_APEX_TARGET / VERCEL_CNAME_TARGET",
+    );
+  }
+  return { apexTarget, cnameTarget };
+}
