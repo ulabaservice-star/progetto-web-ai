@@ -44,6 +44,9 @@
       "resume": "Riprendi la generazione",
       "preview": "Vedi l'anteprima",
       "retry": "Riprova la generazione"
+    },
+    "domain": {
+      "cta": "Gestisci il dominio"
     }
   },
   "onboarding": {
@@ -310,5 +313,29 @@
       "pastDue": "Ancora attivo — regolarizza il pagamento",
       "canceled": "Disdetto"
     }
+  },
+  "domains": {
+    "title": "Dominio personalizzato",
+    "intro": "Collega un dominio che possiedi già al tuo sito pubblicato: apex e www vengono collegati insieme, con HTTPS automatico.",
+    "hostnameLabel": "Nome del dominio (es. iltuobar.com)",
+    "connectButton": "Collega",
+    "noDomains": "Nessun dominio collegato.",
+    "dnsRecordsTitle": "Imposta questi record DNS presso il tuo provider:",
+    "recordType": "Tipo",
+    "recordName": "Nome",
+    "recordValue": "Valore",
+    "copyRecord": "Copia il valore",
+    "verifyButton": "Verifica",
+    "disconnectButton": "Scollega",
+    "status": {
+      "pending": "In attesa della configurazione DNS",
+      "verifying": "In verifica",
+      "active": "Attivo",
+      "suspended": "Sospeso",
+      "error": "Errore di configurazione DNS"
+    },
+    "upgradeTitle": "Dominio personalizzato",
+    "upgradeBody": "Il dominio personalizzato è incluso nel piano Pro. Passa a Pro per collegare il tuo dominio.",
+    "upgradeCta": "Passa a Pro"
   }
 }

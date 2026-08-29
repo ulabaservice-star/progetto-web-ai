@@ -47,14 +47,26 @@ type SiteGenerationLink = {
   ctaLabel: string;
 };
 
+// DOM-501 (macrotask domain-ui, p5-custom-domains-fase2) — il link alla pagina "Dominio
+// personalizzato" del sito (/{locale}/editor/{siteId}/domain), calcolato dalla pagina e passato
+// gia' pronto come onboarding/generation. OPZIONALE per costruzione: i test di unita' di SiteRow la
+// rendono senza, e senza la prop la riga e' identica a prima. L'href arriva costruito dalla pagina
+// (locale dall'allowlist + siteId codificato): qui nessun valore di testo entra in un href. Il gate
+// Pro/Free vive nella pagina di destinazione (DOM-502), non nella visibilita' del link.
+type SiteDomainLink = {
+  href: string;
+  ctaLabel: string;
+};
+
 type SiteRowProps = {
   site: { id: string; name: string; status: string };
   labels: SiteRowLabels;
   onboarding?: SiteOnboardingLink;
   generation?: SiteGenerationLink;
+  domain?: SiteDomainLink;
 };
 
-export function SiteRow({ site, labels, onboarding, generation }: SiteRowProps) {
+export function SiteRow({ site, labels, onboarding, generation, domain }: SiteRowProps) {
   const router = useRouter();
   const [name, setName] = useState(site.name);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -80,7 +92,7 @@ export function SiteRow({ site, labels, onboarding, generation }: SiteRowProps) 
           arrivano gia' costruiti dalla pagina (locale dall'allowlist + siteId codificato): qui
           nessun valore di testo entra in un href. Il nome del sito resta un nodo di testo JSX
           (escaping di React), mai innerHTML — §7 p.4: e' input NON FIDATO in rendering. */}
-      {onboarding || generation ? (
+      {onboarding || generation || domain ? (
         <div className="flex flex-wrap items-center gap-sm">
           {onboarding ? (
             <Link
@@ -96,6 +108,14 @@ export function SiteRow({ site, labels, onboarding, generation }: SiteRowProps) 
               className="text-sm font-medium text-primary underline"
             >
               {generation.ctaLabel}
+            </Link>
+          ) : null}
+          {domain ? (
+            <Link
+              href={domain.href}
+              className="text-sm font-medium text-foreground underline"
+            >
+              {domain.ctaLabel}
             </Link>
           ) : null}
           {onboarding?.statusUnavailable ? (
