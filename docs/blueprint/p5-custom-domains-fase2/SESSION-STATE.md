@@ -9,8 +9,9 @@
 |---|---|
 | **Progetto** | Ulaba/Belora — P5 Fase 2 (domini custom) |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase Cloud EU) |
-| **Ultimo aggiornamento** | 2026-08-29 (session-end BUILD `domain-routing`) |
-| **Sessione corrente (BUILD `domain-routing`, DOM-401/402 + Opzione A)** | **CHIUSO+MERGIATO** (`53def9c`, atomico `8f4f0a4`, pushato su `origin/main`). Rende **SERVIBILE** un dominio custom attivo. **DOM-401** reader pubblico host→slug `src/data/public-domain.ts` (nuovo): `readSiteSlugForHost(host)` come **anon PURO** (nuovo `createAnonServerClient` in `supabase-ssr.ts`, edge-compatibile, cookie vuoti ⇒ MAI la sessione del visitatore, MAI service_role), match **esatto** su `normalized_hostname` (normalizzato DOM-111 prima), **solo attivi** via RLS DOM-102 (`status` NON nominato: filtra la policy, come `is_published` in public-site.ts), fail-closed ⇒ `null`. Gemello di `public-site.ts`, **NO** `import 'server-only'` (edge), **NO** React `cache()`. **DOM-402** middleware `src/middleware.ts`: ramo host-custom **PRIMA** del locale/guardia auth; `isPlatformHost` da `NEXT_PUBLIC_APP_URL` (+ `localhost`/`*.vercel.app`, **fail-safe** env-assente ⇒ tutto piattaforma); host custom risolto ⇒ `NextResponse.rewrite` a `/s/<slug>` (querystring preservata via `nextUrl.clone()`, **nessun** prefisso locale); host sconosciuto ⇒ degrada in `platformFlow` (fail-closed, no host-spoofing); `/s` e `/api` NON ri-riscritti (`isReservedRewritePath`, no ricorsione). Flusso di piattaforma **INVARIATO** (non-regressione `auth-middleware`/`public-exclusion`; su `localhost` isPlatformHost⇒piattaforma). **Opzione A** (denormalizzazione `public_slug` all'attivazione, decisione utente): verify (DOM-311) legge `readPublishedSlugForSite(record.site_id)` (nuovo modulo **reader** `src/data/site-publications-read.ts`, `import 'server-only'`, owner-side RLS, **NON** in `site-publications.ts` che è `'use server'` = Server Action) e lo passa a `setDomainStatus` (patch esteso con `public_slug`). Sito non pubblicato ⇒ slug null ⇒ `public_slug` resta NULL (fail-closed a valle nel reader anon). Chiude l'anello DOM-311→routing. Target tests: `public-domain-read.test.ts` (**DB reale sotto RLS anon**, anti-placebo service_role, AC-401-1..3), `middleware-host-routing.test.ts` (mock, AC-402-1..5), estensione `api-domains-verify.test.ts` (Opzione A). Checkpoint **4/4**: C1 igiene verde `dead-code:0 dup:238 cycle:0 twin:0` **ZERO ratchet** (il clone-preambolo `getAuthedClient` `publishSite↔unpublishSite` che i miei edit toccavano è **PRE-ESISTENTE P4**, provato via `git stash` — su main identico `[236-242]↔[96-102]` — quindi `site-publications.ts` **ripristinato bit-identico a main** con `git checkout HEAD`, il fingerprint del clone torna in baseline); C2 verde `gitleaks:3 osv:2 semgrep:0 rls:2` **nessuna nuova dep**; C3 **1899/1900** salvo debito TS2589 pre-esistente; C4 verde AC-401/402/Opzione-A. Mutazione **6/6** (MR1 normalize, MM1 gate, MM2 fail-closed, MM3 platform, MM4 reserved, MC1 denorm-slug; ripristino **bit-identico** sha256). `next build` ok (route domini + Middleware edge), **e2e 37/37**. **10/12 macrotask done. Prossimo eleggibile: `domain-ui` (DOM-501/502), `domain-downgrade` (DOM-601/602).** |
+| **Ultimo aggiornamento** | 2026-08-29 (session-end BUILD `domain-downgrade`) |
+| **Sessione corrente (BUILD `domain-downgrade`, DOM-601/602)** | **CHIUSO+MERGIATO** (`f05db3b`, atomico `50f61ca`, pushato su `origin/main`). Chiude BIL-D7/DOM-D8: in downgrade Pro→Free i domini custom si **sospendono in modo reversibile** (mai delete). **DOM-601** `src/domain/domains/domain-downgrade.ts`: `applyDomainDowngrade(entitlement, domains)` **puro** (gemello di `applyDowngrade`/BIL-501) — `custom_domain=true` ⇒ `domainsToSuspend:[]`; `false` ⇒ sospende SOLO i collegamenti `'active'` (gli altri stati intatti). Nessun DB/rete/orologio; la decisione ha UNA fonte (`limits.custom_domain` dell'entitlement risolto server-side, Fase 1); mai una cancellazione. **DOM-602** `src/data/domain-downgrade.ts`: `applySoftDomainDowngrade(accountId, entitlement, store)` nel webhook — `import 'server-only'`, `DomainDowngradeStore` iniettabile (gemello di `SiteDowngradeStore`), default service_role **confinato**. **NODO id→host**: la decisione pura ragiona per **id**, ma il writer `setDomainStatus` (DOM-222) sospende per `normalized_hostname` ⇒ lo store elenca `id+status+normalized_hostname` e si **mappa id→host** (`Map`) prima di sospendere; `suspendDomain` riusa `setDomainStatus(host,'suspended')` (mai delete, DOM-D8). **Idempotente** (solo gli `active` toccati ⇒ replay = no-op), riattivabile a Pro (righe/legami intatti). Agganciato in `src/app/api/billing/webhook/route.ts` **dopo** `applySoftDowngrade`: estratti `now` (UNA volta al confine) e `subscription`, `applySoftDomainDowngrade(event.account_id, resolveEntitlement(subscription, now))`, **sempre invocato** (robusto ai retry Stripe). Target tests: `domain-apply-downgrade.test.ts` (AC-601-1..4, puro) + `domain-downgrade-apply.test.ts` (AC-602-1..4, store in-memory con spy `suspendCalls`, idempotenza e non-delete). ⚠️ **Fix di non-regressione**: il nuovo effetto sul webhook ha rotto `tests/billing-webhook-route.test.ts` (BIL-502) — il suo `FakeAdmin` in-memory NON gestiva `site_domains` (throw finale ⇒ webhook 500). Esteso il fake col pattern di `site_publications` (backing `domains` **vuoto** di default ⇒ `applySoftDomainDowngrade` no-op ⇒ 200 invariato, senza toccare le asserzioni BIL-502). Checkpoint **4/4**: C1 igiene verde `dead-code:0 dup:238 cycle:0 twin:0` **ZERO ratchet** (nuovi file clone-free); C2 verde `gitleaks:3 osv:2 semgrep:0 rls:2` **nessuna nuova dep**; C3 suite piena verde salvo debito **TS2589** pre-esistente (`scaffold`); C4 verde 8/8 AC. Mutazione **5/5** (MD1 gate, MD2 filtro-active, MD3 no-suspend, MD4 ignore-decision, MD5 idempotence; ripristino **bit-identico** sha256). `next build` ok (route `/api/billing/webhook` + `/api/domains/*` + Middleware), **e2e 37/37**. **Nessuna migrazione nuova** (riusa `site_domains` + `status='suspended'` già ammesso dal CHECK DOM-101). **11/12 macrotask done. Resta SOLO `domain-ui` (DOM-501/502, gate visivo umano) — ultimo del piano.** |
+| **Sessione precedente (BUILD `domain-routing`, DOM-401/402 + Opzione A)** | **CHIUSO+MERGIATO** (`53def9c`, atomico `8f4f0a4`, pushato su `origin/main`). Rende **SERVIBILE** un dominio custom attivo. **DOM-401** reader pubblico host→slug `src/data/public-domain.ts` (nuovo): `readSiteSlugForHost(host)` come **anon PURO** (nuovo `createAnonServerClient` in `supabase-ssr.ts`, edge-compatibile, cookie vuoti ⇒ MAI la sessione del visitatore, MAI service_role), match **esatto** su `normalized_hostname` (normalizzato DOM-111 prima), **solo attivi** via RLS DOM-102 (`status` NON nominato: filtra la policy, come `is_published` in public-site.ts), fail-closed ⇒ `null`. Gemello di `public-site.ts`, **NO** `import 'server-only'` (edge), **NO** React `cache()`. **DOM-402** middleware `src/middleware.ts`: ramo host-custom **PRIMA** del locale/guardia auth; `isPlatformHost` da `NEXT_PUBLIC_APP_URL` (+ `localhost`/`*.vercel.app`, **fail-safe** env-assente ⇒ tutto piattaforma); host custom risolto ⇒ `NextResponse.rewrite` a `/s/<slug>` (querystring preservata via `nextUrl.clone()`, **nessun** prefisso locale); host sconosciuto ⇒ degrada in `platformFlow` (fail-closed, no host-spoofing); `/s` e `/api` NON ri-riscritti (`isReservedRewritePath`, no ricorsione). Flusso di piattaforma **INVARIATO** (non-regressione `auth-middleware`/`public-exclusion`; su `localhost` isPlatformHost⇒piattaforma). **Opzione A** (denormalizzazione `public_slug` all'attivazione, decisione utente): verify (DOM-311) legge `readPublishedSlugForSite(record.site_id)` (nuovo modulo **reader** `src/data/site-publications-read.ts`, `import 'server-only'`, owner-side RLS, **NON** in `site-publications.ts` che è `'use server'` = Server Action) e lo passa a `setDomainStatus` (patch esteso con `public_slug`). Sito non pubblicato ⇒ slug null ⇒ `public_slug` resta NULL (fail-closed a valle nel reader anon). Chiude l'anello DOM-311→routing. Target tests: `public-domain-read.test.ts` (**DB reale sotto RLS anon**, anti-placebo service_role, AC-401-1..3), `middleware-host-routing.test.ts` (mock, AC-402-1..5), estensione `api-domains-verify.test.ts` (Opzione A). Checkpoint **4/4**: C1 igiene verde `dead-code:0 dup:238 cycle:0 twin:0` **ZERO ratchet** (il clone-preambolo `getAuthedClient` `publishSite↔unpublishSite` che i miei edit toccavano è **PRE-ESISTENTE P4**, provato via `git stash` — su main identico `[236-242]↔[96-102]` — quindi `site-publications.ts` **ripristinato bit-identico a main** con `git checkout HEAD`, il fingerprint del clone torna in baseline); C2 verde `gitleaks:3 osv:2 semgrep:0 rls:2` **nessuna nuova dep**; C3 **1899/1900** salvo debito TS2589 pre-esistente; C4 verde AC-401/402/Opzione-A. Mutazione **6/6** (MR1 normalize, MM1 gate, MM2 fail-closed, MM3 platform, MM4 reserved, MC1 denorm-slug; ripristino **bit-identico** sha256). `next build` ok (route domini + Middleware edge), **e2e 37/37**. **10/12 macrotask done. Prossimo eleggibile: `domain-ui` (DOM-501/502), `domain-downgrade` (DOM-601/602).** |
 | **Sessione precedente (BUILD `domain-verify-disconnect`, DOM-311/321)** | **CHIUSO+MERGIATO** (`35433c2`, atomico `a244f0b`, pushato su `origin/main`). Le due transizioni di stato del collegamento, guidate dal provider, in due endpoint distinti. **DOM-311** `POST /api/domains/verify` (`src/app/api/domains/verify/route.ts`): l'**UNICO** punto che porta ad `active` server-side (DOM-D4). `getVerificationStatus` sulla porta ⇒ `verified` ⇒ `setDomainStatus('active', {verified_at})` (instradabile), `pending` ⇒ `verifying` (NON instradabile, nessuna attivazione prematura), `misconfigured` ⇒ `error` + detail. Gia `active` ⇒ **no-op idempotente** (provider NON interrogato). Gate `custom_domain` letto DAL SERVER, **accountId dal RECORD** (`getDomainByHost`), mai dal body; non-proprietario ⇒ 404 (RLS di sessione nasconde i domini altrui). **DOM-321** `POST /api/domains/disconnect` (`src/app/api/domains/disconnect/route.ts`): scollegamento volontario — `removeDomain` sulla porta + DELETE **owner-side via sessione** (policy `site_domains_delete_member` + GRANT, mai service_role: R7) = nuovo `deleteDomainByHost` in `site-domains.ts`. **Nessun** gate custom_domain (un Free deve poter scollegare un residuo). Record null ⇒ 200 **idempotente senza rimozione** (P1-D21: altrui≡inesistente; anti-hijack: `removeDomain` MAI su un host non-proprio). Il sito `/s/<slug>` resta pubblicato (si tocca SOLO `site_domains`). **Preambolo comune** (guard same-origin+byte + `getUser` + parse `{hostname}` + risoluzione del collegamento posseduto) estratto in `src/app/api/domains/_shared.ts` (`resolveOwnedDomainRequest`, 2 call-site). Writer esteso con lo stato `'verifying'` (il CHECK di `site_domains` lo ammette gia). Target tests: **fake `DomainProvider` iniettato** + store/spy in-memory, tag `covers` AC-311-1..5 / AC-321-1..3. Checkpoint **4/4**: C1 igiene verde dopo **ratchet additivo 233→237** (2 cloni **PRE-ESISTENTI provati su main** via stash — `connect↔generate`, `VISION↔SESSION-STATE` — buchi della baseline di domain-connect; + 2 cloni STRUTTURALI miei — boilerplate del route handler `verify↔disconnect`, preambolo auth `_shared↔billing/_guard` — dello stesso genere dei cloni-route gia in baseline; + **fix dead-code**: `MAX_DOMAIN_BODY_BYTES` era export orfano ⇒ reso locale, che chiudeva anche il rosso di `ci-harness`); C2 verde `gitleaks:3 osv:2 semgrep:0 rls:2` **nessuna nuova dep**; C3 salvo debito TS2589 pre-esistente (il 2° rosso transitorio nel run pieno era **contesa di risorse** su `npm run build`/`typecheck`, sparito in isolamento); C4 verde **9/9** target. Mutazione **8/8** (MV1 gate, MV2 404-null, MV3 verified, MV4 pending, MV5 misconfig, MV6 idempotente, MD1 remove, MD2 guard-null; ripristino **bit-identico** sha256). `next build` ok (route `ƒ /api/domains/verify` + `ƒ /api/domains/disconnect`), **e2e 37/37**. **9/12 macrotask done. Prossimo eleggibile: `domain-routing` (DOM-401/402), `domain-ui` (DOM-501/502, ora sbloccato), `domain-downgrade` (DOM-601/602).** |
 | **Sessione precedente (BUILD `domain-connect`, DOM-301/302/303)** | **CHIUSO+MERGIATO** (`43b4aa8`, atomici `8863980` codice + `d2e9c1c` bonifica-FP, pushato su `origin/main`). L'endpoint `POST /api/domains/connect` (`src/app/api/domains/connect/route.ts`) in tre fette che compongono i pezzi verdi: **DOM-301 auth** — `guardMutatingRequest` (same-origin+byte) + `getUser` + `guardOwnedSite` (proprieta' site_id) + gate `custom_domain` letto DAL SERVER (`getAccountEntitlement`); **accountId DERIVATO dal sito** (nuovo `resolveSiteAccountId` in `account.ts`, gemello di `resolveOwnAccountId`, RLS di sessione), MAI dal body (no IDOR). Free/non-proprietario respinto PRIMA di ogni scrittura. **DOM-302 logica** — `normalizeHostname`+`classifyHostname` (invalid/reserved⇒422); **`addDomain` sulla porta PRIMA della scrittura** (anti-hijack: il provider e' la fonte dell'unicita' globale reale, un host altrui fallisce li' prima che l'upsert del writer tocchi una riga altrui); `createPendingDomain` (writer service_role confinato) col token `randomUUID`; 200 con istruzioni DNS (`dnsInstructionsFor` + nuovo `getPlatformDnsTargets` da env + `verification[]` del provider). **Idempotente** via `getDomainByHost` (RLS sessione): riga gia' del proprio sito ⇒ riuso, nessuna riscrittura. **DOM-303 auto-www** — un apex collega anche `companionHostname` (`www.<apex>`), ri-validato dalle stesse normalize/classify; un subdomain ⇒ nessun companion. Target tests: **fake `DomainProvider` iniettato** + store in-memory condiviso (idempotenza reale), tag `covers` AC-301-1..3 / AC-302-1..3 / AC-303-1..3. Checkpoint **4/4** (C1 igiene verde `dead-code:0 dup:235 cycle:0 twin:0` **nessun ratchet**, `src/app/api/**` route = entry Next; C2 verde `gitleaks:3 osv:2 semgrep:0 rls:2` **nessuna nuova dep** dopo **1 loop di fix** = bonifica FP gitleaks in SESSION-STATE; C3 **1879/1880** salvo debito TS2589; C4 verde **12/12** target), mutazione **7/7** (MG1 gate, MG2 proprieta, ML1 crea-pending, ML2 valida-reserved, ML3 idempotenza, MW1 companion, MW2 no-companion-subdomain; ripristino **bit-identico** sha256), `next build` ok (route `ƒ /api/domains/connect`), **e2e 37/37**. Reader/writer/porta ora **importati** dall'endpoint (non piu' orfani). **8/12 macrotask done. Prossimo eleggibile: `domain-verify-disconnect` (ora sbloccato), `domain-routing`, `domain-downgrade`.** |
 | **Sessione precedente (BUILD `domain-store`, DOM-221/222)** | **CHIUSO+MERGIATO** (`17f2d5e`, atomico `af9ba0d`). **DOM-221** `src/data/site-domains.ts`: reader owner-side sotto RLS (client di SESSIONE, mai service_role). `listSiteDomains(siteId)` + `getDomainByHost(host)` — host normalizzato (DOM-111) prima del match; fail-safe `[]`/`null`. `ownerQuery` SINCRONA (gotcha thenable: un `PostgrestFilterBuilder` awaitato si ESEGUE). **DOM-222** `src/data/site-domains-write.ts`: writer di STATO service_role CONFINATO + store `SiteDomainWriteStore` iniettabile. `createPendingDomain` nasce SEMPRE `'pending'`; `setDomainStatus` active/suspended/error. Nessun UPDATE authenticated (DOM-101). Checkpoint 4/4 (ratchet additivo 232→233 clone PRE-ESISTENTE `vercel↔stripe`), mutazione 7/7, `next build` ok. |
@@ -34,17 +35,17 @@
 | 09 | `domain-verify-disconnect` (DOM-311/321) | **done** | 4/4 ✅ (`35433c2`) | `domain-connect`, `domain-vercel` |
 | 10 | `domain-routing` (DOM-401/402) | **done** | 4/4 ✅ (`53def9c`) | `domain-schema` |
 | 11 | `domain-ui` (DOM-501/502) | **todo** | — | `domain-verify-disconnect` |
-| 12 | `domain-downgrade` (DOM-601/602) | **todo** | — | `domain-schema`, `domain-store` |
+| 12 | `domain-downgrade` (DOM-601/602) | **done** | 4/4 ✅ (`f05db3b`) | `domain-schema`, `domain-store` |
 
-**Eleggibili ora (dipendenze verdi):** `domain-ui` (DOM-501/502 — da `domain-verify-disconnect`
-verde, **con GATE VISIVO umano**) e `domain-downgrade` (DOM-601/602 — da
-`domain-schema`+`domain-store`). Il DAG completo è in `00-INDEX.md` §Build order. Restano
-2 macrotask (11, 12).
+**Eleggibile ora (dipendenze verdi):** SOLO `domain-ui` (DOM-501/502 — da `domain-verify-disconnect`
+verde, **con GATE VISIVO umano**). `domain-downgrade` chiuso. Il DAG completo è in `00-INDEX.md`
+§Build order. Resta **1 macrotask** (11), l'ultimo del piano.
 
 ## 2. Macrotask corrente
 
-- **NESSUNO in corso** — `domain-routing` chiuso e mergiato. Alla prossima sessione il dispatch
-  risolve **BUILD** sul prossimo eleggibile.
+- **NESSUNO in corso** — `domain-downgrade` chiuso e mergiato. Resta SOLO `domain-ui` (DOM-501/502,
+  **gate visivo umano**): alla prossima sessione il dispatch risolve **BUILD** su di esso — è
+  l'**ultimo macrotask** del piano, poi il DAG di `p5-custom-domains-fase2` chiude.
 - **⚡ METODO — dynamic workflow multi-agente command-free (USATO in questa sessione, decisione utente 2026-08-28)**:
   per OGNI unità di build 1 builder command-free (subagenti solo Read/Write/Edit, **mai** eseguono
   comandi — si stallano), tutte le unità in **parallelo** se non condividono file (nessun worktree
@@ -55,9 +56,8 @@ verde, **con GATE VISIVO umano**) e `domain-downgrade` (DOM-601/602 — da
   un file `'use server'` → spostato in modulo `server-only`) e **igiene** (mal-diagnosi del clone → il
   bersaglio reale era il preambolo pre-esistente). Dettaglio nella memoria `dynamic-workflow-build-method`.
 - **Suggerito prossimo**: `domain-ui` (DOM-501/502) — la UI di gestione domini (collega/verifica/scollega),
-  **con GATE VISIVO umano** al checkpoint (unica UI del piano). In alternativa `domain-downgrade`
-  (DOM-601/602): `applyDomainDowngrade` puro (gemello di `applyDowngrade`/BIL-501) + `applySoftDomainDowngrade`
-  agganciato nel webhook dopo `applySoftDowngrade`, idempotente, riusa `setDomainStatus('suspended')`, mai delete.
+  **con GATE VISIVO umano** al checkpoint (unica UI del piano). È l'**ULTIMO** macrotask: dopo, il
+  piano `p5-custom-domains-fase2` chiude il DAG (12/12).
 
 ## 3. Stato git
 
@@ -65,10 +65,10 @@ verde, **con GATE VISIVO umano**) e `domain-downgrade` (DOM-601/602 — da
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `trueline/build/domain-routing` (mergiato in `main` con `--no-ff`; non cancellato — delete branch è distruttivo, mai autonomo). Branch precedenti (`domain-verify-disconnect`, `domain-connect`…) idem conservati. |
-| Ultimo commit | `53def9c` (merge domain-routing in main) — atomico `8f4f0a4` (feat: `public-domain.ts` + `site-publications-read.ts` + 2 test nuovi + `createAnonServerClient` in `supabase-ssr.ts` + host-routing in `middleware.ts` + `public_slug` nel writer + denorm slug in `verify/route.ts` + test Opzione A, 9 file) |
-| Stato merge su `main` | ✅ **mergiato+pushato** su `origin/main`. Deploy Vercel innescato. Il middleware host-custom NON tocca il traffico di piattaforma (`localhost`/`ulaba.net`) → **e2e 37/37 invariati**; il reader `readSiteSlugForHost` è esercitato solo da un Host custom. ⚠️ **Inerte in prod senza env Vercel** per l'attivazione (verify ⇒ 502), ma il **routing** anon funziona su qualsiasi dominio già `active` con `public_slug` popolato (non dipende da `VERCEL_*`). ⚠️ **Prereq DNS/dominio reale**: perché un dominio custom serva davvero, va aggiunto al progetto Vercel (TLS) — go-live, non blueprint. |
-| Deploy-coupling | **coupled** — confermato (push su `main` = deploy su ulaba.net). Verifica locale PRIMA del merge: vitest **1899/1900** (unico rosso: debito TS2589), `next build` ok, **e2e Chromium 37/37**, mutazione 6/6. `main_deploy_coupled: true`. |
+| Branch di lavoro | `trueline/build/domain-downgrade` (mergiato in `main` con `--no-ff`; non cancellato — delete branch è distruttivo, mai autonomo). Branch precedenti (`domain-routing`, `domain-verify-disconnect`…) idem conservati. |
+| Ultimo commit | `f05db3b` (merge domain-downgrade in main) — atomico `50f61ca` (feat: `src/domain/domains/domain-downgrade.ts` + `src/data/domain-downgrade.ts` + aggancio in `billing/webhook/route.ts` + 2 test nuovi + estensione `FakeAdmin` per `site_domains` in `billing-webhook-route.test.ts`, 6 file) |
+| Stato merge su `main` | ✅ **mergiato+pushato** su `origin/main`. Deploy Vercel innescato. Il downgrade domini **NON tocca il traffico esistente**: `applySoftDomainDowngrade` gira nel webhook Stripe (inerte senza eventi reali) ed è **no-op su account senza domini** → **e2e 37/37 invariati**. ⚠️ **Inerte in prod** finché non arrivano eventi Stripe reali (CTA billing inerti senza env `STRIPE_*`); su un account senza domini custom collegati non fa nulla. Riattivazione a Pro: le righe `suspended` restano, l'utente/UI ri-verifica (`/verify`) per tornare `active`. |
+| Deploy-coupling | **coupled** — confermato (push su `main` = deploy su ulaba.net). Verifica locale PRIMA del merge: vitest suite piena verde salvo debito **TS2589** (`scaffold`), i due target 8/8, `next build` ok, **e2e Chromium 37/37**, mutazione 5/5. `main_deploy_coupled: true`. |
 
 ## 4. Baseline & budget
 
@@ -121,41 +121,42 @@ verde, **con GATE VISIVO umano**) e `domain-downgrade` (DOM-601/602 — da
 
 ## 5. Esiti dell'ultima sessione (framing onesto)
 
-- **BUILD `domain-verify-disconnect` (DOM-311/321) concluso e mergiato** (`35433c2`). Due endpoint +
-  1 helper condiviso + 1 funzione data-layer + 2 test:
-  - **verify** `src/app/api/domains/verify/route.ts` (`POST`, DOM-311): l'unico punto ad `active`
-    server-side. `resolveOwnedDomainRequest` (guard+auth+parse+record) ⇒ record null ⇒ **404**; gate
-    `custom_domain` dal server (accountId dal record); gia `active` ⇒ **no-op** (provider non interrogato);
-    altrimenti `getVerificationStatus` ⇒ `verified`⇒`setDomainStatus('active',{verified_at})`,
-    `pending`⇒`verifying`, `misconfigured`⇒`error`+detail (default `dns_misconfigured` se il provider non
-    ne fornisce). 200 con `{status,…}`; guasto provider ⇒ 502.
-  - **disconnect** `src/app/api/domains/disconnect/route.ts` (`POST`, DOM-321): record null ⇒ **200 no-op**
-    (nessuna rimozione: `removeDomain` MAI su host non-proprio); altrimenti `removeDomain` sulla porta +
-    `deleteDomainByHost` (DELETE **owner-side** RLS di sessione). **Nessun** gate. 502 su guasto.
-  - **helper/data-layer**: `resolveOwnedDomainRequest` in `_shared.ts` (2 call-site); `deleteDomainByHost(host)`
-    in `site-domains.ts` (normalizza + DELETE sotto RLS, propaga l'errore — a differenza delle letture
-    fail-safe); writer esteso con `'verifying'`.
-- **Checkpoint 4/4**: C1 igiene verde dopo **ratchet 233→237** (§4: 2 pre-esistenti provati su main + 2
-  strutturali miei + fix dead-code export→locale); C2 verde `gitleaks:3 osv:2 semgrep:0 rls:2` **nessuna
-  nuova dep**; C3 salvo debito TS2589; C4 verde **9/9** (AC-311-1..5, AC-321-1..3, tag `covers:`).
-  **Mutazione 8/8** (ripristino **bit-identico** sha256): MV1 gate→gate/AC-311-5; MV2 404-null→AC-311-5;
-  MV3 no-active→AC-311-1; MV4 pending⇒active→AC-311-2; MV5 no-error→AC-311-3; MV6 no-idempotenza→AC-311-4;
-  MD1 no-removeDomain→AC-321-1; MD2 no-guard-null→AC-321-2/3. `next build` ok (route verify+disconnect),
+- **BUILD `domain-downgrade` (DOM-601/602) concluso e mergiato** (`f05db3b`). 2 sorgenti + 1 aggancio +
+  2 test nuovi + 1 fix di non-regressione, via **dynamic workflow command-free** (2 builder paralleli su
+  file disgiunti — DOM-601 dominio puro, DOM-602 data-layer+webhook — poi UN ciclo di oracoli in
+  foreground dall'orchestratore):
+  - **DOM-601** `src/domain/domains/domain-downgrade.ts`: `applyDomainDowngrade(entitlement, domains)`
+    puro (gemello di `applyDowngrade`/BIL-501). `custom_domain=true` ⇒ `[]`; `false` ⇒ sospende SOLO gli
+    `'active'`. Return type locale `DomainDowngradeOutcome` (consumato per struttura). Mai delete.
+  - **DOM-602** `src/data/domain-downgrade.ts`: `applySoftDomainDowngrade(accountId, entitlement, store)`,
+    `server-only`, store `DomainDowngradeStore` iniettabile (default service_role confinato). **id→host**:
+    lo store elenca `id+status+normalized_hostname`, `Map` id→host, `suspendDomain` riusa
+    `setDomainStatus(host,'suspended')`. Idempotente (solo `active` ⇒ replay no-op), mai delete.
+  - **Aggancio** `src/app/api/billing/webhook/route.ts`: estratti `now` (UNA volta) e `subscription`;
+    `applySoftDomainDowngrade(event.account_id, resolveEntitlement(subscription, now))` **dopo**
+    `applySoftDowngrade`, sempre invocato.
+  - **Fix non-regressione** `tests/billing-webhook-route.test.ts`: esteso il `FakeAdmin` per `site_domains`
+    (select per `account_id`, update per `normalized_hostname`, backing **vuoto** ⇒ no-op) — vedi §7.
+- **Checkpoint 4/4**: C1 igiene verde `dead-code:0 dup:238 cycle:0 twin:0` **ZERO ratchet** (nuovi file
+  clone-free); C2 verde `gitleaks:3 osv:2 semgrep:0 rls:2` **nessuna nuova dep**; C3 suite piena verde salvo
+  debito TS2589 (`scaffold`); C4 verde 8/8 (AC-601-1..4, AC-602-1..4, tag `covers:`). **Mutazione 5/5**
+  (ripristino **bit-identico** sha256): MD1 gate→AC-601-2; MD2 filtro-active→AC-601-1; MD3 no-suspend→AC-602-1;
+  MD4 ignore-decision→AC-602-4; MD5 idempotence→AC-602-2. `next build` ok (route billing/domains + Middleware),
   **e2e 37/37**.
-- **Diagnosi onesta di 2 falsi allarmi**: (1) i blocker C1 apparivano sotto `eval/reference-app/` — è la
-  **normalizzazione dei path** che il control1 applica al fixture canonico (`checkpoint.mjs`), NON una dir
-  del repo; i file erano i miei (`src/app/api/domains/…`). (2) il **2° test rosso** del run pieno (oltre a
-  `scaffold` typecheck) era **contesa di risorse** (`ci-harness`/`scaffold` che spawnano `npm run
-  build`/`knip` sotto carico): isolatamente `lint`✓ `build`✓ `knip`✓, resta solo il typecheck-debito. Il
-  `.snap` di `onboarding-generation-regression` (solo EOL) `git checkout`-ato prima del commit.
+- **Framing onesto — 1 regressione REALE mia, non un falso allarme**: il nuovo effetto sul webhook ha reso
+  rosso `billing-webhook-route.test.ts` (4 test → 500). NON era contesa di risorse: il `FakeAdmin` non
+  implementava `site_domains` (throw finale). Fix chirurgico al fake (backing vuoto ⇒ 200 invariato, zero
+  asserzioni BIL-502 toccate). Ri-eseguito il solo file → 9/9. Il `.snap` di `onboarding-generation-regression`
+  (solo EOL, rigenerato dalla suite piena) `git checkout`-ato prima del commit.
 - **Debito pre-esistente, NON introdotto qui**: `npm run typecheck` fallisce con **`TS2589`** in
   `e2e/effects.spec.ts:103` (dal commit `9c7b0ed`). **Unico** errore `tsc` (assente dai miei file);
   **non blocca `next build`** → rende rosso solo `tests/scaffold.test.ts`. Da affrontare in sessione dedicata.
 
 ## 6. Prossimi passi
 
-- **`domain-routing` chiuso** ✅ (10/12). Prossimo BUILD: `domain-ui` o `domain-downgrade`.
-  Il session-start risolve il dispatch.
+- **`domain-downgrade` chiuso** ✅ (11/12). Prossimo e **ULTIMO** BUILD: `domain-ui` (DOM-501/502).
+  Il session-start risolve il dispatch. Chiuso `domain-ui`, il piano `p5-custom-domains-fase2` chiude
+  il DAG (12/12).
 - **✅ Aggancio `public_slug` RISOLTO (Opzione A, decisione utente)**: verify all'attivazione denormalizza
   `site_domains.public_slug` leggendo `readPublishedSlugForSite(record.site_id)` (reader owner-side
   `site-publications-read.ts`) e passandolo a `setDomainStatus` (patch esteso). L'anello DOM-311→routing è
@@ -164,9 +165,10 @@ verde, **con GATE VISIVO umano**) e `domain-downgrade` (DOM-601/602 — da
   Il flusso naturale è pubblica→collega→verifica; l'aggancio inverso (popolare `site_domains` da `publishSite`)
   è un possibile futuro, non richiesto ora.
 - **`domain-ui` (DOM-501/502)** — la UI di gestione domini, **con GATE VISIVO umano** al checkpoint.
-- **`domain-downgrade` (DOM-601/602)** — ora eleggibile (`schema`+`store`): `applyDomainDowngrade` puro
-  (gemello di `applyDowngrade`/BIL-501) + `applySoftDomainDowngrade` agganciato nel webhook dopo
-  `applySoftDowngrade`, idempotente, riusa `setDomainStatus('suspended')`, mai delete.
+- **`domain-downgrade` (DOM-601/602)** — ✅ **CHIUSO** (`f05db3b`): `applyDomainDowngrade` puro +
+  `applySoftDomainDowngrade` nel webhook, idempotente, riusa `setDomainStatus('suspended')`, mai delete.
+  ⚠️ **Limite noto (out_of_scope)**: al ritorno a Pro le righe `suspended` NON si ri-attivano da sole —
+  l'utente/UI richiama `/verify` (già dichiarato out_of_scope in DOM-602 AC).
 - **Config di deploy (prereq go-live, non blueprint)**: env Vercel `VERCEL_TOKEN`, `VERCEL_PROJECT_ID`,
   `VERCEL_TEAM_ID?`, `VERCEL_APEX_TARGET`, `VERCEL_CNAME_TARGET` — endpoint/adattatore li esigono, inerti
   senza (DOM-D9), come le CTA Stripe di Fase 1. **Gli endpoint `/api/domains/{connect,verify,disconnect}`
@@ -175,6 +177,42 @@ verde, **con GATE VISIVO umano**) e `domain-downgrade` (DOM-601/602 — da
 - **Debito**: pianificare il fix di `TS2589` in `e2e/effects.spec.ts` (typecheck verde) a parte.
 
 ## 7. Carry-over & copertura dichiarata
+
+**Copertura di `domain-downgrade` (DOM-601/602):**
+- `tests/domain-apply-downgrade.test.ts` copre **AC-601-1..4** (puro, nessun DB): free con 2 `active`+1
+  `error` ⇒ solo i 2 `active`; pro ⇒ `[]`; nessuna proprietà di cancellazione (`not.toHaveProperty
+  domainsToDelete/Remove`), i non-attivi (`suspended`/`error`/`pending`) mai in `domainsToSuspend`;
+  determinismo (`r1===r2`).
+- `tests/domain-downgrade-apply.test.ts` copre **AC-602-1..4** (store in-memory con spy `suspendCalls`):
+  free+2 active ⇒ entrambi `suspended`, `rows.length` invariato (non-delete), 2 chiamate; **idempotenza**
+  (seconda passata ⇒ `suspendCalls` non cresce, `{suspended:[]}`); dati intatti per id/host (riattivabili);
+  pro ⇒ 0 chiamate.
+- **NON coperto (out_of_scope)**: l'aggancio end-to-end nel webhook è provato solo di non-regressione
+  (`billing-webhook-route.test.ts` resta verde col fake `site_domains` a backing vuoto), NON con un caso
+  che semina un dominio `active` e ne osserva la sospensione via `POST /webhook` (l'unit DOM-602 lo prova
+  con lo store iniettato); la ri-attivazione automatica al ritorno a Pro (DOM-602 out_of_scope — via `/verify`);
+  l'`adminDomainDowngradeStore` reale (service_role) coperto solo staticamente (parità col gemello BIL-502).
+
+**Carry-over — lezioni nuove (`domain-downgrade`):**
+- **Aggiungere un effetto a un endpoint già testato end-to-end ⇒ il suo fake deve gestire le nuove
+  tabelle**: il webhook Stripe è esercitato in `billing-webhook-route.test.ts` con un `FakeAdmin`
+  in-memory che ha un `throw` finale per le tabelle non gestite. Il mio `applySoftDomainDowngrade`
+  interroga `site_domains` ⇒ il fake lanciava ⇒ il webhook cadeva a **500** (4 test rossi). NON era
+  contesa di risorse (falso allarme tipico): era una **regressione reale** del mio aggancio. Fix: estendere
+  il fake col pattern della tabella-gemella (`site_publications`), backing **vuoto** ⇒ no-op ⇒ 200
+  invariato, senza toccare le asserzioni esistenti. **Prima di dire "contesa di risorse", leggi il messaggio
+  d'errore**: `expected 500 to be 200` è un effetto rotto, non flakiness.
+- **NODO id↔host tra dominio puro e writer**: la decisione pura (DOM-601) ritorna **id** (come il gemello
+  BIL-501 ritorna id di siti), ma il writer `setDomainStatus` (DOM-222) opera per `normalized_hostname`.
+  Il data-layer riconcilia: lo store elenca `id+status+host`, si costruisce una `Map` id→host e si sospende
+  per host. Non forzare la firma pura a ragionare per host: mantiene il dominio disaccoppiato dal data-layer.
+- **Nessuna migrazione per il downgrade**: `status='suspended'` è già ammesso dal CHECK di `site_domains`
+  (DOM-101) e la RLS anon-active lo esclude automaticamente dal routing ⇒ un dominio sospeso smette di
+  essere servito senza altra logica. Riuso puro dello schema esistente, zero DDL.
+- **Metodo command-free confermato su unità che condividono una firma**: DOM-602 dipende dalla firma di
+  DOM-601 (file creato in parallelo). Brief chirurgici con la **firma esatta fissata in entrambi** ⇒ i due
+  builder paralleli non divergono; l'unico intervento dell'orchestratore è stato il fix di non-regressione
+  (il fake), non un disallineamento di firme.
 
 **Copertura di `domain-routing` (DOM-401/402 + Opzione A):**
 - `tests/public-domain-read.test.ts` copre **AC-401-1..3** su **DB reale sotto RLS anon** (mock del solo
