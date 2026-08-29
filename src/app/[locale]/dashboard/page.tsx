@@ -189,6 +189,13 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
                     href: generationHref,
                     ctaLabel: t(genCta.labelKey),
                   }}
+                  domain={{
+                    // DOM-501 — link alla pagina "Dominio personalizzato" del sito. href costruito da
+                    // NOI (locale dall'allowlist + siteId codificato), mai testo del sito in un href;
+                    // il gate Pro/Free vive nella pagina di destinazione (DOM-502).
+                    href: `/${locale}/editor/${encodeURIComponent(site.id)}/domain`,
+                    ctaLabel: t('domain.cta'),
+                  }}
                 />
               );
             })}
