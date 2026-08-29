@@ -101,7 +101,15 @@ verde, **con GATE VISIVO umano**). `domain-downgrade` chiuso. Il DAG completo è
   `ci-harness.test.ts` che gira knip). ⚠️ **Lezione**: rendere locale un export orfano puo SPOSTARE il
   file in un clone (il corpo prima "dead", ora scansionato per dup): il fix dead-code ha fatto emergere il
   clone `_shared↔billing/_guard`. `.trueline/hygiene-baseline.json` versionata; `.trueline/*.mjs` driver
-  gitignored.
+  gitignored. In `domain-routing` la baseline è passata a **238** (clone-preambolo P4 gestito via `git
+  checkout HEAD`, vedi §7). In **`domain-downgrade` NESSUN ratchet**: C1 verde con baseline **238
+  invariata** (`dead-code:0 dup:238 cycle:0 twin:0`, 0 fingerprint nuovi); i 2 nuovi sorgenti
+  (`src/domain/domains/domain-downgrade.ts` + `src/data/domain-downgrade.ts`) sono **clone-free**;
+  `src/domain/**`/`src/data/**` = entry (knip). C2 **invariata** (`gitleaks:3 osv:2 semgrep:0 rls:2`,
+  **nessuna nuova dep**: il downgrade riusa `setDomainStatus`/`createAdminClient`/`resolveEntitlement`
+  esistenti). **Nessuna migrazione** (`status='suspended'` già ammesso dal CHECK DOM-101; la RLS
+  anon-active esclude i sospesi dal routing senza altra logica). RLS di `site_domains` **invariata**
+  (owner-only + anon-active, nessuna UPDATE authenticated); segreti Vercel via env, non toccati.
 - **Baseline di sicurezza** (C2): invariata **dopo due loop di fix** (`gitleaks:3`, `osv:2`, `semgrep:0`,
   `rls:2`); **nessuna nuova dep** (reader/writer usano solo il client Supabase esistente). ⚠️ **Loop di fix
   gitleaks (1)**: un letterale di verifica assegnato nel test writer a una costante con keyword sensibile
