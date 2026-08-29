@@ -18,11 +18,13 @@ import type { SubscriptionEvent } from '@/domain/billing/payment-port';
 
 // ── Client Supabase admin IN-MEMORY (backing di subscriptions + ledger degli eventi) ────────
 type PublicationRow = { site_id: string; account_id: string; is_published: boolean };
+type DomainRow = { id: string; account_id: string; status: string; normalized_hostname: string };
 type FakeAdmin = {
   client: unknown;
   subscriptions: Map<string, Record<string, unknown>>;
   events: Set<string>;
   publications: Map<string, PublicationRow>;
+  domains: Map<string, DomainRow>;
   failUpsert: boolean;
 };
 
@@ -32,6 +34,7 @@ function makeFakeAdmin(): FakeAdmin {
     subscriptions: new Map(),
     events: new Set(),
     publications: new Map(),
+    domains: new Map(),
     failUpsert: false,
   };
   state.client = {
@@ -90,6 +93,38 @@ function makeFakeAdmin(): FakeAdmin {
               eq(_col: string, value: string) {
                 const row = state.publications.get(value);
                 if (row) row.is_published = patch.is_published; // NON distruttivo: la riga resta
+                return Promise.resolve({ error: null });
+              },
+            };
+          },
+        };
+      }
+      if (table === 'site_domains') {
+        // DOM-602 (p5-custom-domains-fase2): dopo la retrocessione dei siti, il webhook applica
+        // anche la sospensione morbida dei domini custom (active->suspended, mai delete). Backing
+        // vuoto di default: gli scenari BIL-502 non collegano domini => no-op, 200 invariato.
+        return {
+          select() {
+            return {
+              eq(_col: string, value: string) {
+                const data = [...state.domains.values()]
+                  .filter((d) => d.account_id === value)
+                  .map((d) => ({
+                    id: d.id,
+                    status: d.status,
+                    normalized_hostname: d.normalized_hostname,
+                  }));
+                return Promise.resolve({ data, error: null });
+              },
+            };
+          },
+          update(patch: { status?: string }) {
+            return {
+              eq(_col: string, value: string) {
+                const row = [...state.domains.values()].find(
+                  (d) => d.normalized_hostname === value,
+                );
+                if (row && typeof patch.status === 'string') row.status = patch.status; // non-delete
                 return Promise.resolve({ error: null });
               },
             };

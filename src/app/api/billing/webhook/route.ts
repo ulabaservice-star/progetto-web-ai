@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { getStripePaymentProvider } from '@/data/payment/stripe';
 import { applySubscriptionEvent } from '@/data/subscriptions-write';
 import { applySoftDowngrade } from '@/data/subscription-downgrade';
+import { applySoftDomainDowngrade } from '@/data/domain-downgrade';
+import { resolveEntitlement } from '@/domain/billing/entitlement';
 
 // BIL-202 (macrotask stripe-checkout-webhook, p5-billing-fase1) — L'endpoint webhook, unica
 // sorgente di verita' dello stato dell'abbonamento (BIL-D5). NON usa la catena same-origin
@@ -41,15 +43,16 @@ export async function POST(request: NextRequest): Promise<Response> {
     // porta offline i SOLI siti eccedenti (mai delete), no-op se l'entitlement resta pro
     // (grazia/attivo). `now` preso UNA volta al confine (gemello di resolveEntitlement).
     // Idempotente: sicuro anche sul replay del provider (nessun eccedente => nessuna azione).
-    await applySoftDowngrade(
-      event.account_id,
-      {
-        plan: event.plan,
-        status: event.status,
-        current_period_end: event.current_period_end,
-      },
-      new Date(),
-    );
+    const now = new Date();
+    const subscription = {
+      plan: event.plan,
+      status: event.status,
+      current_period_end: event.current_period_end,
+    };
+    await applySoftDowngrade(event.account_id, subscription, now);
+    // DOM-602 — sospensione morbida dei DOMINI custom (Pro->Free): active->suspended reversibile,
+    // idempotente (replay = no-op), mai delete. Stesso entitlement risolto al confine.
+    await applySoftDomainDowngrade(event.account_id, resolveEntitlement(subscription, now));
     // 2xx sia alla prima applicazione sia sul replay (idempotente): registrazione avvenuta.
     return NextResponse.json({ received: true }, { status: 200 });
   } catch (error) {
