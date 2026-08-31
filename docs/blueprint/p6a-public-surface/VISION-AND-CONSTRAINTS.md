@@ -158,4 +158,10 @@ sitemap); copy definitivo landing IT+ES + immagine OG 1200×630.
   Fable 5, stack allucinato) + memorie `waitlist-launch-project` e `waitlist-launch-research`
   (deep research 2026-08-29: architettura A/B, due imbuti, motore-come-marketing, benchmark waitlist,
   canali IT/ES/LATAM).
-- **Fase successiva**: **P6b** — anteprima istantanea deterministica + armi del motore (suo blueprint).
+- **Fase successiva**: **P6b — "motore-come-marketing"** (suo blueprint + brainstorming dedicato).
+  **L'apertura di P6b decide quali delle 4 armi entrano e in che ordine**: anteprima istantanea
+  deterministica + programmatic SEO settore×città (**nucleo accoppiato al motore** — riusano
+  `selectDesign` puro + i copy-template settoriali), referral "salta la fila" e badge "Made with
+  Ulaba" (armi **indipendenti dal motore**, valutate lì per collocazione/taglia; il badge ha impatto
+  differito finché non esistono siti Free pubblicati). Nessuna delle quattro è persa: qui restano
+  tracciate come rimandate (P6A-D13).
