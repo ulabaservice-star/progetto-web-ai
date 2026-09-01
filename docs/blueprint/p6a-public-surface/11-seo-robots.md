@@ -48,7 +48,7 @@
     - "Nessun leak dell'host app dal robots landing (AC-301-3): l'host landing non annuncia mai app.* (superficie di ricognizione minima)"
     - "A05:2025 — l'host arriva da headers() e passa per classifyRequestHost (allowlist), mai interpolato da testo libero nella riga Sitemap; base da getLandingBaseUrl (env), non dall'Host grezzo"
   out_of_scope:
-    - "La classificazione host in sé e getLandingBaseUrl (host-classify, PUB-101)"
+    - "La classificazione host in sé e getLandingBaseUrl (host-classify, PUB-102)"
     - "Il comportamento robots sull'host 'custom' (immutato da P5)"
     - "La sitemap landing vera e propria (seo-sitemap, PUB-311)"
 ```

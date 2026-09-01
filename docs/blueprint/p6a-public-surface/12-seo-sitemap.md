@@ -20,7 +20,7 @@
     né l'Host della richiesta. I post del blog restano fuori (li aggiunge PUB-441).
   definition_of_done:
     - "Nuovo file src/app/sitemap.ts che esporta default `sitemap(): MetadataRoute.Sitemap`"
-    - "base assoluta da getLandingBaseUrl() (host-classify, PUB-101), ripulita da slash finale"
+    - "base assoluta da getLandingBaseUrl() (host-classify, PUB-102), ripulita da slash finale"
     - "voce home con alternates.languages { it: `${base}/it`, es: `${base}/es` }"
     - "voce /privacy con url localizzato e alternates.languages { it, es }"
     - "voce indice /blog con url localizzato e alternates.languages { it, es }"

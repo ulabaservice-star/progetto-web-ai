@@ -21,9 +21,8 @@
     [{ url, width: 1200, height: 630 }] (placeholder finché il founder non carica l'immagine, §10), e
     twitter.card 'summary_large_image'. La stringa del canonical/OG non è mai interpolata da input utente.
   definition_of_done:
-    - "generateMetadata nella superficie marketing ((marketing)/layout.tsx o home page) che ritorna Metadata"
-    - "metadataBase = new URL(getLandingBaseUrl()) (host landing, host-classify PUB-101)"
-    - "alternates.canonical = host landing (getLandingBaseUrl), FISSO su ulaba.net (P6A-D4), non derivato dall'Host della richiesta"
+    - "metadataBase = new URL(getLandingBaseUrl()) impostato UNA volta nel layout marketing ((marketing)/layout.tsx) (host landing, host-classify PUB-102); generateMetadata della HOME ritorna il proprio Metadata"
+    - "alternates.canonical della HOME = base landing (getLandingBaseUrl); l'HOST del canonical è FISSO landing (P6A-D4), mai derivato dall'Host della richiesta; NON un canonical unico nel layout (che /privacy e /blog erediterebbero): ogni pagina marketing canonicalizza alla PROPRIA path"
     - "alternates.languages = { it: `${base}/it`, es: `${base}/es` } (hreflang)"
     - "openGraph con title, description e images: [{ url: <og placeholder>, width: 1200, height: 630 }]"
     - "twitter.card = 'summary_large_image'"
