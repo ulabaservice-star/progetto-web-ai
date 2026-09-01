@@ -107,10 +107,41 @@ const DEFAULT_SITE_BASE_URL = 'http://localhost:3000';
  * Vuota/whitespace = non impostata (come loadEnv e gli accessor dei modelli).
  * @param source sorgente delle variabili (default: process.env) — parametrizzato per i test.
  */
-export function getSiteBaseUrl(source: Record<string, string | undefined> = process.env): string {
-  const trimmed = source.NEXT_PUBLIC_SITE_URL?.trim();
+// Normalizza un valore di base-URL: trim + slash finali rimossi; vuoto/whitespace/assente => default di
+// sviluppo. Fattorizzato (PUB-102) cosi' che getSiteBaseUrl e getLandingBaseUrl non duplichino le tre
+// righe (dedup C1). Vuota/whitespace = non impostata, come loadEnv e gli accessor dei modelli.
+function normalizeBaseUrl(value: string | undefined): string {
+  const trimmed = value?.trim();
   if (trimmed === undefined || trimmed === '') return DEFAULT_SITE_BASE_URL;
   return trimmed.replace(/\/+$/, '');
+}
+
+export function getSiteBaseUrl(source: Record<string, string | undefined> = process.env): string {
+  return normalizeBaseUrl(source.NEXT_PUBLIC_SITE_URL);
+}
+
+// PUB-102 (macrotask host-classify, p6a-public-surface) — gli accessor della LANDING (P6a). Config
+// PUBBLICA (l'origine con cui la landing e' servita, la stessa che il browser vede), non un segreto.
+// getLandingHost ricava l'HOSTNAME (per la classificazione host del middleware, PUB-111): parsa
+// NEXT_PUBLIC_LANDING_URL come URL e ne prende l'hostname minuscolo senza porta. FAIL-SAFE: assente,
+// whitespace o non-parsabile => null, cosi' a valle NESSUN Host e' classificato 'landing' senza config
+// valida (P6A-D2) — mai un dominio di ripiego hardcoded.
+export function getLandingHost(source: Record<string, string | undefined> = process.env): string | null {
+  const trimmed = source.NEXT_PUBLIC_LANDING_URL?.trim();
+  if (trimmed === undefined || trimmed === '') return null;
+  try {
+    return new URL(trimmed).hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+// getLandingBaseUrl ricava la BASE URL ASSOLUTA (schema+host) della landing SENZA slash finale, da cui
+// il SEO (robots/sitemap/canonical, PUB-301/311/321) compone URL assoluti. Gemello di getSiteBaseUrl:
+// assente/whitespace => default di sviluppo (come getSiteBaseUrl e gli accessor dei modelli), mai
+// getSiteBaseUrl ne l'Host grezzo della richiesta.
+export function getLandingBaseUrl(source: Record<string, string | undefined> = process.env): string {
+  return normalizeBaseUrl(source.NEXT_PUBLIC_LANDING_URL);
 }
 
 // (deploy pass) — ALLOWLIST DEI SIGNUP: gli indirizzi email autorizzati a registrarsi
