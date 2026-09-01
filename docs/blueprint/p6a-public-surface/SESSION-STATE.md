@@ -87,12 +87,15 @@
   IT↔ES (PUB-421); schema corpo `/api/waitlist` `{ status: 'inserted'|'already' }` pinnato PUB-232↔PUB-241;
   etichette OWASP-2025 corrette (injection=A05, path-traversal=A01, DI non-injection in PUB-222). DAG
   aciclico, nessuna collisione ID, contratti (testid/i18n/firme/schema) coerenti.
-- **Decisione aperta (nota)**: il rate-limit in-memory citato in VISION §5/D6-D7 non è consegnato da
-  alcun task (l'anti-spam v1 resta honeypot + Turnstile + same-origin). Da decidere: aggiungere un
-  micro-task o annotarne il rinvio in VISION (in serverless il rate-limit in-memory è per-istanza,
-  best-effort).
+- **Decisione RISOLTA (2026-09-01)**: rate-limit in-memory **RINVIATO** e annotato in VISION (§5 +
+  ledger P6A-D7); anti-spam v1 consegnato = honeypot + Turnstile + same-origin. Nessun task aggiunto (in
+  serverless l'in-memory è per-istanza/best-effort ⇒ scarsa efficacia).
 
 ## 6. Prossimi passi
 
-- Confermare la chiusura del bootstrap (strutturale verde + rilievi semantici risolti/accettati).
-- Aprire la prima sessione di BUILD su un macrotask eleggibile (§1) col dynamic workflow command-free.
+- **Bootstrap CHIUSO** (strutturale 5/5 `ok:true`, rilievi semantici risolti, decisione rate-limit
+  annotata). Commit `31b60fc` (bootstrap) + `aa361f6` (fix revisione) + annotazione VISION.
+- **PROSSIMA SESSIONE = primo BUILD** su un macrotask eleggibile (§1: `host-classify` ∥ `marketing-i18n`
+  ∥ `waitlist-schema` ∥ `captcha-port` ∥ `blog-pipeline`) col **dynamic workflow command-free**: builder
+  solo Read/Write/Edit su file disgiunti, poi checkpoint 4/4 + batteria di mutazione in foreground al
+  confine. Apri con il prompt `prompts/session-start.md`. Branch `trueline/build/<macrotask>` da main pulito.
