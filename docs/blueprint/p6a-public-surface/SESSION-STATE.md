@@ -10,8 +10,8 @@
 |---|---|
 | **Progetto** | Ulaba/Belora — P6a (superficie pubblica) |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase Cloud EU) |
-| **Ultimo aggiornamento** | 2026-09-01 (BOOTSTRAP Trueline — blueprint generato, nessun macrotask costruito) |
-| **Sessione corrente** | BOOTSTRAP (piano pronto; primo BUILD nella prossima sessione) |
+| **Ultimo aggiornamento** | 2026-09-01 (BUILD `host-classify` — checkpoint 4/4 verde, MERGIATO `d8dd235`) |
+| **Sessione corrente (BUILD `host-classify`, PUB-101/102)** | **CHIUSO+MERGIATO** (`d8dd235`, atomico `fd371fe`, deploy coupled avviato). **1/22 macrotask done.** |
 
 ---
 
@@ -21,7 +21,7 @@
 
 | # | Macrotask | Stato | Checkpoint | Dip |
 |---|---|---|---|---|
-| 01 | `host-classify` (PUB-101/102) | **todo** | — | — |
+| 01 | `host-classify` (PUB-101/102) | **done** | 4/4 ✅ (`d8dd235`) | — |
 | 02 | `host-guard` (PUB-111) | **todo** | — | `host-classify` |
 | 03 | `marketing-i18n` (PUB-121) | **todo** | — | — |
 | 04 | `marketing-layout` (PUB-131) | **todo** | — | `marketing-i18n` |
@@ -44,13 +44,14 @@
 | 21 | `blog-seed` (PUB-451) | **todo** | — | `blog-content` |
 | 22 | `cutover` (PUB-501) | **todo** | — | (tutte le superfici pubbliche) |
 
-**Eleggibili ora (nessuna dipendenza, in parallelo su file disgiunti):** `host-classify`,
-`marketing-i18n`, `waitlist-schema`, `captcha-port`, `blog-pipeline`. `cutover` per ultimo.
+**Eleggibili ora (dipendenze verdi):** `host-guard` (sbloccato da `host-classify`), `marketing-i18n`,
+`waitlist-schema`, `captcha-port`, `blog-pipeline`. `cutover` per ultimo.
 
 ## 2. Macrotask corrente
 
-- **Nessuno selezionato** — bootstrap appena chiuso. Il primo BUILD parte dalla prossima sessione:
-  scegli uno degli eleggibili (§1) rispettando il DAG (00-INDEX §Build order).
+- **Nessuno in corso** — `host-classify` (01) chiuso e mergiato. Il prossimo BUILD sceglie un eleggibile
+  (§1) rispettando il DAG; `host-guard` (PUB-111) è ora sbloccato ed è il seguito naturale (cabla
+  `classifyRequestHost`/`getLandingHost` nel middleware con guard simmetrico).
 - **Metodo**: UN macrotask per sessione via **dynamic workflow command-free** (builder solo Read/Write/
   Edit; oracoli — checkpoint 4/4 + mutazione — in **foreground** dall'orchestratore, unico giudice del
   verde). Vedi 00-INDEX §Granularità e la memoria `dynamic-workflow-build-method`.
@@ -61,41 +62,52 @@
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | — (nessun BUILD ancora; il bootstrap committa solo docs di piano) |
-| Ultimo commit | (bootstrap: 00-INDEX + moduli 01–22 + SESSION-STATE + prompts) |
-| Stato merge su `main` | n/a (nessun codice; gated dal verde del checkpoint per i BUILD) |
-| Deploy-coupling | **coupled** (push su `main` = deploy su ulaba.net) → verifica locale prima del merge |
+| Branch di lavoro | `trueline/build/host-classify` (atomico `fd371fe`, **mergiato** in `main`) |
+| Ultimo commit | `d8dd235` (merge `--no-ff` host-classify in main) |
+| Stato merge su `main` | **done** (checkpoint 4/4 verde → merge → push, deploy coupled avviato) |
+| Deploy-coupling | **coupled** (push su `main` = deploy su ulaba.net) → verifica locale FATTA prima del merge |
 
 ## 4. Baseline & budget
 
 - **Baseline di sicurezza** (C2): `gitleaks/osv/semgrep/rls` — al primo BUILD l'oracolo RLS vedrà la
   nuova `waitlist_leads` (RLS enabled, zero-policy, giustificata P6A-D5); le nuove dep del blog passano
   OSV.
-- **Baseline d'igiene**: `.trueline/hygiene-baseline.json` — ratchet solo **additivo** e giustificato.
+- **Baseline d'igiene**: `.trueline/hygiene-baseline.json` — ratchet additivo **237→244** in `host-classify`
+  (7 cloni PRE-ESISTENTI su main: 5 doc bootstrap p6a + 2 file P5, provati fuori dal diff del macrotask).
 - **Budget**: un macrotask alla volta; loop di fix con tetto in `references/oracles/thresholds.md`.
 
 ## 5. Esiti dell'ultima sessione (framing onesto)
 
-- BOOTSTRAP Trueline eseguito: generato il blueprint (00-INDEX + 22 moduli + SESSION-STATE + 3 prompt)
-  dalla spec approvata `VISION-AND-CONSTRAINTS.md` (ledger P6A-D1…D13). Metodo: dynamic workflow di
-  design (6 agenti di cluster + 1 critico di coerenza).
-- Self-check **strutturale** (`validate_blueprint.mjs`): **verde 5/5, `ok:true`, 26 task atomici**
-  (REQUIRED_FIELDS, AC_COVERAGE, DAG_VALID aciclico, UNIQUE_IDS, MACROTASK_OWNERSHIP).
-- Self-check **semantico** (checklist 6–10) + coerenza cross-modulo: rilievi del critico **RISOLTI** —
-  chiuso l'orfano `getLandingBaseUrl` (prodotto in PUB-102, consumato da seo-robots/sitemap/metadata);
-  firma `guardMutatingRequest` a oggetto `{ maxBodyBytes }` (PUB-231); namespace i18n `blog` con parità
-  IT↔ES (PUB-421); schema corpo `/api/waitlist` `{ status: 'inserted'|'already' }` pinnato PUB-232↔PUB-241;
-  etichette OWASP-2025 corrette (injection=A05, path-traversal=A01, DI non-injection in PUB-222). DAG
-  aciclico, nessuna collisione ID, contratti (testid/i18n/firme/schema) coerenti.
-- **Decisione RISOLTA (2026-09-01)**: rate-limit in-memory **RINVIATO** e annotato in VISION (§5 +
-  ledger P6A-D7); anti-spam v1 consegnato = honeypot + Turnstile + same-origin. Nessun task aggiunto (in
-  serverless l'in-memory è per-istanza/best-effort ⇒ scarsa efficacia).
+**BUILD `host-classify` (PUB-101/102) — CHIUSO+MERGIATO (`d8dd235`, atomico `fd371fe`).** Spina dorsale
+dello split app/landing/custom (P6A-D1/D2), **inerte** finché `host-guard` non lo cabla. PUB-101
+`src/domain/hosting/classify-host.ts`: `classifyRequestHost(host,{appHost,landingHost})` puro →
+app/landing/custom, fail-safe verso custom senza landingHost. PUB-102 `src/config/env.ts`:
+`getLandingHost` (hostname da `NEXT_PUBLIC_LANDING_URL`, null fail-safe) + `getLandingBaseUrl` (base
+assoluta, default dev); `getSiteBaseUrl`/`getLandingBaseUrl` fattorizzati in `normalizeBaseUrl` (dedup
+C1). Checkpoint **4/4**: C1 igiene verde (`dead-code:0 dup:245 cycle:0 twin:0`, 0 nuovi dopo ratchet
+onesto 237→244), C2 verde (`gitleaks:3 osv:2 semgrep:0 rls:2`), C3 **1924/1925** (unico rosso =
+scaffold/TS2589 pre-esistente in `e2e/effects.spec.ts`), C4 **10/10**. Mutazione **6/6** (kill +
+ripristino bit-identico sha256). `next build` ok; e2e non impattato (export non ancora cablate).
+
+- **Lezioni (carry-over):** (1) la jscpd della skill scansiona una COPIA del repo etichettata
+  `eval/reference-app/` → i path blocker portano quel prefisso ma sono i MIEI file (fingerprint
+  content-based, path-indipendenti); (2) il **bootstrap** (docs-only, senza checkpoint) ha lasciato su
+  main **7 cloni-doc non baselinati** → assorbiti col primo BUILD via ratchet additivo onesto (provati
+  fuori dal diff del macrotask); (3) un clone di accessor (`getLandingBaseUrl`↔`getSiteBaseUrl`) si
+  risolve **alla radice** (helper condiviso `normalizeBaseUrl`), non ratchettando; (4) i mutanti
+  **multilinea** in un driver `.mjs` scritto su Windows falliscono (CRLF vs `\n`) → find **single-line**;
+  (5) `vitest run` può riscrivere uno `.snap` col solo line-ending (diff vuoto) → ripristinare, mai
+  committare; (6) verdetto dal JSON del checkpoint, mai dall'exit code (C3 "rosso" era il debito TS2589).
+- **Bootstrap (storico 2026-09-01):** blueprint 22 macrotask/26 task, strutturale 5/5 `ok:true`, rilievi
+  semantici risolti, rate-limit v1 rinviato/annotato in VISION. Commit `31b60fc`/`aa361f6`/`40ad5ec`.
 
 ## 6. Prossimi passi
 
-- **Bootstrap CHIUSO** (strutturale 5/5 `ok:true`, rilievi semantici risolti, decisione rate-limit
-  annotata). Commit `31b60fc` (bootstrap) + `aa361f6` (fix revisione) + annotazione VISION.
-- **PROSSIMA SESSIONE = primo BUILD** su un macrotask eleggibile (§1: `host-classify` ∥ `marketing-i18n`
-  ∥ `waitlist-schema` ∥ `captcha-port` ∥ `blog-pipeline`) col **dynamic workflow command-free**: builder
-  solo Read/Write/Edit su file disgiunti, poi checkpoint 4/4 + batteria di mutazione in foreground al
-  confine. Apri con il prompt `prompts/session-start.md`. Branch `trueline/build/<macrotask>` da main pulito.
+- **1/22 macrotask done** (`host-classify`). **Prossima sessione = BUILD di un eleggibile** (§1):
+  seguito naturale `host-guard` (PUB-111 — cabla `classifyRequestHost`/`getLandingHost` nel middleware
+  con guard **simmetrico**; NON toccare `/s/*`, la guardia auth, né il ramo host-custom: non-regressione
+  `auth-middleware`/`public-exclusion`/`host-routing`), oppure `marketing-i18n` ∥ `waitlist-schema` ∥
+  `captcha-port` ∥ `blog-pipeline` (indipendenti, parallelizzabili).
+- Apri con `prompts/session-start.md`; branch `trueline/build/<macrotask>` da main pulito; **dynamic
+  workflow command-free** + checkpoint 4/4 + mutazione in foreground. I driver `.trueline/pub-*.mjs`
+  (checkpoint/hygiene-ratchet/mutants) sono pronti e riusabili (gitignorati).
