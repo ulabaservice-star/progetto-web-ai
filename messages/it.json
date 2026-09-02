@@ -337,5 +337,41 @@
     "upgradeTitle": "Dominio personalizzato",
     "upgradeBody": "Il dominio personalizzato è incluso nel piano Pro. Passa a Pro per collegare il tuo dominio.",
     "upgradeCta": "Passa a Pro"
+  },
+  "landing": {
+    "nav": {
+      "home": "Home",
+      "blog": "Blog",
+      "privacy": "Privacy",
+      "waitlistCta": "Entra in lista"
+    },
+    "hero": {
+      "headline": "Il sito della tua attività, pronto in pochi minuti",
+      "sub": "Ulaba genera con l’AI un sito su misura per la tua attività locale: nessun template da montare, nessun codice da scrivere. Entra nella lista d’attesa e sii tra i primi a provarlo.",
+      "cta": "Richiedi l’accesso anticipato"
+    },
+    "waitlist": {
+      "emailLabel": "Il tuo indirizzo email",
+      "emailPlaceholder": "nome@esempio.it",
+      "submit": "Entra in lista",
+      "submitting": "Invio in corso…",
+      "consentLabel": "Acconsento a ricevere aggiornamenti sul lancio. Niente spam, ti disiscrivi con un clic.",
+      "successNew": "Ci sei! Ti scriviamo appena apriamo gli accessi.",
+      "successExisting": "Sei già in lista: ti avvisiamo noi al lancio.",
+      "error": "Qualcosa è andato storto. Riprova tra poco.",
+      "unavailable": "Le iscrizioni non sono al momento disponibili. Riprova più tardi."
+    },
+    "valueProps": {
+      "title": "Perché Ulaba",
+      "item1": "Generazione con l’AI: descrivi la tua attività e il sito nasce già scritto e impaginato.",
+      "item2": "Pensato per chi lavora sul territorio: ristoranti, palestre, saloni, negozi e artigiani.",
+      "item3": "Online in un attimo: dominio, foto e contatti pronti, senza toccare una riga di codice."
+    },
+    "footer": {
+      "tagline": "Ulaba — siti web con l’AI per le attività locali.",
+      "rights": "Tutti i diritti riservati.",
+      "privacy": "Privacy",
+      "blog": "Blog"
+    }
   }
 }

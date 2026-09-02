@@ -337,5 +337,41 @@
     "upgradeTitle": "Dominio personalizado",
     "upgradeBody": "El dominio personalizado está incluido en el plan Pro. Pasa a Pro para conectar tu dominio.",
     "upgradeCta": "Pasar a Pro"
+  },
+  "landing": {
+    "nav": {
+      "home": "Inicio",
+      "blog": "Blog",
+      "privacy": "Privacidad",
+      "waitlistCta": "Unite a la lista"
+    },
+    "hero": {
+      "headline": "La web de tu negocio, lista en unos minutos",
+      "sub": "Ulaba crea con IA un sitio a la medida de tu negocio local: sin plantillas que armar, sin código que escribir. Sumate a la lista de espera y sé de los primeros en probarlo.",
+      "cta": "Pide acceso anticipado"
+    },
+    "waitlist": {
+      "emailLabel": "Tu correo electrónico",
+      "emailPlaceholder": "nombre@ejemplo.com",
+      "submit": "Unite a la lista",
+      "submitting": "Enviando…",
+      "consentLabel": "Acepto recibir novedades sobre el lanzamiento. Nada de spam, te das de baja con un clic.",
+      "successNew": "¡Listo! Te escribimos apenas abramos los accesos.",
+      "successExisting": "Ya estás en la lista: nosotros te avisamos en el lanzamiento.",
+      "error": "Algo salió mal. Volvé a intentarlo en un momento.",
+      "unavailable": "Las inscripciones no están disponibles por ahora. Inténtalo más tarde."
+    },
+    "valueProps": {
+      "title": "Por qué Ulaba",
+      "item1": "Generación con IA: contás qué hacés y el sitio nace ya escrito y maquetado.",
+      "item2": "Pensado para quienes trabajan en su zona: restaurantes, gimnasios, peluquerías, tiendas y talleres.",
+      "item3": "En línea en un momento: dominio, fotos y contactos listos, sin tocar una línea de código."
+    },
+    "footer": {
+      "tagline": "Ulaba — sitios web con IA para negocios locales.",
+      "rights": "Todos los derechos reservados.",
+      "privacy": "Privacidad",
+      "blog": "Blog"
+    }
   }
 }
