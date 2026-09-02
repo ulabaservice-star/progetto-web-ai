@@ -10,8 +10,8 @@
 |---|---|
 | **Progetto** | Ulaba/Belora — P6a (superficie pubblica) |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase Cloud EU) |
-| **Ultimo aggiornamento** | 2026-09-02 (BUILD `host-guard` — checkpoint 4/4 verde, MERGIATO `9244fe5`) |
-| **Sessione corrente (BUILD `host-guard`, PUB-111)** | **CHIUSO+MERGIATO** (`9244fe5`, atomico `ebf4291`, deploy coupled avviato/pushato). **2/22 macrotask done.** |
+| **Ultimo aggiornamento** | 2026-09-03 (BUILD `marketing-i18n` — checkpoint 4/4 verde, MERGIATO `f397f82`) |
+| **Sessione corrente (BUILD `marketing-i18n`, PUB-121)** | **CHIUSO+MERGIATO** (`f397f82`, atomico `35faf6b`, deploy coupled avviato/pushato). **3/22 macrotask done.** |
 
 ---
 
@@ -23,7 +23,7 @@
 |---|---|---|---|---|
 | 01 | `host-classify` (PUB-101/102) | **done** | 4/4 ✅ (`d8dd235`) | — |
 | 02 | `host-guard` (PUB-111) | **done** | 4/4 ✅ (`9244fe5`) | `host-classify` |
-| 03 | `marketing-i18n` (PUB-121) | **todo** | — | — |
+| 03 | `marketing-i18n` (PUB-121) | **done** | 4/4 ✅ (`f397f82`) | — |
 | 04 | `marketing-layout` (PUB-131) | **todo** | — | `marketing-i18n` |
 | 05 | `marketing-home` (PUB-141) | **todo** | — | `marketing-layout` |
 | 06 | `waitlist-schema` (PUB-201) | **todo** | — | — |
@@ -44,16 +44,16 @@
 | 21 | `blog-seed` (PUB-451) | **todo** | — | `blog-content` |
 | 22 | `cutover` (PUB-501) | **todo** | — | (tutte le superfici pubbliche) |
 
-**Eleggibili ora (dipendenze verdi):** `marketing-i18n`, `waitlist-schema`, `captcha-port`,
-`blog-pipeline` (tutti indipendenti, parallelizzabili). `cutover` per ultimo.
+**Eleggibili ora (dipendenze verdi):** `marketing-layout` (sbloccato da `marketing-i18n`),
+`waitlist-schema`, `captcha-port`, `blog-pipeline`. `cutover` per ultimo.
 
 ## 2. Macrotask corrente
 
-- **Nessuno in corso** — `host-guard` (02) chiuso e mergiato. Con `host-classify`+`host-guard` lo split
-  app/landing è cablato nel middleware (inerte finché `NEXT_PUBLIC_LANDING_URL` non è valorizzato al
-  cutover). Il prossimo BUILD sceglie un eleggibile (§1) rispettando il DAG: `marketing-i18n` (sblocca
-  `marketing-layout`→`marketing-home` e i SEO), `waitlist-schema` (→ store→endpoint), `captcha-port`,
-  `blog-pipeline` — tutti indipendenti tra loro.
+- **Nessuno in corso** — `marketing-i18n` (03) chiuso e mergiato. Il namespace `landing` (copy
+  pubblico it+es, parità chiavi) è la base testuale di `marketing-layout`→`marketing-home`. Il prossimo
+  BUILD sceglie un eleggibile (§1) rispettando il DAG: `marketing-layout` (PUB-131, ora sbloccato →
+  chrome marketing che consuma `landing`), `waitlist-schema` (→ store→endpoint), `captcha-port`,
+  `blog-pipeline` — questi ultimi tre indipendenti tra loro.
 - **Metodo**: UN macrotask per sessione via **dynamic workflow command-free** (builder solo Read/Write/
   Edit; oracoli — checkpoint 4/4 + mutazione — in **foreground** dall'orchestratore, unico giudice del
   verde). Vedi 00-INDEX §Granularità e la memoria `dynamic-workflow-build-method`.
@@ -64,10 +64,10 @@
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `trueline/build/host-guard` (atomico `ebf4291`, **mergiato** in `main`) |
-| Ultimo commit | `9244fe5` (merge `--no-ff` host-guard in main) + push `a50e5c9..9244fe5` |
+| Branch di lavoro | `trueline/build/marketing-i18n` (atomico `35faf6b`, **mergiato** in `main`) |
+| Ultimo commit | `f397f82` (merge `--no-ff` marketing-i18n in main) + push `dc103fd..f397f82` |
 | Stato merge su `main` | **done** (checkpoint 4/4 verde → merge → push, deploy coupled avviato) |
-| Deploy-coupling | **coupled** (push su `main` = deploy su ulaba.net) → verifica locale FATTA prima del merge (vitest full 1930/1931, tsc, next build ok; e2e inerte env-gated) |
+| Deploy-coupling | **coupled** (push su `main` = deploy su ulaba.net) → verifica locale FATTA prima del merge (vitest full 1933/1934, tsc, next build exit 0; e2e non impattato — nessuna UI/rotta) |
 
 ## 4. Baseline & budget
 
@@ -80,7 +80,37 @@
 
 ## 5. Esiti dell'ultima sessione (framing onesto)
 
-**BUILD `host-guard` (PUB-111) — CHIUSO+MERGIATO (`9244fe5`, atomico `ebf4291`).** Cabla lo split
+**BUILD `marketing-i18n` (PUB-121) — CHIUSO+MERGIATO (`f397f82`, atomico `35faf6b`).** Aggiunge il
+namespace `landing` (copy pubblico: nav/hero/waitlist/valueProps/footer) a `messages/it.json` **e**
+`messages/es.json`, dentro il routing `[locale]` esistente. Set di CHIAVI identico fra i due cataloghi
+(parità); valori ES **localizzati per paese** (tú/vos/ustedes — es. `Unite`/`Sumate`/`contás`/`Volvé`),
+non calco dell'IT. Solo dati: nessun sorgente/rotta/UI toccati (marketing-layout PUB-131 consumerà queste
+chiavi). Target test `tests/marketing-i18n-parity.test.ts` (AC-121-1/2/3): differenza simmetrica dei
+path-foglia di `landing` vuota, 12 path richiesti risolvono a stringa non vuota in entrambi,
+hero.headline/hero.sub/waitlist.submit divergono IT↔ES. Checkpoint **4/4**: C1 verde (`dead-code:0
+dup:245 cycle:0 twin:0`, 0 nuovi — JSON+test non introducono cloni; i .test.ts sono esclusi da jscpd),
+C2 verde (`gitleaks:3 osv:4 semgrep:0 rls:2`, 0 nuovi ≥HIGH — copy pubblico, nessun segreto/PII), C3
+**1933/1934** (unico rosso = scaffold/TS2589 pre-esistente in `e2e/effects.spec.ts`, invariato; +3 test
+nuovi vs 1930/1931), C4 target test **3/3**. Mutazione **5/5** (M1 rinomina foglia es→parità rotta, M2
+headline es=IT→divergenza persa, M3 unavailable es svuotato→foglia vuota, M4 rinomina foglia it→parità
+rotta lato IT, M5 submit es=IT→divergenza persa; ciascuno red + ripristino sha256 bit-identico). tsc
+nessun errore nuovo; `next build` exit 0; e2e non impattato (nessuna UI/rotta).
+
+- **Lezioni (carry-over marketing-i18n):** (1) i cataloghi `messages/*.json` sono `JSON.stringify(obj,
+  null, 2) + '
+'` con **EOL CRLF** → per un diff additivo puro (solo il blocco `landing`) l'edit
+  ri-serializza e ri-applica CRLF (`.replace(/
+/g,'
+')`), verificato byte-identico sul resto del
+  file. (2) La divergenza IT↔ES (AC-121-3) è un **oracolo di anti-calco** debole ma reale: la mutazione
+  M2/M5 (es=IT) la fa rossa → il test coglie una traduzione meccanica sui 3 campi-chiave; la qualità
+  della localizzazione oltre quei 3 campi resta cura umana, non gate. (3) Driver mutazione multi-file
+  `.trueline/pub-i18n-mutants.mjs`: find/repl **costruiti dai valori live via `JSON.stringify`** (non
+  literal non-ASCII hardcoded) → robusto su UTF-8/CRLF; find reso unico dal prefisso-chiave (`"submit":
+  "Unite a la lista"` ≠ `"waitlistCta": "Unite a la lista"`, stesso valore). (4) Ri-confermato: il
+  target test NON ha ri-churnato lo `.snap` onboarding (non lo tocca); lo `.snap` va comunque ispezionato
+  a fine suite (gotcha noto).
+- **host-guard (storico, `9244fe5`, atomico `ebf4291`).** Cabla lo split
 app/landing nel middleware unico: guard SIMMETRICO applicato ai **soli Host di piattaforma**, DOPO la
 deviazione host-custom e PRIMA di locale/guardia auth. `src/middleware.ts`: (1) `isPlatformHost`
 riconosce ora la landing (apex + `www.`) come piattaforma → **non** entra in `routeCustomHost` (nessuna
@@ -131,13 +161,18 @@ ripristino bit-identico sha256). `next build` ok; e2e non impattato (export non 
 
 ## 6. Prossimi passi
 
-- **2/22 macrotask done** (`host-classify`, `host-guard`). **Prossima sessione = BUILD di un
-  eleggibile** (§1): `marketing-i18n` (PUB-121 — sblocca `marketing-layout`→`marketing-home` e i quattro
-  SEO), `waitlist-schema` (PUB-201 — introduce la migrazione `waitlist_leads` RLS enabled/zero-policy
-  → applicarla al Cloud POOLER e verificare RLS/GRANT via node pg, §4), `captcha-port` (PUB-221/222) o
-  `blog-pipeline` (PUB-401, nuove dep markdown/rehype → registrare sotto OSV). Tutti indipendenti tra
-  loro e parallelizzabili con dynamic workflow command-free.
-- **Copertura dichiarata host-guard (§6 del session-end):** target_test `tests/middleware-host-guard.test.ts`
+- **3/22 macrotask done** (`host-classify`, `host-guard`, `marketing-i18n`). **Prossima sessione =
+  BUILD di un eleggibile** (§1): `marketing-layout` (PUB-131 — ora sbloccato: chrome marketing header/
+  footer/nav che consuma `landing`, poi `marketing-home` e i quattro SEO), `waitlist-schema` (PUB-201 —
+  introduce la migrazione `waitlist_leads` RLS enabled/zero-policy → applicarla al Cloud POOLER e
+  verificare RLS/GRANT via node pg, §4), `captcha-port` (PUB-221/222) o `blog-pipeline` (PUB-401, nuove
+  dep markdown/rehype → registrare sotto OSV). Gli ultimi tre indipendenti tra loro.
+- **Copertura dichiarata marketing-i18n (§6):** target_test `tests/marketing-i18n-parity.test.ts` copre
+  AC-121-1 (parità path-foglia `landing` it↔es), AC-121-2 (12 path richiesti → stringa non vuota in
+  entrambi), AC-121-3 (hero.headline/hero.sub/waitlist.submit divergono). Mutazione 5/5 (§5). **NON
+  coperto (dichiarato):** la qualità/registro della localizzazione ES oltre i 3 campi di AC-121-3 (cura
+  umana, non gate); il consumo delle chiavi in UI (rinviato a `marketing-layout`/`marketing-home`).
+- **Copertura dichiarata host-guard:** target_test `tests/middleware-host-guard.test.ts`
   copre AC-111-1…5 + proprietà `isMarketingPath` (confine esatto per ogni locale). Mutazione 5/5
   (M1 dest landing, M2 dest app, M3 guardia fail-safe, M4 riconoscimento landing in `isPlatformHost`,
   M5 predicato app-path). **NON coperto (dichiarato):** e2e reale con `NEXT_PUBLIC_LANDING_URL`
