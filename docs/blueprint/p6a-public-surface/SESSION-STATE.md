@@ -10,8 +10,8 @@
 |---|---|
 | **Progetto** | Ulaba/Belora — P6a (superficie pubblica) |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase Cloud EU) |
-| **Ultimo aggiornamento** | 2026-09-01 (BUILD `host-classify` — checkpoint 4/4 verde, MERGIATO `d8dd235`) |
-| **Sessione corrente (BUILD `host-classify`, PUB-101/102)** | **CHIUSO+MERGIATO** (`d8dd235`, atomico `fd371fe`, deploy coupled avviato). **1/22 macrotask done.** |
+| **Ultimo aggiornamento** | 2026-09-02 (BUILD `host-guard` — checkpoint 4/4 verde, MERGIATO `9244fe5`) |
+| **Sessione corrente (BUILD `host-guard`, PUB-111)** | **CHIUSO+MERGIATO** (`9244fe5`, atomico `ebf4291`, deploy coupled avviato/pushato). **2/22 macrotask done.** |
 
 ---
 
@@ -22,7 +22,7 @@
 | # | Macrotask | Stato | Checkpoint | Dip |
 |---|---|---|---|---|
 | 01 | `host-classify` (PUB-101/102) | **done** | 4/4 ✅ (`d8dd235`) | — |
-| 02 | `host-guard` (PUB-111) | **todo** | — | `host-classify` |
+| 02 | `host-guard` (PUB-111) | **done** | 4/4 ✅ (`9244fe5`) | `host-classify` |
 | 03 | `marketing-i18n` (PUB-121) | **todo** | — | — |
 | 04 | `marketing-layout` (PUB-131) | **todo** | — | `marketing-i18n` |
 | 05 | `marketing-home` (PUB-141) | **todo** | — | `marketing-layout` |
@@ -44,14 +44,16 @@
 | 21 | `blog-seed` (PUB-451) | **todo** | — | `blog-content` |
 | 22 | `cutover` (PUB-501) | **todo** | — | (tutte le superfici pubbliche) |
 
-**Eleggibili ora (dipendenze verdi):** `host-guard` (sbloccato da `host-classify`), `marketing-i18n`,
-`waitlist-schema`, `captcha-port`, `blog-pipeline`. `cutover` per ultimo.
+**Eleggibili ora (dipendenze verdi):** `marketing-i18n`, `waitlist-schema`, `captcha-port`,
+`blog-pipeline` (tutti indipendenti, parallelizzabili). `cutover` per ultimo.
 
 ## 2. Macrotask corrente
 
-- **Nessuno in corso** — `host-classify` (01) chiuso e mergiato. Il prossimo BUILD sceglie un eleggibile
-  (§1) rispettando il DAG; `host-guard` (PUB-111) è ora sbloccato ed è il seguito naturale (cabla
-  `classifyRequestHost`/`getLandingHost` nel middleware con guard simmetrico).
+- **Nessuno in corso** — `host-guard` (02) chiuso e mergiato. Con `host-classify`+`host-guard` lo split
+  app/landing è cablato nel middleware (inerte finché `NEXT_PUBLIC_LANDING_URL` non è valorizzato al
+  cutover). Il prossimo BUILD sceglie un eleggibile (§1) rispettando il DAG: `marketing-i18n` (sblocca
+  `marketing-layout`→`marketing-home` e i SEO), `waitlist-schema` (→ store→endpoint), `captcha-port`,
+  `blog-pipeline` — tutti indipendenti tra loro.
 - **Metodo**: UN macrotask per sessione via **dynamic workflow command-free** (builder solo Read/Write/
   Edit; oracoli — checkpoint 4/4 + mutazione — in **foreground** dall'orchestratore, unico giudice del
   verde). Vedi 00-INDEX §Granularità e la memoria `dynamic-workflow-build-method`.
@@ -62,10 +64,10 @@
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `trueline/build/host-classify` (atomico `fd371fe`, **mergiato** in `main`) |
-| Ultimo commit | `d8dd235` (merge `--no-ff` host-classify in main) |
+| Branch di lavoro | `trueline/build/host-guard` (atomico `ebf4291`, **mergiato** in `main`) |
+| Ultimo commit | `9244fe5` (merge `--no-ff` host-guard in main) + push `a50e5c9..9244fe5` |
 | Stato merge su `main` | **done** (checkpoint 4/4 verde → merge → push, deploy coupled avviato) |
-| Deploy-coupling | **coupled** (push su `main` = deploy su ulaba.net) → verifica locale FATTA prima del merge |
+| Deploy-coupling | **coupled** (push su `main` = deploy su ulaba.net) → verifica locale FATTA prima del merge (vitest full 1930/1931, tsc, next build ok; e2e inerte env-gated) |
 
 ## 4. Baseline & budget
 
@@ -78,7 +80,33 @@
 
 ## 5. Esiti dell'ultima sessione (framing onesto)
 
-**BUILD `host-classify` (PUB-101/102) — CHIUSO+MERGIATO (`d8dd235`, atomico `fd371fe`).** Spina dorsale
+**BUILD `host-guard` (PUB-111) — CHIUSO+MERGIATO (`9244fe5`, atomico `ebf4291`).** Cabla lo split
+app/landing nel middleware unico: guard SIMMETRICO applicato ai **soli Host di piattaforma**, DOPO la
+deviazione host-custom e PRIMA di locale/guardia auth. `src/middleware.ts`: (1) `isPlatformHost`
+riconosce ora la landing (apex + `www.`) come piattaforma → **non** entra in `routeCustomHost` (nessuna
+lookup DB per la landing); (2) `normalizeRequestHost` fattorizzato (dedup, `customHostname` e il guard
+lo condividono → C1 dup:245 invariato, zero cloni nuovi); (3) `isMarketingPath` **esportato** (home
+`/{locale}`, `/{locale}/blog[/*]`, `/{locale}/privacy`); (4) `hostBoundaryRedirect`: landing+app-path →
+308 verso `appHost`, app+marketing → 308 verso `landingHost`, hostname **fisso da env** (anti
+open-redirect), pathname+query preservati. Checkpoint **4/4**: C1 verde (`dead-code:0 dup:245 cycle:0
+twin:0`, 0 nuovi), C2 verde (`gitleaks:3 osv:4 semgrep:0 rls:2`, 0 nuovi ≥HIGH), C3 **1930/1931**
+(unico rosso = scaffold/TS2589 pre-esistente in `e2e/effects.spec.ts`, invariato), C4 target test 5 AC
+verdi. Mutazione **5/5** (red + ripristino sha256 bit-identico). tsc nessun errore nuovo; `next build`
+exit 0; e2e **inerte** (guard env-gated off senza `NEXT_PUBLIC_LANDING_URL`/`APP_URL`).
+
+- **Lezioni (carry-over host-guard):** (1) **decisione di collocazione** — la radice nuda `/` NON è
+  app-path: app-path = complemento marketing **locale-prefissato** (`^/(it|es)(/.*)?$ && !marketing`),
+  così `/` e i path non-prefissati restano a next-intl sull'Host corrente e la landing root non
+  rimbalza mai verso l'app (canonical stabile). Deviazione voluta dalla lettera "complemento" della
+  DoD, giustificata dal fine "canonical stabile": nessun AC testa `/`, tutti gli AC restano verdi.
+  (2) Il guard è **intrinsecamente solo-piattaforma**: i domini cliente classificano `'custom'` e non
+  lo attivano → non-regressione host-routing gratuita; posizionarlo dopo `routeCustomHost` (come da
+  DoD) è comunque corretto e chiaro. (3) **Non-regressione env-based**: i test esistenti usano host
+  `localhost`/nessun host → il guard è no-op lì; solo un Host che combacia con `app`/`landing` da env
+  lo attiva. (4) Ri-confermato il gotcha `.snap` (lesson §5.5 host-classify): `vitest run` ha riscritto
+  `onboarding-generation-regression.test.ts.snap` col solo line-ending → **ripristinato**, mai
+  committato (staged solo `middleware.ts` + il nuovo test).
+- **host-classify (storico, `d8dd235`/`fd371fe`):** Spina dorsale
 dello split app/landing/custom (P6A-D1/D2), **inerte** finché `host-guard` non lo cabla. PUB-101
 `src/domain/hosting/classify-host.ts`: `classifyRequestHost(host,{appHost,landingHost})` puro →
 app/landing/custom, fail-safe verso custom senza landingHost. PUB-102 `src/config/env.ts`:
@@ -103,11 +131,18 @@ ripristino bit-identico sha256). `next build` ok; e2e non impattato (export non 
 
 ## 6. Prossimi passi
 
-- **1/22 macrotask done** (`host-classify`). **Prossima sessione = BUILD di un eleggibile** (§1):
-  seguito naturale `host-guard` (PUB-111 — cabla `classifyRequestHost`/`getLandingHost` nel middleware
-  con guard **simmetrico**; NON toccare `/s/*`, la guardia auth, né il ramo host-custom: non-regressione
-  `auth-middleware`/`public-exclusion`/`host-routing`), oppure `marketing-i18n` ∥ `waitlist-schema` ∥
-  `captcha-port` ∥ `blog-pipeline` (indipendenti, parallelizzabili).
+- **2/22 macrotask done** (`host-classify`, `host-guard`). **Prossima sessione = BUILD di un
+  eleggibile** (§1): `marketing-i18n` (PUB-121 — sblocca `marketing-layout`→`marketing-home` e i quattro
+  SEO), `waitlist-schema` (PUB-201 — introduce la migrazione `waitlist_leads` RLS enabled/zero-policy
+  → applicarla al Cloud POOLER e verificare RLS/GRANT via node pg, §4), `captcha-port` (PUB-221/222) o
+  `blog-pipeline` (PUB-401, nuove dep markdown/rehype → registrare sotto OSV). Tutti indipendenti tra
+  loro e parallelizzabili con dynamic workflow command-free.
+- **Copertura dichiarata host-guard (§6 del session-end):** target_test `tests/middleware-host-guard.test.ts`
+  copre AC-111-1…5 + proprietà `isMarketingPath` (confine esatto per ogni locale). Mutazione 5/5
+  (M1 dest landing, M2 dest app, M3 guardia fail-safe, M4 riconoscimento landing in `isPlatformHost`,
+  M5 predicato app-path). **NON coperto (dichiarato):** e2e reale con `NEXT_PUBLIC_LANDING_URL`
+  valorizzato (rinviato al `cutover`, che accende l'env e lancia le sonde `evaluateCutover`); la
+  regola Cloudflare che nega le rotte a-consumo sull'host landing resta azione manuale founder (VISION §10).
 - Apri con `prompts/session-start.md`; branch `trueline/build/<macrotask>` da main pulito; **dynamic
   workflow command-free** + checkpoint 4/4 + mutazione in foreground. I driver `.trueline/pub-*.mjs`
   (checkpoint/hygiene-ratchet/mutants) sono pronti e riusabili (gitignorati).
