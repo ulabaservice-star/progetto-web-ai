@@ -3,6 +3,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { routing } from './i18n/routing';
 import { getUserFromRequest } from './data/supabase-ssr';
 import { readSiteSlugForHost } from './data/public-domain';
+import { classifyRequestHost } from './domain/hosting/classify-host';
+import { getLandingHost } from './config/env';
 
 // Middleware UNICO: compone il routing per locale di next-intl (T-080) con la
 // guardia auth di route (T-041). Il routing di locale NON viene mai
@@ -42,6 +44,29 @@ export const PUBLIC_STANDALONE_PREFIX = '/s';
 export const isPublicStandalonePath = (pathname: string): boolean =>
   pathname === PUBLIC_STANDALONE_PREFIX ||
   pathname.startsWith(`${PUBLIC_STANDALONE_PREFIX}/`);
+
+// PUB-111 (macrotask host-guard, p6a-public-surface) — le pagine MARKETING della superficie
+// pubblica (P6A-D2): la home localizzata `/{locale}`, il blog `/{locale}/blog` (+ sotto-path) e la
+// privacy `/{locale}/privacy`. ESPORTATA per rendere OSSERVABILE la decisione del guard (come
+// protectedRoute/isPublicStandalonePath): e' contro QUESTA che il guard simmetrico decide se una
+// rotta appartiene alla superficie marketing. Il locale e' vincolato a routing.locales (unica
+// sorgente di verita'), mai a input libero. Privacy = pagina esatta; blog = pagina + sotto-path.
+const MARKETING_PATH_RE = new RegExp(
+  `^/(${routing.locales.join('|')})(/blog(/.*)?|/privacy)?$`,
+);
+export const isMarketingPath = (pathname: string): boolean => MARKETING_PATH_RE.test(pathname);
+
+// Una rotta locale-prefissata (qualunque path sotto `/{locale}`), usata per distinguere la
+// superficie d'APP dal resto. La radice nuda `/` e i path NON prefissati NON vi rientrano: restano a
+// next-intl, che prefissa il locale sull'Host CORRENTE — cosi' il guard non rimbalza mai la radice
+// della landing verso l'app (canonical stabile, P6A-D2).
+const LOCALE_PREFIXED_RE = new RegExp(`^/(${routing.locales.join('|')})(/.*)?$`);
+
+// Rotta d'APP = una rotta di piattaforma locale-prefissata che NON e' una pagina marketing (il
+// complemento marketing all'interno di `/{locale}`); /s/* e i path non-prefissati ne restano fuori
+// per costruzione (non locale-prefissati).
+const isAppPath = (pathname: string): boolean =>
+  LOCALE_PREFIXED_RE.test(pathname) && !isMarketingPath(pathname);
 
 // Flusso di PIATTAFORMA (invariato da P4-D4/T-041): esclusione /s/*, guardia auth sulle route
 // protette, altrimenti routing di locale next-intl. Estratto come funzione perché il fallback
@@ -85,18 +110,58 @@ function platformAppHost(): string | null {
 function isPlatformHost(host: string): boolean {
   if (host === 'localhost' || host === '127.0.0.1') return true;
   if (host.endsWith('.vercel.app')) return true;
+  // PUB-111 — la LANDING (apex + companion 'www.') e' piattaforma, non un dominio cliente: cosi' non
+  // finisce mai in routeCustomHost (nessuna lookup DB readSiteSlugForHost per la landing). Fail-safe:
+  // getLandingHost() === null (config assente) => la landing non e' riconosciuta, comportamento odierno.
+  const landingHost = getLandingHost();
+  if (landingHost !== null && (host === landingHost || host === 'www.' + landingHost)) return true;
   const appHost = platformAppHost();
   if (!appHost) return true; // env assente => fail-safe: tutto piattaforma
   return host === appHost || host.endsWith('.' + appHost);
 }
 
-// L'Host della richiesta, minuscolo e senza porta; null se assente. Un Host di piattaforma => null
-// (il chiamante prosegue nel flusso di piattaforma senza toccare il DB).
-function customHostname(request: NextRequest): string | null {
+// L'Host della richiesta, minuscolo e senza porta; null se assente. Fattorizzato (PUB-111) cosi' che
+// customHostname e il guard host lo normalizzino allo stesso modo, senza duplicare le tre righe.
+function normalizeRequestHost(request: NextRequest): string | null {
   const raw = request.headers.get('host');
   if (!raw) return null;
-  const host = raw.toLowerCase().split(':')[0];
-  return isPlatformHost(host) ? null : host;
+  return raw.toLowerCase().split(':')[0];
+}
+
+// Un Host di piattaforma => null (il chiamante prosegue nel flusso di piattaforma senza toccare il
+// DB); un Host non-piattaforma (dominio cliente candidato) => l'host normalizzato.
+function customHostname(request: NextRequest): string | null {
+  const host = normalizeRequestHost(request);
+  return host !== null && !isPlatformHost(host) ? host : null;
+}
+
+// PUB-111 — GUARD host SIMMETRICO: tiene netti i confini fra la superficie d'app e quella marketing
+// sullo stesso monolite (P6A-D2). Applicato SOLO agli Host di piattaforma (i domini cliente
+// classificano 'custom' e non lo attivano, oltre a essere gia' gestiti prima da routeCustomHost). La
+// destinazione ha hostname FISSO da env (mai da input utente: anti open-redirect, come
+// guardProtectedRoute), pathname+query preservati con un 308 (redirect permanente = canonical stabile):
+//   - Host 'landing' + rotta d'APP  => 308 verso l'appHost;
+//   - Host 'app'     + pagina MARKETING => 308 verso il landingHost.
+// FAIL-SAFE (P6A-D12): senza NEXT_PUBLIC_LANDING_URL nessun Host e' 'landing' e nessuna rotta
+// marketing ha destinazione landing => NESSUN redirect di guard (tutto come oggi).
+function hostBoundaryRedirect(request: NextRequest, pathname: string): NextResponse | null {
+  const host = normalizeRequestHost(request);
+  if (host === null) return null;
+  const appHost = platformAppHost();
+  const landingHost = getLandingHost();
+  const category = classifyRequestHost(host, { appHost, landingHost });
+
+  if (category === 'landing' && appHost !== null && isAppPath(pathname)) {
+    const url = request.nextUrl.clone();
+    url.hostname = appHost;
+    return NextResponse.redirect(url, 308);
+  }
+  if (category === 'app' && landingHost !== null && isMarketingPath(pathname)) {
+    const url = request.nextUrl.clone();
+    url.hostname = landingHost;
+    return NextResponse.redirect(url, 308);
+  }
+  return null;
 }
 
 // Path riservati che NON vanno mai riscritti verso /s/<slug> (no ricorsione del rewrite): il
@@ -141,6 +206,11 @@ export default function middleware(
   if (customHost && !isReservedRewritePath(pathname)) {
     return routeCustomHost(request, customHost, pathname);
   }
+  // PUB-111: Host di piattaforma => guard host SIMMETRICO PRIMA del locale e della guardia auth
+  // (app-path sulla landing => app; marketing sull'app => landing). Non tocca /s/*, il ramo
+  // host-custom (gia' deviato sopra) ne' la guardia auth (che resta in platformFlow).
+  const boundary = hostBoundaryRedirect(request, pathname);
+  if (boundary) return boundary;
   return platformFlow(request, pathname);
 }
 
