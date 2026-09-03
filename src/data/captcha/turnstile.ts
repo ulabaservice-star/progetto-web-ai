@@ -75,3 +75,14 @@ export function createTurnstileVerifier(config: TurnstileConfig): CaptchaVerifie
     },
   };
 }
+
+/**
+ * L'adattatore Turnstile REALE, costruito dalla config di DEPLOY (env). Legge TURNSTILE_SECRET_KEY SOLO
+ * da env (mai dal sorgente, A07/A02:2025) e delega a createTurnstileVerifier. Gemello di
+ * getVercelDomainProvider / getStripePaymentProvider: il route handler (PUB-231) consuma QUESTO getter e
+ * non conosce il secret. INERTE senza env (secret vuoto => verify nega senza rete, nessun 500 — P6A-D6/D9):
+ * l'endpoint gatea la chiamata con isTurnstileConfigured, quindi qui il secret e' valorizzato quando serve.
+ */
+export function getTurnstileVerifier(): CaptchaVerifier {
+  return createTurnstileVerifier({ secret: process.env.TURNSTILE_SECRET_KEY ?? '' });
+}
