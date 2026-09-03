@@ -10,8 +10,8 @@
 |---|---|
 | **Progetto** | Ulaba/Belora — P6a (superficie pubblica) |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase Cloud EU) |
-| **Ultimo aggiornamento** | 2026-09-03 (BUILD `marketing-layout` — checkpoint 4/4 verde, MERGIATO `b06107d`) |
-| **Sessione corrente (BUILD `marketing-layout`, PUB-131)** | **CHIUSO+MERGIATO** (`b06107d`, atomico `9361f04`, deploy coupled avviato/pushato). **4/22 macrotask done.** |
+| **Ultimo aggiornamento** | 2026-09-03 (BUILD `marketing-home` — checkpoint 4/4 verde, MERGIATO `40a0fa3`) |
+| **Sessione corrente (BUILD `marketing-home`, PUB-141)** | **CHIUSO+MERGIATO** (`40a0fa3`, atomico `bbbc707`, deploy coupled avviato/pushato). **5/22 macrotask done.** |
 
 ---
 
@@ -25,7 +25,7 @@
 | 02 | `host-guard` (PUB-111) | **done** | 4/4 ✅ (`9244fe5`) | `host-classify` |
 | 03 | `marketing-i18n` (PUB-121) | **done** | 4/4 ✅ (`f397f82`) | — |
 | 04 | `marketing-layout` (PUB-131) | **done** | 4/4 ✅ (`b06107d`) | `marketing-i18n` |
-| 05 | `marketing-home` (PUB-141) | **todo** | — | `marketing-layout` |
+| 05 | `marketing-home` (PUB-141) | **done** | 4/4 ✅ (`40a0fa3`) | `marketing-layout` |
 | 06 | `waitlist-schema` (PUB-201) | **todo** | — | — |
 | 07 | `waitlist-store` (PUB-211) | **todo** | — | `waitlist-schema` |
 | 08 | `captcha-port` (PUB-221/222) | **todo** | — | — |
@@ -44,19 +44,21 @@
 | 21 | `blog-seed` (PUB-451) | **todo** | — | `blog-content` |
 | 22 | `cutover` (PUB-501) | **todo** | — | (tutte le superfici pubbliche) |
 
-**Eleggibili ora (dipendenze verdi):** `marketing-home` (sbloccato da `marketing-layout`),
-`seo-robots`/`seo-sitemap`/`seo-metadata`/`privacy-page` (sbloccati da `marketing-layout`),
-`waitlist-schema`, `captcha-port`, `blog-pipeline`. `cutover` per ultimo.
+**Eleggibili ora (dipendenze verdi):** `seo-robots`/`seo-sitemap`/`seo-metadata`/`privacy-page`
+(sbloccati da `marketing-layout`), `seo-jsonld` (sbloccato ora da `marketing-home`),
+`waitlist-schema`, `captcha-port`, `blog-pipeline`. `waitlist-form` resta bloccato (serve
+`waitlist-endpoint`); `cutover` per ultimo.
 
 ## 2. Macrotask corrente
 
-- **Nessuno in corso** — `marketing-layout` (04) chiuso e mergiato. Il chrome marketing (route group
-  `(marketing)` + header/footer che consumano `landing`) è la base di `marketing-home` (PUB-141) e dei
-  quattro SEO host-aware. Il prossimo BUILD sceglie un eleggibile (§1) rispettando il DAG:
-  `marketing-home` (PUB-141, ora sbloccato → home strutturale + slot hero P6b + punti waitlist),
-  `seo-robots`/`seo-sitemap`/`seo-metadata`/`privacy-page` (sbloccati da `marketing-layout`),
-  `waitlist-schema` (→ store→endpoint), `captcha-port`, `blog-pipeline` — questi ultimi tre
-  indipendenti tra loro.
+- **Nessuno in corso** — `marketing-home` (05) chiuso e mergiato. La home `/{locale}` vive ora nel route
+  group `(marketing)` (col chrome header/footer di PUB-131) ed espone lo slot hero riservato P6b + i 2
+  punti di montaggio waitlist. Il prossimo BUILD sceglie un eleggibile (§1) rispettando il DAG:
+  `seo-jsonld` (PUB-331, ora sbloccato da `marketing-home` → JSON-LD Organization+WebSite via
+  `serializeJsonLdSafe`), i quattro `seo-robots`/`seo-sitemap`/`seo-metadata`/`privacy-page` (da
+  `marketing-layout`), `waitlist-schema` (→ store→endpoint), `captcha-port`, `blog-pipeline` — questi
+  tre indipendenti tra loro. `waitlist-form` (PUB-241) resta bloccato finché non è pronto
+  `waitlist-endpoint`.
 - **Metodo**: UN macrotask per sessione via **dynamic workflow command-free** (builder solo Read/Write/
   Edit; oracoli — checkpoint 4/4 + mutazione — in **foreground** dall'orchestratore, unico giudice del
   verde). Vedi 00-INDEX §Granularità e la memoria `dynamic-workflow-build-method`.
@@ -67,10 +69,10 @@
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `trueline/build/marketing-layout` (atomico `9361f04`, **mergiato** in `main`) |
-| Ultimo commit | `b06107d` (merge `--no-ff` marketing-layout in main) + push `7069eb0..b06107d` |
+| Branch di lavoro | `trueline/build/marketing-home` (atomico `bbbc707`, **mergiato** in `main`) |
+| Ultimo commit | `40a0fa3` (merge `--no-ff` marketing-home in main) + push `f573e32..40a0fa3` |
 | Stato merge su `main` | **done** (checkpoint 4/4 verde → merge → push, deploy coupled avviato) |
-| Deploy-coupling | **coupled** (push su `main` = deploy su ulaba.net) → verifica locale FATTA prima del merge (vitest full 1935/1936, tsc solo TS2589 invariante, next build exit 0; e2e non impattato — group `(marketing)` orfano, nessuna rotta reale) |
+| Deploy-coupling | **coupled** (push su `main` = deploy su ulaba.net) → verifica locale FATTA prima del merge (vitest full 1938/1939, tsc solo TS2589 invariante, next build exit 0 con rotta `/[locale]` senza conflitto servita dal group; e2e non impattato — nessuno spec naviga la home nuda) |
 
 ## 4. Baseline & budget
 
@@ -78,10 +80,55 @@
   nuova `waitlist_leads` (RLS enabled, zero-policy, giustificata P6A-D5); le nuove dep del blog passano
   OSV.
 - **Baseline d'igiene**: `.trueline/hygiene-baseline.json` — ratchet additivo **237→244** in `host-classify`
-  (7 cloni PRE-ESISTENTI su main: 5 doc bootstrap p6a + 2 file P5, provati fuori dal diff del macrotask).
+  (7 cloni PRE-ESISTENTI su main: 5 doc bootstrap p6a + 2 file P5, provati fuori dal diff del macrotask),
+  poi **244→245** in `marketing-home` (1 clone PRE-ESISTENTE `MarketingHeader`↔`MarketingFooter` fp
+  `c40fc0b6`: il preambolo `'use client'`+import+commento PUB-131 di marketing-layout, 51 token / 1
+  sopra-soglia, latente dal merge di marketing-layout e affiorato dal cambio-corpus jscpd; codice
+  committato fuori dal diff del macrotask, i file di `marketing-home` aggiungono 0 cloni).
 - **Budget**: un macrotask alla volta; loop di fix con tetto in `references/oracles/thresholds.md`.
 
 ## 5. Esiti dell'ultima sessione (framing onesto)
+
+**BUILD `marketing-home` (PUB-141) — CHIUSO+MERGIATO (`40a0fa3`, atomico `bbbc707`).** Crea la home
+pubblica `/{locale}` come `src/app/[locale]/(marketing)/page.tsx` (server component sottile) che rende
+`src/ui/marketing/MarketingHome.tsx` — composizione client (pattern DomainSection/MarketingHeader,
+renderizzabile in jsdom sui cataloghi REALI) con **hero** (`hero.headline`+`hero.sub`), **value-props**
+(`valueProps.title`+3 item) e **closing-CTA** (`nav.waitlistCta`), copy TUTTO dal namespace `landing`
+(PUB-121), nessuna stringa hard-coded. La hero espone lo **SLOT P6b riservato** `data-testid=
+hero-preview-slot` VUOTO (P6A-D13: P6b lo riempirà senza rework) + il **primo** punto di montaggio
+waitlist; la closing-CTA il **secondo** (`data-testid=waitlist-slot`, `data-slot=hero`/`closing`, che
+PUB-241 riempirà). Output solo testo JSX (escaping React), nessun `innerHTML`, nessun dato/auth (A05:2025).
+**Il vecchio placeholder `[locale]/page.tsx` è stato RIMOSSO** (spostato nel group): due `page.tsx` che
+risolvono alla stessa rotta `/{locale}` romperebbero `next build`. Target test `tests/marketing-home.test.tsx`
+(AC-141-1/2/3): la hero rende `hero.headline` + slot P6b vuoto (`childNodes.length===0`); esattamente 2
+`waitlist-slot`; la headline es == catalogo es e ≠ it. Checkpoint **4/4**: C1 green (`dead-code:0 dup:246
+cycle:0`, 0 nuovi dopo ratchet onesto 244→245), C2 green (`gitleaks:3 osv:4 semgrep:0 rls:2`, 0 nuovi
+≥HIGH — solo UI/nessun segreto), C3 **1938/1939** (unico rosso = scaffold→typecheck→TS2589 pre-esistente
+in `e2e/effects.spec.ts`, invariato; +3 test nuovi verdi), C4 target **3/3**. Mutazione **3/3** (M1
+rimozione `waitlist-slot`→AC-141-2 rosso, M2 slot P6b riempito→AC-141-1 rosso, M3 headline hard-coded
+`{'HARDCODED'}`→AC-141-3 rosso; ciascuno red + ripristino sha256 bit-identico). tsc nessun errore nuovo;
+`next build` exit 0 (rotta `/[locale]` senza conflitto, servita dal group); e2e non impattato.
+
+- **Lezioni (carry-over marketing-home):** (1) **la home DEVE migrare nel group** — un route group con
+  `page.tsx` NON cambia l'URL, quindi `(marketing)/page.tsx` e `[locale]/page.tsx` risolvono entrambi a
+  `/{locale}` → "two parallel pages" a `next build`. Il placeholder va rimosso (`git rm`); i due test di
+  confine (`anthropic-boundary`/`supabase-clients`) citano `'src/app/[locale]/page.tsx'` **solo come
+  filename virtuale di lint** (config-matching ESLint, MAI `existsSync` su quel path — solo i `vero:true`
+  sono existsSync-checked) → la rimozione non li rompe (verificato: 1938/1939, entrambi verdi). (2) **Il
+  clone C1 era un PRE-ESISTENTE affiorato, non mio** — C1 ha segnalato 1 clone su `MarketingHeader.tsx`
+  righe 1-7. Prova triangolata: rimuovere i miei file lo lascia; `run_dupcheck` grezzo (min-tokens 50,
+  strict) mostra il fragment = `MarketingHeader`↔`MarketingFooter` (il preambolo `'use client'`+import+
+  commento **PUB-131** di marketing-layout, 51 token); su main pristino non compariva. È **igiene
+  corpus-sensitive di jscpd**: marketing-layout l'ha lasciato latente (baseline a 244, non 245 come
+  narrato), la modifica del corpus l'ha reso visibile. Preambolo React irriducibile (`'use client'`+
+  import non si fattorizzano) → **ratchet additivo onesto** 244→245 (precedente host-classify), NON un
+  root-fix impossibile né churn sui file di marketing-layout; i file di `marketing-home` aggiungono **0
+  cloni**. (3) **Due slot con stesso `data-testid` ma `data-slot` distinto** (`hero`/`closing`): il test
+  li conta con `getAllByTestId('waitlist-slot')`→2, e la mutazione trova la riga in modo univoco (senza
+  `data-slot` le due righe sarebbero substring l'una dell'altra per la sola indentazione → `split` non
+  unico). (4) Ri-confermato il gotcha `.snap`: `vitest run` full ha ri-scritto
+  `onboarding-generation-regression.test.ts.snap` col solo EOL → ripristinato (`git checkout`), mai
+  committato (staged solo i 3 file + la deletion + la hygiene-baseline).
 
 **BUILD `marketing-layout` (PUB-131) — CHIUSO+MERGIATO (`b06107d`, atomico `9361f04`).** Introduce il
 route group `src/app/[locale]/(marketing)/layout.tsx` che avvolge le sole rotte pubbliche (home/blog/
@@ -197,14 +244,23 @@ ripristino bit-identico sha256). `next build` ok; e2e non impattato (export non 
 
 ## 6. Prossimi passi
 
-- **4/22 macrotask done** (`host-classify`, `host-guard`, `marketing-i18n`, `marketing-layout`).
-  **Prossima sessione = BUILD di un eleggibile** (§1): `marketing-home` (PUB-141 — ora sbloccato: home
-  strutturale con slot hero riservato P6b + 2 punti di montaggio waitlist, dentro il group `(marketing)`
-  → poi `seo-jsonld` e `waitlist-form`), `seo-robots`/`seo-sitemap`/`seo-metadata`/`privacy-page`
-  (PUB-301/311/321/341 — tutti sbloccati da `marketing-layout`), `waitlist-schema` (PUB-201 — introduce
-  la migrazione `waitlist_leads` RLS enabled/zero-policy → applicarla al Cloud POOLER e verificare
-  RLS/GRANT via node pg, §4), `captcha-port` (PUB-221/222) o `blog-pipeline` (PUB-401, nuove dep
-  markdown/rehype → registrare sotto OSV). Gli ultimi tre indipendenti tra loro.
+- **5/22 macrotask done** (`host-classify`, `host-guard`, `marketing-i18n`, `marketing-layout`,
+  `marketing-home`). **Prossima sessione = BUILD di un eleggibile** (§1): `seo-jsonld` (PUB-331 — ora
+  sbloccato da `marketing-home`: JSON-LD Organization+WebSite via `serializeJsonLdSafe`, anti-XSS),
+  `seo-robots`/`seo-sitemap`/`seo-metadata`/`privacy-page` (PUB-301/311/321/341 — sbloccati da
+  `marketing-layout`), `waitlist-schema` (PUB-201 — introduce la migrazione `waitlist_leads` RLS
+  enabled/zero-policy → applicarla al Cloud POOLER e verificare RLS/GRANT via node pg, §4),
+  `captcha-port` (PUB-221/222) o `blog-pipeline` (PUB-401, nuove dep markdown/rehype → registrare sotto
+  OSV). Questi tre indipendenti tra loro. `waitlist-form` (PUB-241) resta bloccato finché non è pronto
+  `waitlist-endpoint`.
+- **Copertura dichiarata marketing-home (§6):** target_test `tests/marketing-home.test.tsx` copre AC-141-1
+  (la hero rende `landing.hero.headline` + slot `hero-preview-slot` VUOTO), AC-141-2 (esattamente 2
+  `waitlist-slot`), AC-141-3 (la headline resa in es == catalogo es e ≠ it). Mutazione 3/3 (§5). **NON
+  coperto (dichiarato):** l'estetica/responsive della home (brand, spaziature, hero reale) — cura di P6b
+  (che riempie lo slot) e del polish, non gate qui; il **contenuto** dei due punti waitlist e lo stato/
+  inerzia del form (PUB-241); metadata/canonical/OG/JSON-LD della home (PUB-321/331); il render SSR
+  end-to-end del server component `page.tsx` è provato indirettamente via `next build` (compila, rotta
+  `/[locale]` emessa) e via il componente client in jsdom, non da un render SSR reale.
 - **Copertura dichiarata marketing-layout (§6):** target_test `tests/marketing-layout.test.tsx` copre
   AC-131-1 (i 3 link nav `landing` con href per-locale `/it`,`/it/blog`,`/it/privacy` + `footer.tagline`,
   scoped ai landmark banner/contentinfo) e AC-131-2 (nessun link ad app nel chrome). Mutazione 5/5 (§5).
