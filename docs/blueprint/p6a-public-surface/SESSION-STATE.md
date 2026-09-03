@@ -10,8 +10,8 @@
 |---|---|
 | **Progetto** | Ulaba/Belora — P6a (superficie pubblica) |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase Cloud EU) |
-| **Ultimo aggiornamento** | 2026-09-03 (BUILD `marketing-home` — checkpoint 4/4 verde, MERGIATO `40a0fa3`) |
-| **Sessione corrente (BUILD `marketing-home`, PUB-141)** | **CHIUSO+MERGIATO** (`40a0fa3`, atomico `bbbc707`, deploy coupled avviato/pushato). **5/22 macrotask done.** |
+| **Ultimo aggiornamento** | 2026-09-03 (BUILD `waitlist-schema` — checkpoint 4/4 verde, MERGIATO `8f74307`) |
+| **Sessione corrente (BUILD `waitlist-schema`, PUB-201)** | **CHIUSO+MERGIATO** (`8f74307`, atomico `f856f40`, deploy coupled pushato; migrazione applicata+verificata al Cloud POOLER). **6/22 macrotask done.** |
 
 ---
 
@@ -26,7 +26,7 @@
 | 03 | `marketing-i18n` (PUB-121) | **done** | 4/4 ✅ (`f397f82`) | — |
 | 04 | `marketing-layout` (PUB-131) | **done** | 4/4 ✅ (`b06107d`) | `marketing-i18n` |
 | 05 | `marketing-home` (PUB-141) | **done** | 4/4 ✅ (`40a0fa3`) | `marketing-layout` |
-| 06 | `waitlist-schema` (PUB-201) | **todo** | — | — |
+| 06 | `waitlist-schema` (PUB-201) | **done** | 4/4 ✅ (`8f74307`) | — |
 | 07 | `waitlist-store` (PUB-211) | **todo** | — | `waitlist-schema` |
 | 08 | `captcha-port` (PUB-221/222) | **todo** | — | — |
 | 09 | `waitlist-endpoint` (PUB-231/232) | **todo** | — | `waitlist-store`, `captcha-port` |
@@ -44,20 +44,23 @@
 | 21 | `blog-seed` (PUB-451) | **todo** | — | `blog-content` |
 | 22 | `cutover` (PUB-501) | **todo** | — | (tutte le superfici pubbliche) |
 
-**Eleggibili ora (dipendenze verdi):** `seo-robots`/`seo-sitemap`/`seo-metadata`/`privacy-page`
-(sbloccati da `marketing-layout`), `seo-jsonld` (sbloccato ora da `marketing-home`),
-`waitlist-schema`, `captcha-port`, `blog-pipeline`. `waitlist-form` resta bloccato (serve
-`waitlist-endpoint`); `cutover` per ultimo.
+**Eleggibili ora (dipendenze verdi):** `waitlist-store` (PUB-211 — ora sbloccato da `waitlist-schema`:
+writer service_role confinato + store iniettabile, `insertLead` idempotenza `23505`),
+`seo-robots`/`seo-sitemap`/`seo-metadata`/`privacy-page` (sbloccati da `marketing-layout`), `seo-jsonld`
+(sbloccato da `marketing-home`), `captcha-port`, `blog-pipeline`. `waitlist-endpoint` resta bloccato
+(serve `waitlist-store` + `captcha-port`); `waitlist-form` resta bloccato (serve `waitlist-endpoint`);
+`cutover` per ultimo.
 
 ## 2. Macrotask corrente
 
-- **Nessuno in corso** — `marketing-home` (05) chiuso e mergiato. La home `/{locale}` vive ora nel route
-  group `(marketing)` (col chrome header/footer di PUB-131) ed espone lo slot hero riservato P6b + i 2
-  punti di montaggio waitlist. Il prossimo BUILD sceglie un eleggibile (§1) rispettando il DAG:
-  `seo-jsonld` (PUB-331, ora sbloccato da `marketing-home` → JSON-LD Organization+WebSite via
-  `serializeJsonLdSafe`), i quattro `seo-robots`/`seo-sitemap`/`seo-metadata`/`privacy-page` (da
-  `marketing-layout`), `waitlist-schema` (→ store→endpoint), `captcha-port`, `blog-pipeline` — questi
-  tre indipendenti tra loro. `waitlist-form` (PUB-241) resta bloccato finché non è pronto
+- **Nessuno in corso** — `waitlist-schema` (06) chiuso e mergiato. La tabella `public.waitlist_leads`
+  esiste ora in locale E su Cloud (RLS enabled, ZERO policy, GRANT solo service_role, UNIQUE
+  `normalized_email`). Il prossimo BUILD sceglie un eleggibile (§1) rispettando il DAG: `waitlist-store`
+  (PUB-211, ora sbloccato → writer service_role confinato + `insertLead` idempotenza `23505`), `seo-jsonld`
+  (PUB-331 → JSON-LD Organization+WebSite via `serializeJsonLdSafe`), i quattro
+  `seo-robots`/`seo-sitemap`/`seo-metadata`/`privacy-page` (da `marketing-layout`), `captcha-port`,
+  `blog-pipeline` — indipendenti tra loro. `waitlist-endpoint` (PUB-231) resta bloccato finché non sono
+  pronti `waitlist-store` + `captcha-port`; `waitlist-form` (PUB-241) finché non è pronto
   `waitlist-endpoint`.
 - **Metodo**: UN macrotask per sessione via **dynamic workflow command-free** (builder solo Read/Write/
   Edit; oracoli — checkpoint 4/4 + mutazione — in **foreground** dall'orchestratore, unico giudice del
@@ -69,25 +72,81 @@
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `trueline/build/marketing-home` (atomico `bbbc707`, **mergiato** in `main`) |
-| Ultimo commit | `40a0fa3` (merge `--no-ff` marketing-home in main) + push `f573e32..40a0fa3` |
-| Stato merge su `main` | **done** (checkpoint 4/4 verde → merge → push, deploy coupled avviato) |
-| Deploy-coupling | **coupled** (push su `main` = deploy su ulaba.net) → verifica locale FATTA prima del merge (vitest full 1938/1939, tsc solo TS2589 invariante, next build exit 0 con rotta `/[locale]` senza conflitto servita dal group; e2e non impattato — nessuno spec naviga la home nuda) |
+| Branch di lavoro | `trueline/build/waitlist-schema` (atomico `f856f40`, **mergiato** in `main`) |
+| Ultimo commit | `8f74307` (merge `--no-ff` waitlist-schema in main) + push `fb676a3..8f74307` |
+| Stato merge su `main` | **done** (checkpoint 4/4 verde → migrazione al Cloud POOLER applicata+verificata → merge → push, deploy coupled) |
+| Deploy-coupling | **coupled** (push su `main` = deploy su ulaba.net) → verifica locale FATTA prima del merge (vitest full **1943/1944**, tsc solo TS2589 invariante, next build exit 0; e2e non impattato — solo migrazione+test DB). Migrazione `20260903000100_waitlist_leads.sql` applicata al Cloud (POOLER `supabase db push`) e verificata via node pg su TLS **CA-verified** (Supabase Root 2021 CA): relrowsecurity=true, policies:[], grant service_role-only, UNIQUE presente |
 
 ## 4. Baseline & budget
 
-- **Baseline di sicurezza** (C2): `gitleaks/osv/semgrep/rls` — al primo BUILD l'oracolo RLS vedrà la
-  nuova `waitlist_leads` (RLS enabled, zero-policy, giustificata P6A-D5); le nuove dep del blog passano
-  OSV.
+- **Baseline di sicurezza** (C2): `gitleaks/osv/semgrep/rls` — con `waitlist-schema` l'oracolo RLS vede
+  ora `waitlist_leads` e emette **`RLS002_NO_POLICY` MEDIUM** (RLS enabled + zero policy = deny-all): è
+  la **postura VOLUTA** (P6A-D5), **NON blocca** (gate C2 = ≥HIGH; MEDIUM è sotto soglia). `rls:3` = 2
+  HIGH pre-esistenti baselinati (`site_publications`, `site_domains`) + questo 1 nuovo MEDIUM. **Baseline
+  security NON modificata**: la voce non va baselinata perché è già sotto la soglia di gate (diversamente
+  dalle 2 HIGH, baselinate proprio perché altrimenti bloccherebbero). Le nuove dep del blog passeranno
+  OSV al loro BUILD.
 - **Baseline d'igiene**: `.trueline/hygiene-baseline.json` — ratchet additivo **237→244** in `host-classify`
   (7 cloni PRE-ESISTENTI su main: 5 doc bootstrap p6a + 2 file P5, provati fuori dal diff del macrotask),
   poi **244→245** in `marketing-home` (1 clone PRE-ESISTENTE `MarketingHeader`↔`MarketingFooter` fp
   `c40fc0b6`: il preambolo `'use client'`+import+commento PUB-131 di marketing-layout, 51 token / 1
   sopra-soglia, latente dal merge di marketing-layout e affiorato dal cambio-corpus jscpd; codice
-  committato fuori dal diff del macrotask, i file di `marketing-home` aggiungono 0 cloni).
+  committato fuori dal diff del macrotask, i file di `marketing-home` aggiungono 0 cloni). In
+  `waitlist-schema` C1 ha mostrato `dup:246` (raw) ma **0 nuovi fingerprint** (blockers vuoti, C1 green):
+  `.sql` non è nel corpus jscpd e i `.test.ts` sono esclusi → né la migrazione né il test aggiungono
+  cloni; il +1 raw è re-partizione del conteggio jscpd (corpus-sensitive, già visto), **nessun ratchet**.
 - **Budget**: un macrotask alla volta; loop di fix con tetto in `references/oracles/thresholds.md`.
 
 ## 5. Esiti dell'ultima sessione (framing onesto)
+
+**BUILD `waitlist-schema` (PUB-201) — CHIUSO+MERGIATO (`8f74307`, atomico `f856f40`).** Crea
+`public.waitlist_leads` in UNA migrazione (`supabase/migrations/20260903000100_waitlist_leads.sql`): la
+postura RLS più chiusa del repo — RLS abilitata + **ZERO policy** anon/authenticated (deny-all
+DELIBERATO, P6A-D5; NON owner-only: la superficie pubblica non ha owner) + `revoke all` + GRANT **solo**
+a `service_role` (`select, insert`; niente update/delete). Il client non legge né scrive mai; solo il
+server (service_role, che BYPASSA la RLS) inserisce. `UNIQUE(normalized_email)` per l'idempotenza
+(duplicato ⇒ `23505`). Colonne: `id/email/normalized_email/locale (check it|es)/source/created_at` —
+**nessun IP in chiaro, nessun updated_at, nessuna FK** (P6A-D7, tabella standalone). Test RLS DB-reale
+`tests/waitlist-rls.test.ts` (AC-201-1..5, template `subscriptions-rls.test.ts`): catalogo
+(relrowsecurity=true, `pols.length===0`, GRANT `has_table_privilege` service_role-only), anon
+SELECT/INSERT ⇒ `42501`, service_role INSERT ⇒ riga con valori attesi, secondo INSERT stesso
+`normalized_email` ⇒ `23505` senza seconda riga. **ANTI-PLACEBO**: oracolo indipendente
+(service_role/superuser) prova che la tabella NON è vuota ⇒ il `42501` è soppressione d'accesso, non
+assenza di dati. Checkpoint **4/4**: C1 green (`dead-code:0 dup:246 cycle:0`, **0 nuovi fingerprint**),
+C2 green (`gitleaks:3 osv:4 semgrep:0 rls:3`, **0 nuovi ≥HIGH** — il nuovo `RLS002_NO_POLICY` è MEDIUM =
+deny-all voluto, sotto soglia), C3 **1943/1944** (unico rosso = TS2589 scaffold pre-esistente in
+`e2e/effects.spec.ts`, invariato; +5 test nuovi verdi), C4 **5/5**. Mutazione **2/2** (M1 `grant insert
+on waitlist_leads to anon` ⇒ AC-201-1 rosso via l'asserzione `has_table_privilege(anon,INSERT)=false`;
+M2 `drop constraint waitlist_leads_normalized_email_key` ⇒ AC-201-5 rosso, il secondo insert non solleva
+più `23505`; entrambe ripristinate + verifica catalogo `{ins_anon:false, unique_present:true}`). tsc
+nessun errore nuovo; `next build` exit 0. **Migrazione applicata al Cloud** (POOLER, `supabase db push`
+--dry-run poi apply) e verificata via node pg su TLS **CA-verified** (relrowsecurity=true, policies:[],
+grant service_role-only, UNIQUE presente) — Cloud identico al locale.
+
+- **Lezioni (carry-over waitlist-schema):** (1) **la mutazione di uno SCHEMA si applica alla LIVE local
+  DB, non al file** — il test RLS legge il DB reale, quindi mutare il `.sql` senza ri-applicarlo non
+  cambierebbe l'esito. Driver `.trueline/pub-waitlist-mutants.mjs` (node pg superuser): applica/ripristina
+  la mutazione con inverso esatto (`revoke insert`; `add constraint <nome>`), verificabile via catalogo
+  prima e dopo. Il nome del constraint UNIQUE è auto-generato `waitlist_leads_normalized_email_key` —
+  catturarlo per ricrearlo identico nel restore. (2) **`grant insert to anon` NON flippa il codice
+  comportamentale di AC-201-3** — con GRANT ma zero policy, la RLS nega comunque l'INSERT anon con
+  `42501` (stesso codice del deny-per-GRANT), solo messaggio diverso. Il KILL affidabile della mutazione
+  è l'asserzione a livello di **GRANT** in AC-201-1 (`has_table_privilege(anon,INSERT)=false`), non
+  l'asserzione di codice in AC-201-3: inserire SEMPRE la sonda GRANT accanto a quella comportamentale.
+  (3) **PostgREST schema cache**: dopo `supabase migration up` locale ho forzato `notify pgrst, 'reload
+  schema'` via pgQuery prima dei test, per evitare `PGRST205` (tabella non nel cache → 404 invece del
+  `42501` atteso). (4) **service_role NON ha GRANT DELETE** su questa tabella e la tabella non ha FK →
+  niente cascade cleanup: il teardown del test cancella via **pgQuery superuser** (bypassa il no-delete);
+  email PER-RUN uniche (randomUUID) per rerunnabilità. (5) **TLS Cloud senza `rejectUnauthorized:false`**:
+  il pooler presenta la catena `*.pooler.supabase.com ← Supabase Intermediate 2021 CA ← Supabase Root
+  2021 CA` (root self-signed, non nel CA store di Node → `SELF_SIGNED_CERT_IN_CHAIN`). Estratto il root
+  dalla catena via `openssl s_client -starttls postgres` e usato come `ssl:{ca, rejectUnauthorized:true}`
+  ⇒ verifica reale (il leaf deve incatenarsi a quel root), non disabilitata. (6) **`RLS002_NO_POLICY`
+  MEDIUM non si baselina**: il gate C2 è ≥HIGH, quindi il deny-all voluto non blocca e non serve
+  aggiungerlo alla baseline security (diversamente dalle 2 HIGH `RLS004` di site_publications/site_domains,
+  baselinate proprio perché altrimenti bloccherebbero). (7) Ri-confermato il gotcha `.snap`: `vitest run`
+  full ha riscritto `onboarding-generation-regression.test.ts.snap` col solo EOL → ripristinato via `git
+  checkout`, mai committato (staged solo i 2 file del macrotask).
 
 **BUILD `marketing-home` (PUB-141) — CHIUSO+MERGIATO (`40a0fa3`, atomico `bbbc707`).** Crea la home
 pubblica `/{locale}` come `src/app/[locale]/(marketing)/page.tsx` (server component sottile) che rende
@@ -244,15 +303,25 @@ ripristino bit-identico sha256). `next build` ok; e2e non impattato (export non 
 
 ## 6. Prossimi passi
 
-- **5/22 macrotask done** (`host-classify`, `host-guard`, `marketing-i18n`, `marketing-layout`,
-  `marketing-home`). **Prossima sessione = BUILD di un eleggibile** (§1): `seo-jsonld` (PUB-331 — ora
-  sbloccato da `marketing-home`: JSON-LD Organization+WebSite via `serializeJsonLdSafe`, anti-XSS),
-  `seo-robots`/`seo-sitemap`/`seo-metadata`/`privacy-page` (PUB-301/311/321/341 — sbloccati da
-  `marketing-layout`), `waitlist-schema` (PUB-201 — introduce la migrazione `waitlist_leads` RLS
-  enabled/zero-policy → applicarla al Cloud POOLER e verificare RLS/GRANT via node pg, §4),
+- **6/22 macrotask done** (`host-classify`, `host-guard`, `marketing-i18n`, `marketing-layout`,
+  `marketing-home`, `waitlist-schema`). **Prossima sessione = BUILD di un eleggibile** (§1):
+  `waitlist-store` (PUB-211 — ora sbloccato da `waitlist-schema`: writer `service_role` confinato +
+  store iniettabile, `insertLead` con idempotenza `23505` sulla `UNIQUE(normalized_email)` appena creata),
+  `seo-jsonld` (PUB-331 — JSON-LD Organization+WebSite via `serializeJsonLdSafe`, anti-XSS),
+  `seo-robots`/`seo-sitemap`/`seo-metadata`/`privacy-page` (PUB-301/311/321/341 — da `marketing-layout`),
   `captcha-port` (PUB-221/222) o `blog-pipeline` (PUB-401, nuove dep markdown/rehype → registrare sotto
-  OSV). Questi tre indipendenti tra loro. `waitlist-form` (PUB-241) resta bloccato finché non è pronto
-  `waitlist-endpoint`.
+  OSV). `waitlist-endpoint` (PUB-231) resta bloccato finché non sono pronti `waitlist-store` +
+  `captcha-port`; `waitlist-form` (PUB-241) finché non è pronto `waitlist-endpoint`.
+- **Copertura dichiarata waitlist-schema (§6):** target_test `tests/waitlist-rls.test.ts` copre AC-201-1
+  (catalogo: relrowsecurity=true, zero policy, GRANT service_role-only, anon/authenticated niente),
+  AC-201-2 (anon SELECT ⇒ 42501, tabella non vuota anti-placebo), AC-201-3 (anon INSERT ⇒ 42501, nessuna
+  riga scritta), AC-201-4 (service_role INSERT ⇒ riga con `normalized_email`/`locale` attesi), AC-201-5
+  (secondo INSERT stesso `normalized_email` ⇒ 23505, nessuna seconda riga). Mutazione 2/2 (§5).
+  Verificata anche sul Cloud via node pg (§3). **NON coperto (dichiarato):** la normalizzazione
+  dell'email (lowercase/trim) è cura del writer `waitlist-store` (PUB-211), qui `normalized_email` è
+  fornito esplicito dal test; il comportamento dell'endpoint / anti-spam (honeypot/Turnstile/same-origin)
+  è di `waitlist-endpoint` (PUB-231/232); il test gira solo con Supabase locale attivo
+  (`describe.skipIf(!SB)`), su CI senza DB si SKIPpa in modo dichiarato.
 - **Copertura dichiarata marketing-home (§6):** target_test `tests/marketing-home.test.tsx` copre AC-141-1
   (la hero rende `landing.hero.headline` + slot `hero-preview-slot` VUOTO), AC-141-2 (esattamente 2
   `waitlist-slot`), AC-141-3 (la headline resa in es == catalogo es e ≠ it). Mutazione 3/3 (§5). **NON
