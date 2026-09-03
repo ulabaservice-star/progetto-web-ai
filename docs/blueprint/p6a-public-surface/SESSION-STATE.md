@@ -10,8 +10,8 @@
 |---|---|
 | **Progetto** | Ulaba/Belora — P6a (superficie pubblica) |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase Cloud EU) |
-| **Ultimo aggiornamento** | 2026-09-03 (BUILD `waitlist-store` — checkpoint 4/4 verde, MERGIATO `70418f2`) |
-| **Sessione corrente (BUILD `waitlist-store`, PUB-211)** | **CHIUSO+MERGIATO** (`70418f2`, atomico `7db344c`, deploy coupled pushato `4bb5035..70418f2`; nessuna migrazione — schema gia' applicato in PUB-201). **7/22 macrotask done.** |
+| **Ultimo aggiornamento** | 2026-09-03 (BUILD `captcha-port` — checkpoint 4/4 verde, MERGIATO `5933c12`) |
+| **Sessione corrente (BUILD `captcha-port`, PUB-221/222)** | **CHIUSO+MERGIATO** (`5933c12`, atomico `810af55`, deploy coupled pushato `77cfed3..5933c12`; nessuna migrazione). **8/22 macrotask done.** |
 
 ---
 
@@ -28,7 +28,7 @@
 | 05 | `marketing-home` (PUB-141) | **done** | 4/4 ✅ (`40a0fa3`) | `marketing-layout` |
 | 06 | `waitlist-schema` (PUB-201) | **done** | 4/4 ✅ (`8f74307`) | — |
 | 07 | `waitlist-store` (PUB-211) | **done** | 4/4 ✅ (`70418f2`) | `waitlist-schema` |
-| 08 | `captcha-port` (PUB-221/222) | **todo** | — | — |
+| 08 | `captcha-port` (PUB-221/222) | **done** | 4/4 ✅ (`5933c12`) | — |
 | 09 | `waitlist-endpoint` (PUB-231/232) | **todo** | — | `waitlist-store`, `captcha-port` |
 | 10 | `waitlist-form` (PUB-241/242) | **todo** | — | `marketing-home`, `waitlist-endpoint` |
 | 11 | `seo-robots` (PUB-301) | **todo** | — | `marketing-layout` |
@@ -44,25 +44,26 @@
 | 21 | `blog-seed` (PUB-451) | **todo** | — | `blog-content` |
 | 22 | `cutover` (PUB-501) | **todo** | — | (tutte le superfici pubbliche) |
 
-**Eleggibili ora (dipendenze verdi):** `captcha-port` (PUB-221/222 — porta pura `CaptchaVerifier` + fake
-+ adattatore Turnstile server-only env-gated inerte; **ultimo tassello che sblocca `waitlist-endpoint`**,
-ora che `waitlist-store` e' verde), `seo-robots`/`seo-sitemap`/`seo-metadata`/`privacy-page` (sbloccati da
-`marketing-layout`), `seo-jsonld` (sbloccato da `marketing-home`), `blog-pipeline` (PUB-401 — nuove dep
-markdown/rehype → registrare sotto OSV). `waitlist-endpoint` (PUB-231) resta bloccato finche' non e'
-pronto `captcha-port` (ha gia' `waitlist-store`); `waitlist-form` (PUB-241) finche' non e' pronto
-`waitlist-endpoint`; `cutover` per ultimo.
+**Eleggibili ora (dipendenze verdi):** **`waitlist-endpoint`** (PUB-231/232 — ORA SBLOCCATO: ha sia
+`waitlist-store` sia `captcha-port` verdi; l'endpoint POST che valida la forma email (zod), applica
+anti-spam honeypot+Turnstile+same-origin via `_shared/request-guard`, e scrive via `insertLead`),
+`seo-robots`/`seo-sitemap`/`seo-metadata`/`privacy-page` (sbloccati da `marketing-layout`), `seo-jsonld`
+(sbloccato da `marketing-home`), `blog-pipeline` (PUB-401 — nuove dep markdown/rehype → registrare sotto
+OSV). `waitlist-form` (PUB-241) resta bloccato finche' non e' pronto `waitlist-endpoint`; `cutover` per
+ultimo.
 
 ## 2. Macrotask corrente
 
-- **Nessuno in corso** — `waitlist-store` (07) chiuso e mergiato. Il writer `src/data/waitlist.ts`
-  (`insertLead`, service_role confinato + store iniettabile) e' l'unico percorso che scrive
-  `waitlist_leads`; normalizza l'email e assorbe il `23505` come `'already'`. Il prossimo BUILD sceglie un
-  eleggibile (§1) rispettando il DAG: **`captcha-port`** (PUB-221/222 — porta `CaptchaVerifier` + fake +
-  adattatore Turnstile server-only inerte; e' l'**ultimo prerequisito** di `waitlist-endpoint`, che ha
-  gia' `waitlist-store`), `seo-jsonld` (PUB-331 → JSON-LD via `serializeJsonLdSafe`), i quattro
-  `seo-robots`/`seo-sitemap`/`seo-metadata`/`privacy-page` (da `marketing-layout`), `blog-pipeline`
-  (PUB-401) — indipendenti tra loro. `waitlist-endpoint` (PUB-231) resta bloccato finche' non e' pronto
-  `captcha-port`; `waitlist-form` (PUB-241) finche' non e' pronto `waitlist-endpoint`.
+- **Nessuno in corso** — `captcha-port` (08) chiuso e mergiato. La porta `CaptchaVerifier`
+  (`src/domain/captcha/captcha-port.ts`, pura + `makeFakeCaptchaVerifier`) e l'adattatore Turnstile
+  (`src/data/captcha/turnstile.ts`, `import 'server-only'`, `isTurnstileConfigured` + `createTurnstileVerifier`
+  su config iniettabile, INERTE senza env — no 500) sono pronti: l'anti-spam captcha e' dietro un'astrazione
+  che l'endpoint consuma senza chiavi reali. Il prossimo BUILD sceglie un eleggibile (§1) rispettando il DAG:
+  **`waitlist-endpoint`** (PUB-231/232 — ORA SBLOCCATO: ha `waitlist-store` + `captcha-port`; endpoint POST
+  con zod + honeypot/Turnstile/same-origin + `insertLead`), `seo-jsonld` (PUB-331 → JSON-LD via
+  `serializeJsonLdSafe`), i quattro `seo-robots`/`seo-sitemap`/`seo-metadata`/`privacy-page` (da
+  `marketing-layout`), `blog-pipeline` (PUB-401) — indipendenti tra loro. `waitlist-form` (PUB-241) resta
+  bloccato finche' non e' pronto `waitlist-endpoint`.
 - **Metodo**: UN macrotask per sessione via **dynamic workflow command-free** (builder solo Read/Write/
   Edit; oracoli — checkpoint 4/4 + mutazione — in **foreground** dall'orchestratore, unico giudice del
   verde). Vedi 00-INDEX §Granularità e la memoria `dynamic-workflow-build-method`.
@@ -73,10 +74,10 @@ pronto `captcha-port` (ha gia' `waitlist-store`); `waitlist-form` (PUB-241) finc
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `trueline/build/waitlist-store` (atomico `7db344c`, **mergiato** in `main`) |
-| Ultimo commit | `70418f2` (merge `--no-ff` waitlist-store in main) + push `4bb5035..70418f2` |
-| Stato merge su `main` | **done** (checkpoint 4/4 verde → verifica locale → merge → push, deploy coupled; nessuna migrazione — schema gia' applicato in PUB-201) |
-| Deploy-coupling | **coupled** (push su `main` = deploy su ulaba.net) → verifica locale FATTA prima del merge (vitest full **1948/1949**, unico rosso = TS2589 scaffold pre-esistente invariante; next build exit 0; e2e non impattato — modulo `src/data` puro, nessuna rotta/middleware/UI). Nessuna migrazione in questo macrotask |
+| Branch di lavoro | `trueline/build/captcha-port` (atomico `810af55`, **mergiato** in `main`) |
+| Ultimo commit | `5933c12` (merge `--no-ff` captcha-port in main) + push `77cfed3..5933c12` |
+| Stato merge su `main` | **done** (checkpoint 4/4 verde → verifica locale → merge → push, deploy coupled; nessuna migrazione) |
+| Deploy-coupling | **coupled** (push su `main` = deploy su ulaba.net) → verifica locale FATTA prima del merge (vitest full **1958/1959**, unico rosso = TS2589 scaffold pre-esistente invariante; next build exit 0; e2e non impattato — porta pura `src/domain` + adattatore `src/data` server-only, nessuna rotta/middleware/UI). Nessuna migrazione in questo macrotask |
 
 ## 4. Baseline & budget
 
@@ -86,7 +87,10 @@ pronto `captcha-port` (ha gia' `waitlist-store`); `waitlist-form` (PUB-241) finc
   HIGH pre-esistenti baselinati (`site_publications`, `site_domains`) + questo 1 nuovo MEDIUM. **Baseline
   security NON modificata**: la voce non va baselinata perché è già sotto la soglia di gate (diversamente
   dalle 2 HIGH, baselinate proprio perché altrimenti bloccherebbero). Le nuove dep del blog passeranno
-  OSV al loro BUILD.
+  OSV al loro BUILD. In `captcha-port` C2 = `gitleaks:3 osv:4 semgrep:0 rls:3`, **0 nuovi ≥HIGH**: il
+  `TURNSTILE_SECRET_KEY` è letto **solo da env** (`source` iniettabile nei test), MAI nel sorgente, e
+  `import 'server-only'` tiene l'adattatore fuori dal bundle client (gitleaks non vede segreti; nel verde
+  nessuna chiave reale, solo un fake + `fetchImpl` iniettato).
 - **Baseline d'igiene**: `.trueline/hygiene-baseline.json` — ratchet additivo **237→244** in `host-classify`
   (7 cloni PRE-ESISTENTI su main: 5 doc bootstrap p6a + 2 file P5, provati fuori dal diff del macrotask),
   poi **244→245** in `marketing-home` (1 clone PRE-ESISTENTE `MarketingHeader`↔`MarketingFooter` fp
@@ -100,10 +104,49 @@ pronto `captcha-port` (ha gia' `waitlist-store`); `waitlist-form` (PUB-241) finc
   clone-free (gemello di `SiteDomainWriteStore`, già in baseline) e il `.test.ts` e' escluso dal corpus →
   **0 nuovi cloni, nessun ratchet** (baseline resta a 245). C2 su `waitlist-store` = `gitleaks:3 osv:4
   semgrep:0 rls:3`, **0 nuovi ≥HIGH** (writer server puro, nessun segreto, nessuna nuova policy RLS: il
-  modulo scrive via service_role, non tocca la postura di `waitlist_leads`).
+  modulo scrive via service_role, non tocca la postura di `waitlist_leads`). In `captcha-port` C1 conferma
+  `dup:246` con **blockers vuoti** (C1 green): la porta è gemella di `domain-port` e l'adattatore gemello
+  di `vercel.ts` (entrambi i pattern già in baseline), i `.test.ts` esclusi dal corpus → **0 nuovi cloni,
+  nessun ratchet** (baseline resta a 245).
 - **Budget**: un macrotask alla volta; loop di fix con tetto in `references/oracles/thresholds.md`.
 
 ## 5. Esiti dell'ultima sessione (framing onesto)
+
+**BUILD `captcha-port` (PUB-221/222) — CHIUSO+MERGIATO (`5933c12`, atomico `810af55`).** Mette l'anti-spam
+captcha dietro una **porta** pura + un **adattatore** server-only inerte, gemello del pattern
+`domain-port` + `vercel.ts`. PUB-221 `src/domain/captcha/captcha-port.ts`: interfaccia `CaptchaVerifier`
+con `verify(token: string): Promise<{ ok: boolean }>` (dominio PURO — nessun I/O/env/rete/segreto) +
+`makeFakeCaptchaVerifier({ ok })` iniettabile (il fake usa una fn 0-aria, assegnabile a `verify(token)`,
+così **nessun arg inutilizzato** da lint — lezione `waitlist-store`). PUB-222 `src/data/captcha/turnstile.ts`
+(`import 'server-only'`): `isTurnstileConfigured(source?)` è `true` **solo** con `TURNSTILE_SECRET_KEY`
+valorizzato (whitespace=false, semantica di `loadEnv`) + `createTurnstileVerifier({ secret, fetchImpl? })`
+che POSTa secret+token all'endpoint **FISSO** Cloudflare siteverify (anti-SSRF) via `fetchImpl` iniettabile
+e mappa `success`→`{ ok }`. **INERTE dichiarato** (P6A-D6/D9): secret assente ⇒ nessuna rete e `{ ok: false }`;
+qualunque errore di rete/parse ⇒ `{ ok: false }` **senza lanciare** (nessun 500) — come le CTA Stripe inerti.
+Nessuna chiave reale nel verde (fake + `fetchImpl`). Target test `tests/captcha-port.test.ts` (AC-221-1/2 +
+guard di purezza) e `tests/captcha-turnstile.test.ts` (AC-222-1/2/3 + contro-prova configured=true +
+inerzia secret-vuoto senza rete + guard `import 'server-only'`/no-secret-hardcoded). Checkpoint **4/4**:
+C1 green (`dead-code:0 dup:246 cycle:0`, **0 nuovi cloni**, nessun ratchet), C2 green (`gitleaks:3 osv:4
+semgrep:0 rls:3`, **0 nuovi ≥HIGH**), C3 **1958/1959** (unico rosso = TS2589 scaffold pre-esistente in
+`e2e/effects.spec.ts`, invariato; lint pulito; +9 test nuovi verdi), C4 target **10/10**. Mutazione **4/4**
+(M1 `isTurnstileConfigured`→`true`⇒AC-222-1 rosso, M2 `verify` ri-lancia sull'errore di rete⇒AC-222-3 rosso,
+M3 ignora `success`⇒AC-222-2 rosso, M4 il fake hardcoda `ok:true`⇒AC-221-2 rosso; ciascuno red + restore
+sha256 bit-identico, driver `.trueline/pub-captcha-mutants.mjs` per-mutante src+test). tsc nessun errore
+nuovo; `next build` exit 0; e2e non impattato; **nessuna migrazione**.
+
+- **Lezioni (carry-over captcha-port):** (1) **fn 0-aria per il fake** — un `verify()` senza parametri è
+  assegnabile a `verify(token: string)` (come i fake di `domain-port`) ⇒ niente arg inutilizzato, evitata a
+  monte la lint-regression `no-unused-vars` che in `waitlist-store` era emersa solo dal C3 (il config del
+  repo non onora il prefisso `_`). (2) **inerzia a DUE porte** — l'adattatore è inerte sia per
+  `isTurnstileConfigured` (env assente ⇒ l'endpoint degrada, non 500) sia dentro `verify` (secret vuoto ⇒
+  short-circuit senza rete): un test-spy prova che con secret vuoto `fetchImpl` **non** è chiamato. (3) **AC-222-3
+  copre due guasti** — `{ success: false }` **e** un `fetchImpl` che lancia: entrambi ⇒ `{ ok: false }`, il
+  secondo esercita il `try/catch` (nessuna propagazione). (4) **mutazione multi-file** — il driver fa il
+  backup per-file e instrada ogni mutante al suo target_test (adattatore→`captcha-turnstile`, porta→
+  `captcha-port`), find SINGLE-LINE, restore sha256-verificato (MAI git checkout — file uncommitted).
+  (5) Ri-confermato il gotcha `.snap`: `vitest run` full ha riscritto
+  `onboarding-generation-regression.test.ts.snap` col solo EOL → ripristinato (`git checkout`), mai
+  committato (staged solo i 4 file del macrotask).
 
 **BUILD `waitlist-store` (PUB-211) — CHIUSO+MERGIATO (`70418f2`, atomico `7db344c`).** Introduce
 `src/data/waitlist.ts` (`import 'server-only'`, gemello di `SiteDomainWriteStore` DOM-222): `insertLead({
@@ -348,15 +391,28 @@ ripristino bit-identico sha256). `next build` ok; e2e non impattato (export non 
 
 ## 6. Prossimi passi
 
-- **7/22 macrotask done** (`host-classify`, `host-guard`, `marketing-i18n`, `marketing-layout`,
-  `marketing-home`, `waitlist-schema`, `waitlist-store`). **Prossima sessione = BUILD di un eleggibile**
-  (§1): **`captcha-port`** (PUB-221/222 — porta `CaptchaVerifier` + fake + adattatore Turnstile
-  server-only env-gated inerte; e' l'**ultimo prerequisito** di `waitlist-endpoint`, che ha gia'
-  `waitlist-store`), `seo-jsonld` (PUB-331 — JSON-LD Organization+WebSite via `serializeJsonLdSafe`,
-  anti-XSS), `seo-robots`/`seo-sitemap`/`seo-metadata`/`privacy-page` (PUB-301/311/321/341 — da
-  `marketing-layout`), `blog-pipeline` (PUB-401, nuove dep markdown/rehype → registrare sotto OSV).
-  `waitlist-endpoint` (PUB-231) resta bloccato finche' non e' pronto `captcha-port`; `waitlist-form`
-  (PUB-241) finche' non e' pronto `waitlist-endpoint`.
+- **8/22 macrotask done** (`host-classify`, `host-guard`, `marketing-i18n`, `marketing-layout`,
+  `marketing-home`, `waitlist-schema`, `waitlist-store`, `captcha-port`). **Prossima sessione = BUILD di un
+  eleggibile** (§1): **`waitlist-endpoint`** (PUB-231/232 — ORA SBLOCCATO: ha `waitlist-store` +
+  `captcha-port`; endpoint POST che valida la forma email con zod, applica anti-spam
+  honeypot+Turnstile+same-origin via `_shared/request-guard` + `isTurnstileConfigured`/`createTurnstileVerifier`,
+  e scrive via `insertLead` — degrada a "captcha non disponibile" se `isTurnstileConfigured` è false, mai un
+  500), `seo-jsonld` (PUB-331 — JSON-LD Organization+WebSite via `serializeJsonLdSafe`, anti-XSS),
+  `seo-robots`/`seo-sitemap`/`seo-metadata`/`privacy-page` (PUB-301/311/321/341 — da `marketing-layout`),
+  `blog-pipeline` (PUB-401, nuove dep markdown/rehype → registrare sotto OSV). `waitlist-form` (PUB-241)
+  resta bloccato finche' non e' pronto `waitlist-endpoint`; `cutover` per ultimo.
+- **Copertura dichiarata captcha-port (§6):** target_test `tests/captcha-port.test.ts` copre AC-221-1
+  (fake `{ ok: true }` → `verify` risolve `{ ok: true }`), AC-221-2 (fake `{ ok: false }` → `{ ok: false }`)
+  + un guard di purezza (nessun import di rete/env/adattatore); `tests/captcha-turnstile.test.ts` copre
+  AC-222-1 (`isTurnstileConfigured` false senza secret / con whitespace) + contro-prova true con secret,
+  AC-222-2 (`fetchImpl` `{ success: true }` → `{ ok: true }`), AC-222-3 (`{ success: false }` **e**
+  `fetchImpl` che lancia → `{ ok: false }` senza propagare) + inerzia secret-vuoto (nessuna chiamata di rete)
+  + guard `import 'server-only'`/no-secret-hardcoded. Mutazione 4/4 (§5). **NON coperto (dichiarato):** la
+  **decisione dell'endpoint** quando `isTurnstileConfigured` è false (degrado a "non disponibile") è di
+  `waitlist-endpoint` (PUB-231); il **widget client** e la site key pubblica sono di `waitlist-form`
+  (PUB-241); il **wiring reale** dell'adattatore su `process.env` è provato solo strutturalmente (default
+  `fetch`/`process.env`) — nel verde nessuna chiamata reale a Cloudflare (fake + `fetchImpl`), l'inerzia
+  senza env resta dichiarata come le CTA Stripe.
 - **Copertura dichiarata waitlist-store (§6):** target_test `tests/waitlist-store.test.ts` copre AC-211-1
   (`insertLead` con email spazi/maiuscole → `normalized_email='mario@bar.it'` trim+lowercase, `email`
   cased preservata, `source`→null, esito `inserted`), AC-211-2 (store che solleva `23505` → `already`
