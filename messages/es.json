@@ -377,5 +377,38 @@
       "privacy": "Privacidad",
       "blog": "Blog"
     }
+  },
+  "privacy": {
+    "title": "Aviso de privacidad — lista de espera",
+    "intro": "Este aviso explica cómo Ulaba trata los datos personales recopilados a través de la lista de espera para el acceso anticipado al servicio, conforme al Reglamento (UE) 2016/679 (RGPD).",
+    "controller": {
+      "heading": "Responsable del tratamiento",
+      "body": "El responsable del tratamiento de tus datos es Ulaba. Para cualquier cuestión relacionada con el tratamiento, puedes escribirnos a privacy@ulaba.net."
+    },
+    "purpose": {
+      "heading": "Finalidad del tratamiento",
+      "body": "Recopilamos tu correo electrónico con el único fin de gestionar la lista de espera y avisarte cuando abramos el acceso anticipado. No realizamos ningún tipo de perfilado ni cedemos tus datos a terceros con fines publicitarios."
+    },
+    "lawfulBasis": {
+      "heading": "Base jurídica",
+      "body": "La base jurídica del tratamiento es tu consentimiento, conforme al art. 6.1.a) del RGPD, que otorgas al marcar la casilla correspondiente en el formulario de inscripción."
+    },
+    "dataCollected": {
+      "heading": "Datos que recopilamos",
+      "body": "Recopilamos únicamente tu correo electrónico y tu preferencia de idioma. No almacenamos tu dirección IP, no usamos cookies de rastreo ni recopilamos ningún otro dato personal."
+    },
+    "retention": {
+      "heading": "Conservación de los datos",
+      "body": "Los datos se almacenan en infraestructura de Supabase, alojada en una región de la Unión Europea y gestionada por Ulaba. Los conservamos hasta el lanzamiento del servicio o hasta que retires tu consentimiento o te des de baja, momento en el que se eliminan."
+    },
+    "noDoubleOptIn": {
+      "heading": "Inscripción en un solo paso",
+      "body": "La inscripción se realiza en un solo paso: no enviamos ningún correo de confirmación ni aplicamos doble opt-in."
+    },
+    "rights": {
+      "heading": "Tus derechos",
+      "body": "Tienes derecho a acceder a tus datos, a solicitar su rectificación o supresión y a retirar tu consentimiento en cualquier momento, con un clic o escribiéndonos. Puedes darte de baja cuando quieras.",
+      "contact": "Para ejercer tus derechos o retirar tu consentimiento, escribe a privacy@ulaba.net."
+    }
   }
 }
