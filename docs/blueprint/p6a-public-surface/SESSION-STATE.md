@@ -10,8 +10,8 @@
 |---|---|
 | **Progetto** | Ulaba/Belora — P6a (superficie pubblica) |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase Cloud EU) |
-| **Ultimo aggiornamento** | 2026-09-04 (BUILD `seo-jsonld` — checkpoint 4/4 verde + mutazione 3/3, MERGIATO `744b0ae`) |
-| **Sessione corrente (BUILD `seo-jsonld`, PUB-331)** | **CHIUSO+MERGIATO** (`744b0ae`, atomico `853aa09`, deploy coupled; nessuna migrazione). **14/22 macrotask done.** |
+| **Ultimo aggiornamento** | 2026-09-05 (BUILD `privacy-page` — checkpoint 4/4 verde + mutazione 3/3, MERGIATO `a329b41`) |
+| **Sessione corrente (BUILD `privacy-page`, PUB-341)** | **CHIUSO+MERGIATO** (`a329b41`, atomico `65aa7a7`, deploy coupled; nessuna migrazione). **15/22 macrotask done.** |
 
 ---
 
@@ -35,7 +35,7 @@
 | 12 | `seo-sitemap` (PUB-311) | **done** | 4/4 ✅ (`52fb2c5`) | `marketing-layout` |
 | 13 | `seo-metadata` (PUB-321) | **done** | 4/4 ✅ (`16318d7`, branch) | `marketing-layout` |
 | 14 | `seo-jsonld` (PUB-331) | **done** | 4/4 ✅ (`853aa09`, merge `744b0ae`) | `marketing-home` |
-| 15 | `privacy-page` (PUB-341) | **todo** | — | `marketing-layout` |
+| 15 | `privacy-page` (PUB-341) | **done** | 4/4 ✅ (`65aa7a7`, merge `a329b41`) | `marketing-layout` |
 | 16 | `blog-pipeline` (PUB-401) | **todo** | — | — |
 | 17 | `blog-content` (PUB-411) | **todo** | — | `blog-pipeline` |
 | 18 | `blog-list` (PUB-421) | **todo** | — | `blog-content`, `marketing-layout` |
@@ -44,8 +44,17 @@
 | 21 | `blog-seed` (PUB-451) | **todo** | — | `blog-content` |
 | 22 | `cutover` (PUB-501) | **todo** | — | (tutte le superfici pubbliche) |
 
-**Eleggibili ora (dipendenze verdi):** `privacy-page` (PUB-341 — da `marketing-layout`),
-`blog-pipeline` (PUB-401 — nuove dep markdown/rehype → registrare sotto OSV). `cutover` per ultimo.
+**Eleggibili ora (dipendenze verdi):** `blog-pipeline` (PUB-401 — nuove dep markdown/rehype →
+registrare sotto OSV). `cutover` per ultimo. **`privacy-page` (PUB-341) è CHIUSO+MERGIATO**
+(`a329b41`, atomico `65aa7a7`): pagina pubblica `/{locale}/privacy` sotto il chrome marketing
+(PUB-131) + namespace i18n `privacy` (17 path-foglia, parità it↔es, ES localizzato non calco).
+Client component `src/ui/marketing/PrivacyNotice.tsx` (`useTranslations('privacy')`, 7 sezioni con
+`data-testid='privacy-<sezione>'`, output SOLO testo JSX — A05:2025); server wrapper sottile
+`(marketing)/privacy/page.tsx` che NON ridefinisce canonical/OG (riusa il `metadataBase` del layout
+marketing, PUB-321). Contenuto onesto v1 (P6A-D7): consenso come base giuridica, dati = email +
+locale, NESSUN IP, conservazione Supabase EU, niente double opt-in. È la destinazione del link di
+consenso del form (PUB-242). Nessuna dep nuova, nessuna migrazione. Sblocca (lato layout) nulla di
+nuovo: i blog restano su `blog-pipeline`.
 **`seo-jsonld` (PUB-331) è CHIUSO+MERGIATO** (`744b0ae`): due `<script type="application/ld+json">`
 (`Organization` + `WebSite`) sulla home marketing, montati come **figlio testuale** con
 `serializeJsonLdSafe` RIUSATO da `@/domain/generation/jsonld` (mai `dangerouslySetInnerHTML`); builder
@@ -99,13 +108,24 @@ CHIUSO** (`52fb2c5`): `src/app/sitemap.ts` (MetadataRoute.Sitemap) landing — h
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `trueline/build/seo-jsonld` (atomico `853aa09`, **mergiato** in `main` e cancellato) |
-| Ultimo commit | `744b0ae` (merge `--no-ff` seo-jsonld in main) + docs session-end (in corso) |
-| Stato merge su `main` | **done** (via umana esplicita → merge `744b0ae` → push, deploy coupled; nessuna migrazione) |
-| Deploy-coupling | **coupled** (push su `main` = deploy su ulaba.net) → verifica locale FATTA prima del merge (vitest full **1996 passati / 1 rosso** = TS2589 scaffold pre-esistente invariante `scaffold.test.ts`→`e2e/effects.spec.ts`, **+5 test nuovi** `jsonld-organization.test.ts`; tsc nessun errore nuovo; eslint 0 sui 3 file toccati; next build exit 0 con `/[locale]` **ƒ** già dinamica, `/sitemap.xml` ○ e `/robots.txt` ƒ immutati, nessuna nuova rotta; e2e non impattato — due `<script>` additivi sulla home, corpo `MarketingHome` invariato, nessun `goto` alla home marketing). Nessuna migrazione. Push OK (`ba8aae3..744b0ae`) |
+| Branch di lavoro | `trueline/build/privacy-page` (atomico `65aa7a7`, **mergiato** in `main`; branch locale ancora presente) |
+| Ultimo commit | `a329b41` (merge `--no-ff` privacy-page in main) + docs session-end (in corso) |
+| Stato merge su `main` | **done** (via umana esplicita → merge `a329b41` → push, deploy coupled; nessuna migrazione) |
+| Deploy-coupling | **coupled** (push su `main` = deploy su ulaba.net) → verifica locale FATTA prima del merge (vitest full **1999 passati / 1 rosso** = TS2589 scaffold pre-esistente invariante `scaffold.test.ts`→`e2e/effects.spec.ts`, **+3 test nuovi** `privacy-page.test.tsx`; tsc nessun errore nuovo; eslint 0 sui 3 file di codice; next build exit 0 con `/[locale]/privacy` **ƒ** come la home, nessun'altra rotta cambiata; e2e non impattato — rotta additiva, nessuno spec e2e referenzia privacy). Nessuna migrazione. Push OK (`ad1b207..a329b41`) |
 
 ## 4. Baseline & budget
 
+- **`privacy-page` (PUB-341):** C1 green con **`dead-code:0 dup:248 cycle:0` e blockers VUOTI** (0 cloni
+  nuovi): il componente `PrivacyNotice.tsx` è ripetitivo per struttura (7 sezioni simili) ma **sotto la
+  soglia jscpd** (i blocchi `<section>` variano per `data-testid`/`id`/chiave i18n; nessuna sequenza
+  verbatim ≥ `min_tokens`), il wrapper `page.tsx` è minimale, i JSON i18n e il `.test.tsx` sono fuori dal
+  corpus jscpd (o additivi) → **nessun ratchet**, baseline resta a **247** fingerprint. C2 green
+  (`gitleaks:3 osv:4 semgrep:0 rls:3`, **0 nuovi ≥HIGH**): pagina statica solo-testo, copy dai cataloghi
+  i18n (nessun `innerHTML`, escaping React — A05:2025), l'email di contatto `privacy@ulaba.net` è dato
+  pubblico (non un segreto → gitleaks invariato), **nessuna dep nuova** (osv invariato), nessuna tabella/
+  policy RLS toccata (rls invariato). tsc: nessun errore nuovo (solo il TS2589 invariante di
+  `e2e/effects.spec.ts`); i tipi `itMessages.privacy[key]` risolvono via `messages.d.ts` (`typeof it.json`),
+  che ora include il namespace `privacy`.
 - **`seo-jsonld` (PUB-331):** C1 green con **`dup:248` e blockers VUOTI** (0 cloni nuovi): il nuovo
   modulo `src/domain/marketing/organization-jsonld.ts` è clone-free (builder minimi, nessun preambolo
   strutturale condiviso), le ~27 righe aggiunte a `(marketing)/page.tsx` non introducono cloni e il
@@ -208,7 +228,59 @@ CHIUSO** (`52fb2c5`): `src/app/sitemap.ts` (MetadataRoute.Sitemap) landing — h
 
 ## 5. Esiti dell'ultima sessione (framing onesto)
 
-**BUILD `seo-jsonld` (PUB-331) — CHIUSO+MERGIATO (`744b0ae`, atomico `853aa09`).** Aggiunge alla home
+**BUILD `privacy-page` (PUB-341) — CHIUSO+MERGIATO (`a329b41`, atomico `65aa7a7`).** Aggiunge la
+pagina pubblica `/{locale}/privacy` (route group `(marketing)`, chrome PUB-131) e il namespace i18n
+`privacy` (top-level in `messages/it.json`+`es.json`, **17 path-foglia**, parità it↔es). Il copy
+(bilingue) è stato prodotto con un **dynamic workflow di 2 agenti** (draft → review avversariale su
+parità chiavi + accuratezza legale P6A-D7 + localizzazione ES non-calco) e inserito nei JSON via
+merge-script `JSON.parse`/`stringify` **CRLF-preserving** (diff = sole aggiunte, righe esistenti
+byte-identiche). Componente client `src/ui/marketing/PrivacyNotice.tsx` (`useTranslations('privacy')`)
+rende 7 sezioni — controller/purpose/lawfulBasis/dataCollected/retention/noDoubleOptIn/rights — ognuna
+in un `<section data-testid="privacy-<sezione>">` con h2 + corpo; `rights` rende anche il contatto
+(`privacy@ulaba.net`). Output **SOLO testo JSX** (escaping React, A05:2025), nessun
+`innerHTML`/`dangerouslySetInnerHTML`, nessun dato utente (contenuto statico), nessuna auth/query.
+Server wrapper `(marketing)/privacy/page.tsx` sottile (`export default function PrivacyPage(): return
+<PrivacyNotice/>`), pattern MarketingHomePage→MarketingHome; **NON ridefinisce** canonical/OG (DoD
+PUB-341: riusa il `metadataBase` del layout marketing PUB-321, non dichiara metadati propri).
+Contenuto onesto v1 (P6A-D7): base giuridica = consenso (art. 6.1.a GDPR), dati = **email + locale**,
+**NESSUN IP**, conservazione su **Supabase EU** di proprietà, **niente double opt-in**, diritti
+dell'interessato + contatto. È la destinazione del link di consenso del form (PUB-242). Target test
+`tests/privacy-page.test.tsx` (jsdom, `NextIntlClientProvider` sui cataloghi REALI it/es, `flattenKeys`
+riusato da `@/i18n/keys`): AC-341-1 (it: controller/purpose/rights esistono, heading == catalogo it,
+corpo reso e non vuoto), AC-341-2 (es: le stesse sezioni, heading == catalogo es), AC-341-3 (parità
+path-foglia `privacy` it↔es via `toEqual` degli array ordinati). Checkpoint **4/4**: C1 green
+(`dead-code:0 dup:248 cycle:0`, **0 nuovi**, baseline 247), C2 green (`gitleaks:3 osv:4 semgrep:0
+rls:3`, **0 nuovi ≥HIGH**), C3 **1999 passati / 1 rosso** (il rosso è `scaffold.test.ts`→typecheck,
+SOLO per il TS2589 invariante di `e2e/effects.spec.ts`; **+3 test nuovi verdi**), C4 target **3/3**.
+Mutazione **3/3** (M1 rinomina `data-testid="privacy-rights"` ⇒ AC-341-1 rosso; M2 chiave orfana solo
+in `it.json` ⇒ AC-341-3 rosso per parità rotta; M3 rinomina il namespace `privacy` in `es.json` ⇒
+AC-341-2 rosso; ciascuno red + restore sha256 bit-identico, driver `.trueline/pub-privacy-mutants.mjs`,
+multi-file). tsc nessun errore nuovo; eslint 0 sui 3 file di codice; `next build` exit 0
+(`/[locale]/privacy` **ƒ** come la home — il layout radice legge cookie); **e2e non impattato** (nessuno
+spec `e2e/*` referenzia privacy, rotta puramente additiva disgiunta dalla copertura e2e); **nessuna
+migrazione**. **Merge `a329b41` + push su main ESEGUITI su via umana esplicita (deploy coupled su
+ulaba.net).**
+
+- **Lezioni (carry-over privacy-page):** (1) **il target_test qui è `.tsx`, quindi JSX è ammesso** (a
+  differenza del `.ts` di seo-jsonld che rifiutava JSX): render diretto `<PrivacyNotice/>` dentro
+  `NextIntlClientProvider`, nessun `createElement` a mano. (2) **inserire un namespace in un JSON CRLF
+  senza churn**: `JSON.parse` → set del nuovo key → `JSON.stringify(obj,null,2)` → `\n`→`\r\n` → append
+  `\r\n`; git rende il diff come **sole aggiunte** (la riga di chiusura di `landing` `  }` è matchata
+  con la nuova chiusura del namespace `privacy`, e la virgola/blocco nuovi sono additivi) — nessuna riga
+  esistente riscritta. (3) **agganciare gli AC ai cataloghi reali uccide i mutanti**: AC-341-2 asserisce
+  `heading.textContent === esMessages.privacy[key].heading`; se il namespace es sparisce (M3) il test
+  fallisce sia perché `esMessages.privacy` è `undefined` (TypeError) sia perché il render non ha il
+  testo atteso — non basta "testo non vuoto" (il fallback next-intl renderebbe il key-path, non vuoto).
+  (4) **DoD > nota storica**: la §6 di seo-metadata ipotizzava "/privacy dichiarerà il PROPRIO
+  canonical", ma il DoD di PUB-341 dice esplicitamente di NON ridefinire i metadati qui (lo scope di
+  seo-metadata era solo la home) → build-to-spec, niente `generateMetadata` sulla privacy (il canonical
+  per-pagina di /privacy resta un'eventuale evoluzione futura, fuori da questo macrotask). (5)
+  **ri-confermato il gotcha `.snap`**: il `vitest run` full ha riscritto
+  `onboarding-generation-regression.test.ts.snap` col solo EOL → ripristinato con `git checkout`, staged
+  solo i 5 file del macrotask. (6) **la mutazione multi-file** (un file diverso per mutante) funziona con
+  backup/restore per-mutante dentro il ciclo (buffer + sha256 per file), non un unico backup globale.
+
+
 marketing due blocchi JSON-LD di schema.org — `Organization` e `WebSite` — con **builder PURI**
 (`src/domain/marketing/organization-jsonld.ts`: `buildOrganizationJsonLd(baseUrl, name)` /
 `buildWebSiteJsonLd(baseUrl, name)`, `@context`/`@type` costanti, `name` e `url` dagli ARGOMENTI, nessun
@@ -775,20 +847,37 @@ ripristino bit-identico sha256). `next build` ok; e2e non impattato (export non 
 
 ## 6. Prossimi passi
 
-- **14/22 macrotask done** (`host-classify`, `host-guard`, `marketing-i18n`, `marketing-layout`,
+- **15/22 macrotask done** (`host-classify`, `host-guard`, `marketing-i18n`, `marketing-layout`,
   `marketing-home`, `waitlist-schema`, `waitlist-store`, `captcha-port`, `waitlist-endpoint`,
-  `waitlist-form`, `seo-robots`, `seo-sitemap`, `seo-metadata`, `seo-jsonld` — tutti mergiati su main;
-  `seo-jsonld` = `744b0ae`). **Prossima sessione = BUILD di un eleggibile** (§1):
-  `privacy-page` (PUB-341 — da `marketing-layout`), `blog-pipeline` (PUB-401, nuove dep
-  markdown/rehype → registrare sotto OSV). `cutover` per ultimo. **`privacy-page` (PUB-341)** è un candidato
-  naturale ora (la home ha già canonical/OG/hreflang HTML-level + JSON-LD; /privacy dichiarerà il PROPRIO
-  canonical); **`blog-post` (PUB-431)** ha ora ENTRAMBE le dipendenze metadati verdi (`seo-metadata` +
-  `seo-jsonld`), ma attende ancora `blog-content` (→ `blog-pipeline`); `blog-sitemap` (PUB-441) è sbloccato
-  sul lato SEO ma attende `blog-content`. Il canale
+  `waitlist-form`, `seo-robots`, `seo-sitemap`, `seo-metadata`, `seo-jsonld`, `privacy-page` — tutti
+  mergiati su main; `privacy-page` = `a329b41`). **Prossima sessione = BUILD di un eleggibile** (§1):
+  `blog-pipeline` (PUB-401, nuove dep markdown/rehype → registrare sotto OSV). `cutover` per ultimo.
+  **`blog-pipeline` (PUB-401)** è ora il candidato naturale: nessuna dipendenza, apre la catena blog
+  (→ `blog-content` → `blog-list`/`blog-post`/`blog-sitemap`/`blog-seed`); introduce le prime dep nuove
+  del workstream (unified/rehype-sanitize/gray-matter) → **registrarle sotto OSV (C2)** e provare la
+  pipeline pura. **`blog-post` (PUB-431)** ha ENTRAMBE le dipendenze metadati verdi (`seo-metadata` +
+  `seo-jsonld`) ma attende `blog-content` (→ `blog-pipeline`); `blog-sitemap` (PUB-441) è sbloccato sul
+  lato SEO ma attende `blog-content`. Superfici pubbliche home-side ora complete (chrome + home + i quattro
+  SEO + privacy); resta solo la catena blog e il cutover. Il canale
   waitlist resta **completo end-to-end**: resta un **gate visivo umano** opportuno sulla landing (la home È
   la demo) e, al go-live, la site key pubblica `NEXT_PUBLIC_TURNSTILE_SITE_KEY` + il secret
   `TURNSTILE_SECRET_KEY` su Vercel (finché assenti: form `unavailable` + endpoint che degrada, inerti
   dichiarati, nessun 500).
+- **Copertura dichiarata privacy-page (§6):** target_test `tests/privacy-page.test.tsx` copre AC-341-1
+  (la pagina resa in it: i contenitori `privacy-controller`/`privacy-purpose`/`privacy-rights` esistono,
+  l'h2 di ciascuno == `itMessages.privacy[key].heading`, il corpo è reso e non vuoto), AC-341-2 (resa in
+  es: le stesse tre sezioni, h2 == `esMessages.privacy[key].heading` → aggancio al catalogo ES reale, non
+  solo "non vuoto"), AC-341-3 (parità: `flattenKeys(itMessages.privacy)` vs `flattenKeys(esMessages.privacy)`,
+  array ordinati uguali). Mutazione 3/3 (§5). **NON coperto (dichiarato):** il **render SSR reale** della
+  rotta `/{locale}/privacy` da parte di Next è provato indirettamente via `next build` (compila,
+  `/[locale]/privacy` ƒ) e via il componente client in jsdom, non da un GET reale; le sezioni
+  `lawfulBasis`/`dataCollected`/`retention`/`noDoubleOptIn`/`title`/`intro` sono rese e in parità (parte
+  di AC-341-3) ma non hanno asserzioni di render dedicate oltre alle 3 richieste dagli AC; la **qualità/
+  correttezza legale** del copy IT/ES oltre la fedeltà ai fatti P6A-D7 (rivista dall'agente avversariale,
+  non oracolabile) resta cura umana; il **canonical/OG per-pagina** di /privacy è deliberatamente assente
+  (DoD PUB-341 → riusa il `metadataBase` del layout, nessun metadato proprio) — un'eventuale canonical
+  dedicata è fuori scope; l'**estetica/responsive** della pagina è cura del polish, non gate qui; nessuna
+  tabella/RLS/auth toccata (pagina statica pubblica).
 - **Copertura dichiarata seo-jsonld (§6):** target_test `tests/jsonld-organization.test.ts` copre AC-331-1
   (la home resa espone ≥2 `<script type="application/ld+json">`, uno `@type` `Organization` e uno
   `WebSite`), AC-331-2 (con un nome brand ostile contenente `</script>`: nessuno dei due testi contiene la
