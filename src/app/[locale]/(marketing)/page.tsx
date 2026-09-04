@@ -1,6 +1,12 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
+import { getBrandName } from '@/config/brand';
 import { getLandingBaseUrl } from '@/config/env';
+import { serializeJsonLdSafe } from '@/domain/generation/jsonld';
+import {
+  buildOrganizationJsonLd,
+  buildWebSiteJsonLd,
+} from '@/domain/marketing/organization-jsonld';
 import { MarketingHome } from '@/ui/marketing/MarketingHome';
 
 type MarketingHomePageProps = {
@@ -74,6 +80,25 @@ export async function generateMetadata({ params }: MarketingHomePageProps): Prom
 // niente plumbing di locale qui. Sostituisce il vecchio placeholder [locale]/page.tsx (spostato nel
 // group perché la home È una rotta marketing; un page.tsx fuori dal group risolverebbe alla stessa
 // rotta /{locale} e romperebbe il build). Solo contenuto statico: nessun dato, nessuna auth.
+// PUB-331 (macrotask seo-jsonld, p6a-public-surface) — Il JSON-LD `Organization` + `WebSite` della
+// LANDING, montato SULLA HOME. La base URL nasce da getLandingBaseUrl() (config pubblica
+// NEXT_PUBLIC_LANDING_URL, MAI l'Host della richiesta — A05:2025), il nome brand da getBrandName();
+// entrambi passati ai builder PURI (@/domain/marketing/organization-jsonld). La stringa e' serializzata
+// con serializeJsonLdSafe RIUSATO (@/domain/generation/jsonld): `<` `>` `&` U+2028/U+2029 → escape
+// unicode, cosi' la sequenza di chiusura del <script> e' irrappresentabile. Montata come FIGLIO
+// TESTUALE di <script type="application/ld+json"> (mai dangerouslySetInnerHTML / concatenazione grezza),
+// fratello del <main> della home, come il JSON-LD LocalBusiness della serving (T-410, P4).
 export default function MarketingHomePage() {
-  return <MarketingHome />;
+  const base = getLandingBaseUrl();
+  const name = getBrandName();
+  const organizationJsonLd = serializeJsonLdSafe(buildOrganizationJsonLd(base, name));
+  const webSiteJsonLd = serializeJsonLdSafe(buildWebSiteJsonLd(base, name));
+
+  return (
+    <>
+      <script type="application/ld+json">{organizationJsonLd}</script>
+      <script type="application/ld+json">{webSiteJsonLd}</script>
+      <MarketingHome />
+    </>
+  );
 }
