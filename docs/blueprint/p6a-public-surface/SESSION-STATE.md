@@ -10,8 +10,8 @@
 |---|---|
 | **Progetto** | Ulaba/Belora — P6a (superficie pubblica) |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase Cloud EU) |
-| **Ultimo aggiornamento** | 2026-09-04 (BUILD `seo-robots` — checkpoint 4/4 verde, MERGIATO `90d0907`) |
-| **Sessione corrente (BUILD `seo-robots`, PUB-301)** | **CHIUSO+MERGIATO** (`90d0907`, atomico `d49c935`, deploy coupled; nessuna migrazione). **11/22 macrotask done.** |
+| **Ultimo aggiornamento** | 2026-09-04 (BUILD `seo-sitemap` — checkpoint 4/4 verde, MERGIATO `52fb2c5`) |
+| **Sessione corrente (BUILD `seo-sitemap`, PUB-311)** | **CHIUSO+MERGIATO** (`52fb2c5`, atomico `42a866d`, deploy coupled; nessuna migrazione). **12/22 macrotask done.** |
 
 ---
 
@@ -32,7 +32,7 @@
 | 09 | `waitlist-endpoint` (PUB-231/232) | **done** | 4/4 ✅ (`193ba0e`) | `waitlist-store`, `captcha-port` |
 | 10 | `waitlist-form` (PUB-241/242) | **done** | 4/4 ✅ (`4c5cb52`) | `marketing-home`, `waitlist-endpoint` |
 | 11 | `seo-robots` (PUB-301) | **done** | 4/4 ✅ (`90d0907`) | `marketing-layout` |
-| 12 | `seo-sitemap` (PUB-311) | **todo** | — | `marketing-layout` |
+| 12 | `seo-sitemap` (PUB-311) | **done** | 4/4 ✅ (`52fb2c5`) | `marketing-layout` |
 | 13 | `seo-metadata` (PUB-321) | **todo** | — | `marketing-layout` |
 | 14 | `seo-jsonld` (PUB-331) | **todo** | — | `marketing-home` |
 | 15 | `privacy-page` (PUB-341) | **todo** | — | `marketing-layout` |
@@ -44,27 +44,27 @@
 | 21 | `blog-seed` (PUB-451) | **todo** | — | `blog-content` |
 | 22 | `cutover` (PUB-501) | **todo** | — | (tutte le superfici pubbliche) |
 
-**Eleggibili ora (dipendenze verdi):** `seo-sitemap`/`seo-metadata`/`privacy-page`
-(PUB-311/321/341 — sbloccati da `marketing-layout`), `seo-jsonld` (PUB-331 — sbloccato da
+**Eleggibili ora (dipendenze verdi):** `seo-metadata`/`privacy-page`
+(PUB-321/341 — sbloccati da `marketing-layout`), `seo-jsonld` (PUB-331 — sbloccato da
 `marketing-home`), `blog-pipeline` (PUB-401 — nuove dep markdown/rehype → registrare sotto OSV).
-`cutover` per ultimo. **`seo-robots` (PUB-301) è CHIUSO** (`90d0907`): `src/app/robots.ts` async e
-host-aware (allow marketing su host landing + Sitemap landing; disallow-all su host app; ramo custom
-legacy immutato) è in main.
+`cutover` per ultimo. **`seo-sitemap` (PUB-311) è CHIUSO** (`52fb2c5`): `src/app/sitemap.ts`
+(MetadataRoute.Sitemap) landing — home + `/privacy` + indice `/blog`, ognuno con hreflang IT↔ES da
+`getLandingBaseUrl` — è in main e materializza la Sitemap che `robots.ts` (PUB-301) già nomina sul ramo
+`'landing'`. Sblocca `blog-sitemap` (PUB-441) sul lato SEO.
 
 ## 2. Macrotask corrente
 
-- **Nessuno in corso** — `seo-robots` (11) chiuso e mergiato. `src/app/robots.ts` ora è `async`, legge
-  l'Host via `headers()` (render dinamico) e lo classifica SEMPRE con `classifyRequestHost`
-  (host-classify, PUB-101) su `{ appHost: getAppHost(), landingHost: getLandingHost() }` (env, allowlist,
-  mai testo libero). Tre rami: `'landing'` → marketing indicizzabile (`allow: ['/', '/s/']`, Disallow
-  editor/preview, `sitemap = getLandingBaseUrl()/sitemap.xml`); `'app'` (e ogni host non-landing
-  non-custom) → Disallow totale `'/'`, nessuna regola marketing, nessuna Sitemap (app mai indicizzabile,
-  A01:2025); `'custom'` → postura P5/P4 immutata (`allow: '/s/'`, `sitemap = getSiteBaseUrl()/…`) + il
-  fail-safe senza config. `env.ts` ha fattorizzato `hostnameFromUrl` (gemello di `normalizeBaseUrl`),
-  `getLandingHost` lo riusa e si aggiunge `getAppHost` (da `NEXT_PUBLIC_APP_URL`, fail-safe null). Il
-  prossimo BUILD sceglie un eleggibile (§1) rispettando il DAG: `seo-jsonld` (PUB-331 → JSON-LD via
-  `serializeJsonLdSafe`), `seo-sitemap`/`seo-metadata`/`privacy-page` (da `marketing-layout`),
-  `blog-pipeline` (PUB-401) — indipendenti tra loro.
+- **Nessuno in corso** — `seo-sitemap` (12) chiuso e mergiato. `src/app/sitemap.ts`
+  (`MetadataRoute.Sitemap`, file convention Next) è la sitemap della LANDING (`/sitemap.xml`), sorella
+  pubblica della sitemap per-sito `/s/<slug>/sitemap.xml` (P4). Emette le **tre pagine stabili** — home
+  (`${base}/it`), `/privacy`, indice `/blog` — ciascuna con **una voce** `alternates.languages { it, es }`
+  (hreflang tra i soli `routing.locales`, `localePrefix 'always'` → anche `it` è prefissato). L'origine di
+  OGNI URL nasce SEMPRE da `getLandingBaseUrl()` (`NEXT_PUBLIC_LANDING_URL`), **mai** `getSiteBaseUrl` né
+  l'Host della richiesta (A05:2025 host-injection/open-redirect): la funzione è **pura** rispetto alla
+  richiesta (nessun `headers()`) → `/sitemap.xml` resta **statico** (`○`), diverso da `robots.ts` che è
+  `ƒ`. I singoli post del blog restano fuori (li aggiunge `blog-sitemap`, PUB-441). Il prossimo BUILD
+  sceglie un eleggibile (§1) rispettando il DAG: `seo-jsonld` (PUB-331 → JSON-LD via `serializeJsonLdSafe`),
+  `seo-metadata`/`privacy-page` (da `marketing-layout`), `blog-pipeline` (PUB-401) — indipendenti tra loro.
 - **Metodo**: UN macrotask per sessione via **dynamic workflow command-free** (builder solo Read/Write/
   Edit; oracoli — checkpoint 4/4 + mutazione — in **foreground** dall'orchestratore, unico giudice del
   verde). Vedi 00-INDEX §Granularità e la memoria `dynamic-workflow-build-method`.
@@ -75,13 +75,25 @@ legacy immutato) è in main.
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `trueline/build/seo-robots` (atomico `d49c935`, **mergiato** in `main`) |
-| Ultimo commit | `90d0907` (merge `--no-ff` seo-robots in main) + docs session-end + push |
-| Stato merge su `main` | **done** (checkpoint 4/4 verde → verifica locale → merge → push, deploy coupled; nessuna migrazione) |
-| Deploy-coupling | **coupled** (push su `main` = deploy su ulaba.net) → verifica locale FATTA prima del merge (vitest full **1982 passati / 1 rosso** = TS2589 scaffold pre-esistente invariante, +6 test nuovi; next build exit 0 con **`/robots.txt` ora `ƒ` (dynamic)** oltre a `/[locale]` e `/api/waitlist` ƒ; e2e non impattato — robots è una rotta metadata a-lato-request, nessun flusso Playwright la tocca, nessuna pagina/goto cambiata). Nessuna migrazione in questo macrotask. Push fallito una volta per rete (github:443), riuscito al retry |
+| Branch di lavoro | `trueline/build/seo-sitemap` (atomico `42a866d`, **mergiato** in `main` e cancellato) |
+| Ultimo commit | `52fb2c5` (merge `--no-ff` seo-sitemap in main) + docs session-end + push |
+| Stato merge su `main` | **done** (checkpoint 4/4 verde → verifica locale → merge → push `3df1ae9..52fb2c5`, deploy coupled; nessuna migrazione) |
+| Deploy-coupling | **coupled** (push su `main` = deploy su ulaba.net) → verifica locale FATTA prima del merge (vitest full **1986 passati / 1 rosso** = TS2589 scaffold pre-esistente invariante `scaffold.test.ts`→`e2e/effects.spec.ts`, **+4 test nuovi** `sitemap-landing.test.ts`; next build exit 0 con **`/sitemap.xml` STATICO `○`** — nuova rotta, oltre a `/s/[slug]/sitemap.xml` ƒ e `/robots.txt` ƒ immutati; e2e non impattato — la sitemap è una rotta metadata a-lato-build, nessun flusso Playwright la tocca, nessuna pagina/goto cambiata). Nessuna migrazione in questo macrotask. Push `3df1ae9..52fb2c5` OK al primo tentativo |
 
 ## 4. Baseline & budget
 
+- **`seo-sitemap` (PUB-311):** C1 green con **`dup:248` e blockers VUOTI** (0 cloni nuovi): `src/app/sitemap.ts`
+  è un modulo nuovo e clone-free (non condivide preambolo strutturale né con `robots.ts` né con il route
+  handler della sitemap per-sito), i `.test.ts` sono esclusi dal corpus jscpd → **nessun ratchet**, la
+  baseline resta a **247** fingerprint. C2 su `seo-sitemap` = `gitleaks:3 osv:4 semgrep:0 rls:3`, **0 nuovi
+  ≥HIGH**: la sitemap è solo-logica, nessun segreto (le basi da env via `getLandingBaseUrl`, gli hreflang
+  dai soli `routing.locales`), nessun dato privato/enumerazione DB, nessuna nuova policy RLS. tsc: nessun
+  errore nuovo (solo il TS2589 pre-esistente di `e2e/effects.spec.ts`); il tipo `Object.fromEntries(...)`
+  (`Record<string,string>`) è assegnabile a `Languages<string>` (chiavi tutte opzionali). Revisione
+  avversariale (workflow 3 lenti + verify): **0 finding confermati**; l'unico rilievo — hreflang
+  **una-voce-per-pagina** (idioma `MetadataRoute` di Next) invece di una voce per-locale reciproca — è
+  **conforme al DoD P6A-D8** (auto-ammesso "not a deviation"), registrato come flag di design in §6, non
+  bloccante.
 - **`seo-robots` (PUB-301):** C1 ha mostrato **1 clone NUOVO** (`dup:248`, fingerprint
   `1cbd93ae6dc47486d112f33d8415ec3f`) su `src/ui/waitlist/waitlist-calls.ts` — la **coppia gemella
   PRE-ESISTENTE** `domain-calls.ts ↔ waitlist-calls.ts` (il confine POST same-origin, gemello dichiarato
@@ -154,6 +166,47 @@ legacy immutato) è in main.
 - **Budget**: un macrotask alla volta; loop di fix con tetto in `references/oracles/thresholds.md`.
 
 ## 5. Esiti dell'ultima sessione (framing onesto)
+
+**BUILD `seo-sitemap` (PUB-311) — CHIUSO+MERGIATO (`52fb2c5`, atomico `42a866d`).** Crea
+`src/app/sitemap.ts` (`MetadataRoute.Sitemap`, file convention Next), la **sitemap della LANDING**
+(`/sitemap.xml`): oggi esisteva solo la sitemap PER-SITO `/s/<slug>/sitemap.xml` (P4). Emette le **tre
+pagine stabili** — home (`${base}/it`, il locale di default prefissato perché `localePrefix 'always'`),
+`/privacy`, indice `/blog` — ciascuna come **UNA voce** con `alternates.languages { it, es }` (hreflang tra
+i soli `routing.locales`, single-source-of-truth). Ogni URL è **ASSOLUTO** e la sua origine nasce SEMPRE da
+`getLandingBaseUrl()` (`NEXT_PUBLIC_LANDING_URL`), **mai** `getSiteBaseUrl` né l'Host della richiesta
+(A05:2025 host-injection/open-redirect): la funzione è **pura** rispetto alla richiesta (nessun
+`headers()`) → `/sitemap.xml` resta **statico** (`○`) in `next build`, diverso da `robots.ts` (`ƒ`).
+Materializza la Sitemap che `robots.ts` (PUB-301) già **nomina** sul ramo `'landing'`; i post del blog
+restano fuori (li aggiunge `blog-sitemap`, PUB-441 — ora sbloccato sul lato SEO). Target test
+`tests/sitemap-landing.test.ts` (AC-311-1/2/3): basi **landing ≠ sito** pinnate via `vi.stubEnv` (uccide la
+mutazione `getLandingBaseUrl`→`getSiteBaseUrl`), accessor env REALI; verifica voce home `{ it, es }`, voce
+`/privacy` localizzata, l'**origine di ogni loc E di ogni hreflang** == host landing (mai host sito), ed
+**esattamente 3 voci** (nessun post). Checkpoint **4/4**: C1 green (`dup:248`, **0 nuovi**, nessun ratchet,
+baseline 247), C2 green (`gitleaks:3 osv:4 semgrep:0 rls:3`, **0 nuovi ≥HIGH**), C3 **1986 passati / 1 rosso**
+(il rosso è `scaffold.test.ts` che lancia `npm run typecheck` → fallisce SOLO per il TS2589 invariante di
+`e2e/effects.spec.ts`; **+4 test nuovi verdi**), C4 target **4/4**. Mutazione **3/3** (M1 svuota
+`alternates.languages` ⇒ AC-311-1 rosso, M2 base diverge dalla landing ⇒ AC-311-3 rosso, M3 omette
+`/privacy` da `LANDING_PATHS` ⇒ AC-311-2 rosso; ciascuno red + restore sha256 bit-identico, driver
+`pub-sitemap-mutants.mjs`). tsc nessun errore nuovo; `next build` exit 0 (`/sitemap.xml` `○` statico); e2e
+non impattato; **nessuna migrazione**.
+
+- **Lezioni (carry-over seo-sitemap):** (1) **la sitemap landing è STATICA, il robots è DINAMICO** — sono
+  sorelle ma opposte in staticità: `robots.ts` legge `headers()` (host-aware, `ƒ`), la sitemap NO (base da
+  env, `○`). Volutamente non-host-aware: una sitemap ridiretta da un Host contraffatto sarebbe un
+  open-redirect (A05:2025); la base la fissa la config, non il traffico. (2) **hreflang una-voce-per-pagina
+  ≠ una-voce-per-locale**: l'idioma `MetadataRoute.Sitemap` di Next (una `<url>` col map `alternates.languages`)
+  NON è strettamente reciproco secondo Google (il `/es` non ottiene un proprio `<loc>` con il return-link
+  verso `/it`). È **conforme al DoD P6A-D8** (che chiede "una voce per la home … con `alternates.languages
+  { it, es }`") e la revisione avversariale l'ha auto-classificato "not a deviation" → **non toccato**
+  (build-to-spec, non ridiscutere il design mid-build), ma è un **flag di design** da valutare per il
+  mercato ES/LATAM (vedi §6). (3) **`Object.fromEntries` tipizza `{[k:string]:string}`**, assegnabile a
+  `Languages<string>` di Next perché le chiavi del target sono tutte opzionali — nessun cast necessario
+  (verificato in `next/dist/lib/metadata/types/*`). (4) Ri-confermato il gotcha `.snap`: `vitest run` full
+  ha riscritto `onboarding-generation-regression.test.ts.snap` col solo EOL → ripristinato con `git
+  checkout` (file COMMITTATO, quindi checkout lecito; solo i 2 file uncommitted del macrotask non vanno mai
+  git-checkout), staged solo i 2 file del macrotask. (5) **`git merge -F -` NON legge stdin** (a differenza
+  di `git commit -F -`): per un messaggio di merge multi-riga con accenti serve un file temporaneo
+  (`-F /tmp/…`), non un heredoc su `-`.
 
 **BUILD `seo-robots` (PUB-301) — CHIUSO+MERGIATO (`90d0907`, atomico `d49c935`).** Rende
 `src/app/robots.ts` **host-aware** (P6A-D8): da funzione globale sincrona a `async` che legge l'Host via
@@ -594,17 +647,40 @@ ripristino bit-identico sha256). `next build` ok; e2e non impattato (export non 
 
 ## 6. Prossimi passi
 
-- **11/22 macrotask done** (`host-classify`, `host-guard`, `marketing-i18n`, `marketing-layout`,
+- **12/22 macrotask done** (`host-classify`, `host-guard`, `marketing-i18n`, `marketing-layout`,
   `marketing-home`, `waitlist-schema`, `waitlist-store`, `captcha-port`, `waitlist-endpoint`,
-  `waitlist-form`, `seo-robots`). **Prossima sessione = BUILD di un eleggibile** (§1): `seo-jsonld`
-  (PUB-331 — JSON-LD Organization+WebSite via `serializeJsonLdSafe`, anti-XSS), `seo-sitemap`/
-  `seo-metadata`/`privacy-page` (PUB-311/321/341 — da `marketing-layout`), `blog-pipeline` (PUB-401,
-  nuove dep markdown/rehype → registrare sotto OSV). `cutover` per ultimo. **`seo-sitemap` (PUB-311)** è
-  un candidato naturale ora: `robots.ts` landing punta già a `${getLandingBaseUrl()}/sitemap.xml`, che
-  PUB-311 deve materializzare (`src/app/sitemap.ts` landing host-aware). Il canale waitlist resta
-  **completo end-to-end**: resta un **gate visivo umano** opportuno sulla landing (la home È la demo) e,
-  al go-live, la site key pubblica `NEXT_PUBLIC_TURNSTILE_SITE_KEY` + il secret `TURNSTILE_SECRET_KEY` su
-  Vercel (finché assenti: form `unavailable` + endpoint che degrada, inerti dichiarati, nessun 500).
+  `waitlist-form`, `seo-robots`, `seo-sitemap`). **Prossima sessione = BUILD di un eleggibile** (§1):
+  `seo-jsonld` (PUB-331 — JSON-LD Organization+WebSite via `serializeJsonLdSafe`, anti-XSS),
+  `seo-metadata`/`privacy-page` (PUB-321/341 — da `marketing-layout`), `blog-pipeline` (PUB-401, nuove dep
+  markdown/rehype → registrare sotto OSV). `cutover` per ultimo. **`seo-metadata` (PUB-321)** è un candidato
+  naturale ora (le pagine landing hanno la sitemap ma non ancora canonical/OG/hreflang a livello di
+  `<head>`); `blog-sitemap` (PUB-441) è sbloccato sul lato SEO ma attende `blog-content`. Il canale
+  waitlist resta **completo end-to-end**: resta un **gate visivo umano** opportuno sulla landing (la home È
+  la demo) e, al go-live, la site key pubblica `NEXT_PUBLIC_TURNSTILE_SITE_KEY` + il secret
+  `TURNSTILE_SECRET_KEY` su Vercel (finché assenti: form `unavailable` + endpoint che degrada, inerti
+  dichiarati, nessun 500).
+- **⚑ Flag di design (hreflang sitemap, da valutare col mercato ES/LATAM):** `seo-sitemap` emette **una
+  voce per pagina** con `alternates.languages { it, es }` (idioma `MetadataRoute` di Next, conforme al DoD
+  P6A-D8). Non è **strettamente reciproco** secondo Google (il `/es` non ha un proprio `<loc>` con il
+  return-link verso `/it`; e non c'è ancora hreflang HTML-level, che arriverà con `seo-metadata` PUB-321).
+  Opzioni per una reciprocità piena, SE si decide di rivederlo: (a) emettere **una voce per (pagina ×
+  locale)** = 6 voci con lo stesso map (rompe l'AC "una voce"/il test `toHaveLength(3)` → serve emendare
+  DoD+test), oppure (b) affidarsi all'hreflang **HTML `<link rel=alternate>`** che `seo-metadata` aggiungerà
+  su ogni pagina (reciproco per costruzione), lasciando la sitemap come discovery. **Raccomandazione:** (b)
+  — la sitemap resta com'è (spec-conforme) e la reciprocità la garantisce PUB-321 nel `<head>`. Decisione
+  utente/ledger da prendere al BUILD di `seo-metadata`.
+- **Copertura dichiarata seo-sitemap (§6):** target_test `tests/sitemap-landing.test.ts` copre AC-311-1
+  (voce home con `alternates.languages { it: `${base}/it`, es: `${base}/es` }`, base landing pinnata),
+  AC-311-2 (esiste la voce `/privacy` localizzata `{ it, es }`; + contro-prova indice `/blog` presente e
+  **nessun** post `/blog/…`, `toHaveLength(3)`), AC-311-3 (l'origine di OGNI `loc` e di OGNI hreflang ==
+  `getLandingBaseUrl`, mai `getSiteBaseUrl`, con le due basi divergenti pinnate). Mutazione 3/3 (§5).
+  **NON coperto (dichiarato):** la **reciprocità hreflang per-locale** (flag di design sopra) — la sitemap
+  emette una voce per pagina, non una per `/es`; l'**hreflang HTML-level** `<link rel=alternate>` è di
+  `seo-metadata` (PUB-321), non qui; le **voci dei singoli post** del blog sono di `blog-sitemap` (PUB-441);
+  il **render XML reale** di `/sitemap.xml` da parte di Next (serializzazione `MetadataRoute`→`<urlset>`
+  con `<xhtml:link>`) è provato SOLO indirettamente via `next build` (rotta `/sitemap.xml` emessa `○`), non
+  da un GET reale; il **wiring reale** su `NEXT_PUBLIC_LANDING_URL` di produzione è provato solo
+  strutturalmente (`getLandingBaseUrl` con env stubbato nel verde), non da un render a-request reale.
 - **Copertura dichiarata seo-robots (§6):** target_test `tests/robots-host-aware.test.ts` copre AC-301-1
   (Host landing → `allow` include `/` e `/s/`, `disallow` include `/*/editor` e `/*/preview`, `sitemap
   === ${getLandingBaseUrl()}/sitemap.xml`), AC-301-2 (Host app → `disallow` `['/']`, nessuna `allow`,
