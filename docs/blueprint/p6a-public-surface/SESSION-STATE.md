@@ -10,8 +10,8 @@
 |---|---|
 | **Progetto** | Ulaba/Belora — P6a (superficie pubblica) |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase Cloud EU) |
-| **Ultimo aggiornamento** | 2026-09-04 (BUILD `waitlist-form` — checkpoint 4/4 verde, MERGIATO `4c5cb52`) |
-| **Sessione corrente (BUILD `waitlist-form`, PUB-241/242)** | **CHIUSO+MERGIATO** (`4c5cb52`, atomico `fedafe4`, deploy coupled; nessuna migrazione). **10/22 macrotask done.** |
+| **Ultimo aggiornamento** | 2026-09-04 (BUILD `seo-robots` — checkpoint 4/4 verde, MERGIATO `90d0907`) |
+| **Sessione corrente (BUILD `seo-robots`, PUB-301)** | **CHIUSO+MERGIATO** (`90d0907`, atomico `d49c935`, deploy coupled; nessuna migrazione). **11/22 macrotask done.** |
 
 ---
 
@@ -31,7 +31,7 @@
 | 08 | `captcha-port` (PUB-221/222) | **done** | 4/4 ✅ (`5933c12`) | — |
 | 09 | `waitlist-endpoint` (PUB-231/232) | **done** | 4/4 ✅ (`193ba0e`) | `waitlist-store`, `captcha-port` |
 | 10 | `waitlist-form` (PUB-241/242) | **done** | 4/4 ✅ (`4c5cb52`) | `marketing-home`, `waitlist-endpoint` |
-| 11 | `seo-robots` (PUB-301) | **todo** | — | `marketing-layout` |
+| 11 | `seo-robots` (PUB-301) | **done** | 4/4 ✅ (`90d0907`) | `marketing-layout` |
 | 12 | `seo-sitemap` (PUB-311) | **todo** | — | `marketing-layout` |
 | 13 | `seo-metadata` (PUB-321) | **todo** | — | `marketing-layout` |
 | 14 | `seo-jsonld` (PUB-331) | **todo** | — | `marketing-home` |
@@ -44,25 +44,27 @@
 | 21 | `blog-seed` (PUB-451) | **todo** | — | `blog-content` |
 | 22 | `cutover` (PUB-501) | **todo** | — | (tutte le superfici pubbliche) |
 
-**Eleggibili ora (dipendenze verdi):** `seo-robots`/`seo-sitemap`/`seo-metadata`/`privacy-page`
-(PUB-301/311/321/341 — sbloccati da `marketing-layout`), `seo-jsonld` (PUB-331 — sbloccato da
+**Eleggibili ora (dipendenze verdi):** `seo-sitemap`/`seo-metadata`/`privacy-page`
+(PUB-311/321/341 — sbloccati da `marketing-layout`), `seo-jsonld` (PUB-331 — sbloccato da
 `marketing-home`), `blog-pipeline` (PUB-401 — nuove dep markdown/rehype → registrare sotto OSV).
-`cutover` per ultimo. **`waitlist-form` (PUB-241/242) è CHIUSO** (`4c5cb52`): il form client nei 2
-`waitlist-slot` della home, con honeypot + widget Turnstile + consenso GDPR + POST a `/api/waitlist`
-(stati inserted/already/errore dal contratto `{ status }`), è in main.
+`cutover` per ultimo. **`seo-robots` (PUB-301) è CHIUSO** (`90d0907`): `src/app/robots.ts` async e
+host-aware (allow marketing su host landing + Sitemap landing; disallow-all su host app; ramo custom
+legacy immutato) è in main.
 
 ## 2. Macrotask corrente
 
-- **Nessuno in corso** — `waitlist-form` (10) chiuso e mergiato. `WaitlistForm` client
-  (`src/ui/waitlist/WaitlistForm.tsx`) + confine `waitlist-calls.ts` (gemello di `domain-calls.ts`: POST
-  same-origin a `/api/waitlist`, mappa `{ status }` → `{ kind: inserted|already|error }`, non-2xx/rete
-  caduta → error) montato nei 2 `data-testid=waitlist-slot` della home (`MarketingHome`, PUB-141). Widget
-  Turnstile solo con la site key PUBBLICA `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (assente → `unavailable`, no
-  crash); consenso GDPR NON pre-spuntato che blocca il submit; link privacy `/{locale}/privacy` fisso. Il
-  canale waitlist è ora completo end-to-end (form → endpoint → store → tabella). Il prossimo BUILD sceglie
-  un eleggibile (§1) rispettando il DAG: `seo-jsonld` (PUB-331 → JSON-LD via `serializeJsonLdSafe`), i
-  quattro `seo-robots`/`seo-sitemap`/`seo-metadata`/`privacy-page` (da `marketing-layout`), `blog-pipeline`
-  (PUB-401) — indipendenti tra loro.
+- **Nessuno in corso** — `seo-robots` (11) chiuso e mergiato. `src/app/robots.ts` ora è `async`, legge
+  l'Host via `headers()` (render dinamico) e lo classifica SEMPRE con `classifyRequestHost`
+  (host-classify, PUB-101) su `{ appHost: getAppHost(), landingHost: getLandingHost() }` (env, allowlist,
+  mai testo libero). Tre rami: `'landing'` → marketing indicizzabile (`allow: ['/', '/s/']`, Disallow
+  editor/preview, `sitemap = getLandingBaseUrl()/sitemap.xml`); `'app'` (e ogni host non-landing
+  non-custom) → Disallow totale `'/'`, nessuna regola marketing, nessuna Sitemap (app mai indicizzabile,
+  A01:2025); `'custom'` → postura P5/P4 immutata (`allow: '/s/'`, `sitemap = getSiteBaseUrl()/…`) + il
+  fail-safe senza config. `env.ts` ha fattorizzato `hostnameFromUrl` (gemello di `normalizeBaseUrl`),
+  `getLandingHost` lo riusa e si aggiunge `getAppHost` (da `NEXT_PUBLIC_APP_URL`, fail-safe null). Il
+  prossimo BUILD sceglie un eleggibile (§1) rispettando il DAG: `seo-jsonld` (PUB-331 → JSON-LD via
+  `serializeJsonLdSafe`), `seo-sitemap`/`seo-metadata`/`privacy-page` (da `marketing-layout`),
+  `blog-pipeline` (PUB-401) — indipendenti tra loro.
 - **Metodo**: UN macrotask per sessione via **dynamic workflow command-free** (builder solo Read/Write/
   Edit; oracoli — checkpoint 4/4 + mutazione — in **foreground** dall'orchestratore, unico giudice del
   verde). Vedi 00-INDEX §Granularità e la memoria `dynamic-workflow-build-method`.
@@ -73,13 +75,31 @@
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `trueline/build/waitlist-form` (atomico `fedafe4`, **mergiato** in `main`) |
-| Ultimo commit | `4c5cb52` (merge `--no-ff` waitlist-form in main) + docs session-end + push |
+| Branch di lavoro | `trueline/build/seo-robots` (atomico `d49c935`, **mergiato** in `main`) |
+| Ultimo commit | `90d0907` (merge `--no-ff` seo-robots in main) + docs session-end + push |
 | Stato merge su `main` | **done** (checkpoint 4/4 verde → verifica locale → merge → push, deploy coupled; nessuna migrazione) |
-| Deploy-coupling | **coupled** (push su `main` = deploy su ulaba.net) → verifica locale FATTA prima del merge (vitest full **1976/1977**, unico rosso = TS2589 scaffold pre-esistente invariante; next build exit 0 con `/[locale]` e `/api/waitlist` ƒ registrate; e2e non impattato — nessun `goto` alla home `/{locale}`, solo UI additiva client). Nessuna migrazione in questo macrotask |
+| Deploy-coupling | **coupled** (push su `main` = deploy su ulaba.net) → verifica locale FATTA prima del merge (vitest full **1982 passati / 1 rosso** = TS2589 scaffold pre-esistente invariante, +6 test nuovi; next build exit 0 con **`/robots.txt` ora `ƒ` (dynamic)** oltre a `/[locale]` e `/api/waitlist` ƒ; e2e non impattato — robots è una rotta metadata a-lato-request, nessun flusso Playwright la tocca, nessuna pagina/goto cambiata). Nessuna migrazione in questo macrotask. Push fallito una volta per rete (github:443), riuscito al retry |
 
 ## 4. Baseline & budget
 
+- **`seo-robots` (PUB-301):** C1 ha mostrato **1 clone NUOVO** (`dup:248`, fingerprint
+  `1cbd93ae6dc47486d112f33d8415ec3f`) su `src/ui/waitlist/waitlist-calls.ts` — la **coppia gemella
+  PRE-ESISTENTE** `domain-calls.ts ↔ waitlist-calls.ts` (il confine POST same-origin, gemello dichiarato
+  da PUB-241), sotto-soglia a `waitlist-form` e **affiorata dal cambio-corpus jscpd** dei miei file
+  `robots.ts`/`env.ts`. Triangolazione diretta (`pub-c1-triangulate.mjs`, jscpd@50): dei **248 cloni,
+  `clonesTouchingMyDiff: 0`** → i miei 5 file aggiungono **0 cloni**; il +1 è codice PRE-ESISTENTE su
+  main. Risoluzione = **ratchet additivo onesto 246→247 fingerprint** (`pub-hygiene-ratchet.mjs`), NON
+  un refactor dei confini (fuori scope); dopo il ratchet C1 torna green (0 nuovi). C2 su `seo-robots` =
+  `gitleaks:3 osv:4 semgrep:0 rls:3`, **0 nuovi ≥HIGH**: `robots.ts` è solo-logica, nessun segreto
+  (l'host arriva da `headers()` + allowlist `classifyRequestHost`, mai testo libero; le basi da env), il
+  ramo app è disallow-all (nessun leak dell'host app dal robots landing, AC-301-3). **Nota C2**: al
+  PRIMO run C2 era rosso con **2 gitleaks CRITICAL su `docs/…/SESSION-STATE.md`** — la prosa citava
+  verbatim un pattern `identificatore-KEY = 'stringa≥24'` (il lesson di `waitlist-form` sul FP
+  `trueline-generic-assigned-secret`), aggiunto dal session-end di `waitlist-form` (`c9e156b`) DOPO il
+  suo checkpoint → primo checkpoint che lo vede. **FP documentale** (il valore è il NOME di una env
+  pubblica). Gitleaks gira **working-tree** (non history) → **eliminato alla radice** riscrivendo le 2
+  righe di prosa (rotto il pattern assegnazione), NON baselinato (coerente col lesson: NON baselinare un
+  FP eliminabile). Dopo il fix `gitleaks:3` (torna alla baseline).
 - **Baseline di sicurezza** (C2): `gitleaks/osv/semgrep/rls` — con `waitlist-schema` l'oracolo RLS vede
   ora `waitlist_leads` e emette **`RLS002_NO_POLICY` MEDIUM** (RLS enabled + zero policy = deny-all): è
   la **postura VOLUTA** (P6A-D5), **NON blocca** (gate C2 = ≥HIGH; MEDIUM è sotto soglia). `rls:3` = 2
@@ -134,6 +154,55 @@
 - **Budget**: un macrotask alla volta; loop di fix con tetto in `references/oracles/thresholds.md`.
 
 ## 5. Esiti dell'ultima sessione (framing onesto)
+
+**BUILD `seo-robots` (PUB-301) — CHIUSO+MERGIATO (`90d0907`, atomico `d49c935`).** Rende
+`src/app/robots.ts` **host-aware** (P6A-D8): da funzione globale sincrona a `async` che legge l'Host via
+`headers()` (forza il render **dinamico**: `/robots.txt` passa da statico a `ƒ`) e lo classifica SEMPRE
+con `classifyRequestHost(host, { appHost: getAppHost(), landingHost: getLandingHost() })` (host-classify
+PUB-101, allowlist da env, mai testo libero — A05:2025). Tre rami: **`'landing'`** (ulaba.net) → marketing
+indicizzabile (`allow: ['/', '/s/']`, conserva Disallow `/*/editor`/`/*/preview`, `sitemap =
+${getLandingBaseUrl()}/sitemap.xml` — mai `getSiteBaseUrl` né l'Host grezzo); il robots landing **non
+nomina mai** l'host app (AC-301-3, ricognizione minima). **`'app'`** (app.ulaba.net, e ogni host
+non-landing non-custom) → **Disallow totale `'/'`**, nessuna regola marketing, nessuna Sitemap (app mai
+indicizzabile, A01:2025). **`'custom'`** → postura P5/P4 **immutata** (`allow: '/s/'`, Disallow
+editor/preview, `sitemap = ${getSiteBaseUrl()}/…`) + il **fail-safe** senza config (appHost/landingHost
+null ⇒ 'custom' ⇒ tutto come oggi). `env.ts`: fattorizzato `hostnameFromUrl` (gemello di
+`normalizeBaseUrl`), `getLandingHost` lo riusa e si aggiunge **`getAppHost`** (da `NEXT_PUBLIC_APP_URL`,
+fail-safe null). Target test `tests/robots-host-aware.test.ts` (AC-301-1/2/3): `next/headers` mockato
+(host per-caso), `classifyRequestHost`+accessor env REALI, basi **landing ≠ site** (uccide la mutazione
+base). `tests/env-landing.test.ts` esteso con 3 test `getAppHost`; `tests/sitemap-robots.test.ts`
+**aggiornato** al `robots()` async (mock `next/headers` con host CUSTOM ⇒ ramo legacy, AC-411-3
+non-regressione). Checkpoint **4/4**: C1 green (`dup:248`, **0 nuovi dopo ratchet onesto 246→247** del
+clone PRE-ESISTENTE `domain-calls↔waitlist-calls`, §4; triangolato: 0 cloni sui miei file), C2 green
+(`gitleaks:3 osv:4 semgrep:0 rls:3`, **0 nuovi ≥HIGH** dopo eliminazione alla radice dei 2 FP doc in
+SESSION-STATE.md, §4), C3 **1982 passati / 1 rosso** (unico rosso = TS2589 scaffold pre-esistente
+invariante; **+6 test nuovi verdi**), C4 target **3/3**. Mutazione **3/3** (M1 ramo-app disattivato ⇒
+AC-301-2 rosso, M2 `getLandingBaseUrl`→`getSiteBaseUrl` ⇒ AC-301-1 rosso, M3 leak `getAppHost()` nella
+Sitemap ⇒ AC-301-3 rosso; ciascuno red + restore sha256 bit-identico, driver `pub-robots-mutants.mjs`).
+tsc nessun errore nuovo; `next build` exit 0 (`/robots.txt` ora `ƒ` dynamic); e2e non impattato; **nessuna
+migrazione**.
+
+- **Lezioni (carry-over seo-robots):** (1) **il render dinamico è una conseguenza di `headers()`** — un
+  `robots()` che legge `headers()` diventa `ƒ` (Dynamic) in `next build` (era `○` statico): è VOLUTO
+  (P6A-D8, un robots per-host non può essere statico). (2) **`referenceApp` = il repo reale; `eval/
+  reference-app/` è solo l'ETICHETTA canonica** del normalizer (checkpoint.mjs) → i path blocker portano
+  quel prefisso ma sono i MIEI file (lesson ereditata da host-classify, ri-confermata). (3) **gitleaks
+  gira WORKING-TREE, non history** (`gitleaks dir`, checkpoint.mjs) → un FP nel working tree si elimina
+  **editando il file** (non serve riscrivere la history); un FP DOCUMENTALE (prosa che cita un pattern
+  `KEY = 'stringa'`) si rompe riscrivendo la prosa, NON si baselina (coerente col lesson `waitlist-form`).
+  ⚠️ **Il session-end può INTRODURRE un FP C2**: la prosa di SESSION-STATE.md è nel corpus gitleaks, e un
+  lesson che cita verbatim il pattern colpevole lo riaccende al PROSSIMO checkpoint (qui `waitlist-form`
+  l'ha seminato in `c9e156b`, `seo-robots` l'ha trovato). Regola: **nei lesson non scrivere
+  `identificatore-sensibile = 'valore≥24char'` verbatim** — parafrasare. (4) **aggiornare la firma di una
+  rotta metadata (sync→async) ROMPE i suoi test esistenti**: `tests/sitemap-robots.test.ts` chiamava
+  `robots()` sincrono; renderlo `async` esige `await robots()` + mock `next/headers` in QUEL file (con
+  host custom per riprodurre il ramo legacy). È una **conseguenza attesa**, non una regressione mascherata
+  (il contratto è cambiato; il test si adegua e resta verde). (5) **la triangolazione C1 diretta è la
+  prova**: `pub-c1-triangulate.mjs` elenca TUTTE le coppie jscpd@50 e filtra sui 5 file del diff →
+  `clonesTouchingMyDiff: 0` è la prova che il +1 è pre-esistente, non retorica. (6) Ri-confermato il
+  gotcha `.snap`: `vitest run` full ha riscritto `onboarding-generation-regression.test.ts.snap` col solo
+  EOL → ripristinato (`git checkout`), mai committato (staged solo i 5 file del macrotask + hygiene-baseline
+  + il fix FP di SESSION-STATE.md).
 
 **BUILD `waitlist-form` (PUB-241/242) — CHIUSO+MERGIATO (`4c5cb52`, atomico `fedafe4`).** Completa il
 canale waitlist end-to-end (form → endpoint → store → tabella) montando il form client nei due
@@ -525,16 +594,30 @@ ripristino bit-identico sha256). `next build` ok; e2e non impattato (export non 
 
 ## 6. Prossimi passi
 
-- **10/22 macrotask done** (`host-classify`, `host-guard`, `marketing-i18n`, `marketing-layout`,
+- **11/22 macrotask done** (`host-classify`, `host-guard`, `marketing-i18n`, `marketing-layout`,
   `marketing-home`, `waitlist-schema`, `waitlist-store`, `captcha-port`, `waitlist-endpoint`,
-  `waitlist-form`). **Prossima sessione = BUILD di un eleggibile** (§1): `seo-jsonld` (PUB-331 — JSON-LD
-  Organization+WebSite via `serializeJsonLdSafe`, anti-XSS), `seo-robots`/`seo-sitemap`/`seo-metadata`/
-  `privacy-page` (PUB-301/311/321/341 — da `marketing-layout`), `blog-pipeline` (PUB-401, nuove dep
-  markdown/rehype → registrare sotto OSV). `cutover` per ultimo. Il canale waitlist è **completo
-  end-to-end** (form client → endpoint → store → tabella): resta un **gate visivo umano** opportuno sulla
-  landing (la home È la demo del prodotto) e, al go-live, la site key pubblica `NEXT_PUBLIC_TURNSTILE_SITE_KEY`
-  + il secret `TURNSTILE_SECRET_KEY` da valorizzare su Vercel (finché assenti: form `unavailable` +
-  endpoint che degrada, entrambi inerti dichiarati, nessun 500).
+  `waitlist-form`, `seo-robots`). **Prossima sessione = BUILD di un eleggibile** (§1): `seo-jsonld`
+  (PUB-331 — JSON-LD Organization+WebSite via `serializeJsonLdSafe`, anti-XSS), `seo-sitemap`/
+  `seo-metadata`/`privacy-page` (PUB-311/321/341 — da `marketing-layout`), `blog-pipeline` (PUB-401,
+  nuove dep markdown/rehype → registrare sotto OSV). `cutover` per ultimo. **`seo-sitemap` (PUB-311)** è
+  un candidato naturale ora: `robots.ts` landing punta già a `${getLandingBaseUrl()}/sitemap.xml`, che
+  PUB-311 deve materializzare (`src/app/sitemap.ts` landing host-aware). Il canale waitlist resta
+  **completo end-to-end**: resta un **gate visivo umano** opportuno sulla landing (la home È la demo) e,
+  al go-live, la site key pubblica `NEXT_PUBLIC_TURNSTILE_SITE_KEY` + il secret `TURNSTILE_SECRET_KEY` su
+  Vercel (finché assenti: form `unavailable` + endpoint che degrada, inerti dichiarati, nessun 500).
+- **Copertura dichiarata seo-robots (§6):** target_test `tests/robots-host-aware.test.ts` copre AC-301-1
+  (Host landing → `allow` include `/` e `/s/`, `disallow` include `/*/editor` e `/*/preview`, `sitemap
+  === ${getLandingBaseUrl()}/sitemap.xml`), AC-301-2 (Host app → `disallow` `['/']`, nessuna `allow`,
+  `sitemap` assente), AC-301-3 (robots landing serializzato non contiene mai `NEXT_PUBLIC_APP_URL`).
+  `tests/env-landing.test.ts` copre `getAppHost` (hostname senza porta / null fail-safe / non-parsabile).
+  Mutazione 3/3 (§5). **NON coperto (dichiarato):** il ramo `'custom'` è provato da
+  `tests/sitemap-robots.test.ts` (AC-411-3, ora async, host custom → legacy) ma il suo comportamento è
+  **fuori scope** qui (immutato da P5, non-regressione); la **sitemap landing vera** (`/sitemap.xml`
+  landing) è di `seo-sitemap` (PUB-311) — `robots.ts` la NOMINA soltanto; il **wiring reale** su
+  `NEXT_PUBLIC_APP_URL`/`NEXT_PUBLIC_LANDING_URL` in produzione (host reali di Vercel) è provato solo
+  strutturalmente (accessor env + `classifyRequestHost`, con env stubbati nel verde), non da un render
+  a-request reale; il render dell'output `MetadataRoute.Robots` in `robots.txt` testuale da parte di Next
+  è provato indirettamente via `next build` (rotta `/robots.txt` emessa `ƒ`), non da un GET reale.
 - **Copertura dichiarata waitlist-form (§6):** target_test `tests/ui-waitlist-form.test.tsx` copre AC-241-1
   (inserted → `successNew` + POST a `/api/waitlist` con `{email, locale}`), AC-241-2 (already →
   `successExisting`, + contro-prova non-2xx → `error`), AC-241-3 (senza site key → `unavailable`, nessun
