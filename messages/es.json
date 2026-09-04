@@ -339,6 +339,10 @@
     "upgradeCta": "Pasar a Pro"
   },
   "landing": {
+    "meta": {
+      "title": "Ulaba — Sitios web con IA para negocios locales",
+      "description": "Ulaba crea con inteligencia artificial un sitio a la medida de tu negocio local: sin plantillas que armar, sin código. Sumate a la lista de espera para el acceso anticipado."
+    },
     "nav": {
       "home": "Inicio",
       "blog": "Blog",
