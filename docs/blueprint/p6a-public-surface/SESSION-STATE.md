@@ -10,8 +10,8 @@
 |---|---|
 | **Progetto** | Ulaba/Belora — P6a (superficie pubblica) |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase Cloud EU) |
-| **Ultimo aggiornamento** | 2026-09-04 (BUILD `seo-metadata` — checkpoint 4/4 verde + mutazione 3/3, MERGIATO `374e2f7`) |
-| **Sessione corrente (BUILD `seo-metadata`, PUB-321)** | **CHIUSO+MERGIATO** (`374e2f7`, atomico `16318d7`, deploy coupled; nessuna migrazione). **13/22 macrotask done.** |
+| **Ultimo aggiornamento** | 2026-09-04 (BUILD `seo-jsonld` — checkpoint 4/4 verde + mutazione 3/3, MERGIATO `744b0ae`) |
+| **Sessione corrente (BUILD `seo-jsonld`, PUB-331)** | **CHIUSO+MERGIATO** (`744b0ae`, atomico `853aa09`, deploy coupled; nessuna migrazione). **14/22 macrotask done.** |
 
 ---
 
@@ -34,7 +34,7 @@
 | 11 | `seo-robots` (PUB-301) | **done** | 4/4 ✅ (`90d0907`) | `marketing-layout` |
 | 12 | `seo-sitemap` (PUB-311) | **done** | 4/4 ✅ (`52fb2c5`) | `marketing-layout` |
 | 13 | `seo-metadata` (PUB-321) | **done** | 4/4 ✅ (`16318d7`, branch) | `marketing-layout` |
-| 14 | `seo-jsonld` (PUB-331) | **todo** | — | `marketing-home` |
+| 14 | `seo-jsonld` (PUB-331) | **done** | 4/4 ✅ (`853aa09`, merge `744b0ae`) | `marketing-home` |
 | 15 | `privacy-page` (PUB-341) | **todo** | — | `marketing-layout` |
 | 16 | `blog-pipeline` (PUB-401) | **todo** | — | — |
 | 17 | `blog-content` (PUB-411) | **todo** | — | `blog-pipeline` |
@@ -45,16 +45,34 @@
 | 22 | `cutover` (PUB-501) | **todo** | — | (tutte le superfici pubbliche) |
 
 **Eleggibili ora (dipendenze verdi):** `privacy-page` (PUB-341 — da `marketing-layout`),
-`seo-jsonld` (PUB-331 — da `marketing-home`), `blog-pipeline` (PUB-401 — nuove dep markdown/rehype →
-registrare sotto OSV). `cutover` per ultimo. **`seo-metadata` (PUB-321) è CHIUSO+MERGIATO** (`374e2f7`): `generateMetadata` della home marketing (canonical fisso landing + OG 1200×630 +
-twitter + hreflang HTML-level it/es) — RISOLVE il flag hreflang di seo-sitemap con l’opzione (b) e sblocca
-il lato metadati di `blog-post` (PUB-431). **`seo-sitemap` (PUB-311) è CHIUSO** (`52fb2c5`): `src/app/sitemap.ts`
-(MetadataRoute.Sitemap) landing — home + `/privacy` + indice `/blog`, ognuno con hreflang IT↔ES da
-`getLandingBaseUrl` — è in main e materializza la Sitemap che `robots.ts` (PUB-301) già nomina sul ramo
-`'landing'`. Sblocca `blog-sitemap` (PUB-441) sul lato SEO.
+`blog-pipeline` (PUB-401 — nuove dep markdown/rehype → registrare sotto OSV). `cutover` per ultimo.
+**`seo-jsonld` (PUB-331) è CHIUSO+MERGIATO** (`744b0ae`): due `<script type="application/ld+json">`
+(`Organization` + `WebSite`) sulla home marketing, montati come **figlio testuale** con
+`serializeJsonLdSafe` RIUSATO da `@/domain/generation/jsonld` (mai `dangerouslySetInnerHTML`); builder
+PURI `src/domain/marketing/organization-jsonld.ts` (base landing + nome brand come argomenti). Sblocca
+il lato JSON-LD di `blog-post` (PUB-431), che dipende da `seo-metadata` + `seo-jsonld`. **`seo-metadata`
+(PUB-321) è CHIUSO+MERGIATO** (`374e2f7`): `generateMetadata` della home marketing (canonical fisso
+landing + OG 1200×630 + twitter + hreflang HTML-level it/es) — RISOLVE il flag hreflang di seo-sitemap
+con l’opzione (b) e sblocca il lato metadati di `blog-post` (PUB-431). **`seo-sitemap` (PUB-311) è
+CHIUSO** (`52fb2c5`): `src/app/sitemap.ts` (MetadataRoute.Sitemap) landing — home + `/privacy` + indice
+`/blog`, ognuno con hreflang IT↔ES da `getLandingBaseUrl` — è in main e materializza la Sitemap che
+`robots.ts` (PUB-301) già nomina sul ramo `'landing'`. Sblocca `blog-sitemap` (PUB-441) sul lato SEO.
 
 ## 2. Macrotask corrente
 
+- **`seo-jsonld` (14) CHIUSO+MERGIATO** (`744b0ae`, atomico `853aa09`, branch cancellato). Aggiunge alla
+  home marketing (`src/app/[locale]/(marketing)/page.tsx`, server component) due blocchi JSON-LD di
+  schema.org — `Organization` e `WebSite` — costruiti da funzioni PURE (`src/domain/marketing/organization-jsonld.ts`:
+  `buildOrganizationJsonLd(baseUrl, name)` / `buildWebSiteJsonLd(baseUrl, name)`, nessun accesso a env,
+  base e nome sono ARGOMENTI), serializzati con `serializeJsonLdSafe` **RIUSATO** da
+  `@/domain/generation/jsonld` (`<` `>` `&` U+2028/U+2029 → escape unicode) e montati come **figlio
+  TESTUALE** di `<script type="application/ld+json">` (mai `dangerouslySetInnerHTML` né concatenazione
+  grezza — P6A-D8, A05:2025). La base nasce da `getLandingBaseUrl()` (`NEXT_PUBLIC_LANDING_URL`, mai
+  l'Host della richiesta), il nome brand da `getBrandName()`; gli `<script>` sono fratelli del `<main>`
+  della home (come il JSON-LD LocalBusiness della serving T-410, P4, che resta sulle rotte `/s/<slug>`,
+  NON su questa). Sblocca il lato JSON-LD di `blog-post` (PUB-431). Il prossimo BUILD sceglie un
+  eleggibile (§1): `privacy-page` (PUB-341 — da `marketing-layout`) o `blog-pipeline` (PUB-401 — nuove
+  dep markdown/rehype).
 - **`seo-metadata` (13) CHIUSO+MERGIATO** (`374e2f7`, atomico `16318d7`, branch cancellato). `src/app/[locale]/(marketing)/layout.tsx` fissa `metadataBase` (host landing da
   `getLandingBaseUrl`, UNA volta) e `src/app/[locale]/(marketing)/page.tsx` aggiunge `generateMetadata` alla
   home: canonical = `getLandingBaseUrl()` (P6A-D4, invariante a locale/Host), `alternates.languages { it, es }`
@@ -81,13 +99,22 @@ il lato metadati di `blog-post` (PUB-431). **`seo-sitemap` (PUB-311) è CHIUSO**
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `trueline/build/seo-metadata` (atomico `16318d7`, **mergiato** in `main` e cancellato) |
-| Ultimo commit | `374e2f7` (merge `--no-ff` seo-metadata in main) + docs session-end MERGIATO + push |
-| Stato merge su `main` | **done** (via umana → merge `374e2f7` → push, deploy coupled; nessuna migrazione) |
-| Deploy-coupling | **coupled** (push su `main` = deploy su ulaba.net) → verifica locale FATTA prima del merge (vitest full **1991 passati / 1 rosso** = TS2589 scaffold pre-esistente invariante `scaffold.test.ts`→`e2e/effects.spec.ts`, **+5 test nuovi** `marketing-metadata.test.ts`; tsc nessun errore nuovo; next build exit 0 con `/[locale]` **ƒ** già dinamica, `/sitemap.xml` ○ e `/robots.txt` ƒ immutati, nessuna nuova rotta; e2e non impattato — metadata-only nel `<head>`, corpo `MarketingHome` invariato, nessun `goto` alla home). Nessuna migrazione. Push OK |
+| Branch di lavoro | `trueline/build/seo-jsonld` (atomico `853aa09`, **mergiato** in `main` e cancellato) |
+| Ultimo commit | `744b0ae` (merge `--no-ff` seo-jsonld in main) + docs session-end (in corso) |
+| Stato merge su `main` | **done** (via umana esplicita → merge `744b0ae` → push, deploy coupled; nessuna migrazione) |
+| Deploy-coupling | **coupled** (push su `main` = deploy su ulaba.net) → verifica locale FATTA prima del merge (vitest full **1996 passati / 1 rosso** = TS2589 scaffold pre-esistente invariante `scaffold.test.ts`→`e2e/effects.spec.ts`, **+5 test nuovi** `jsonld-organization.test.ts`; tsc nessun errore nuovo; eslint 0 sui 3 file toccati; next build exit 0 con `/[locale]` **ƒ** già dinamica, `/sitemap.xml` ○ e `/robots.txt` ƒ immutati, nessuna nuova rotta; e2e non impattato — due `<script>` additivi sulla home, corpo `MarketingHome` invariato, nessun `goto` alla home marketing). Nessuna migrazione. Push OK (`ba8aae3..744b0ae`) |
 
 ## 4. Baseline & budget
 
+- **`seo-jsonld` (PUB-331):** C1 green con **`dup:248` e blockers VUOTI** (0 cloni nuovi): il nuovo
+  modulo `src/domain/marketing/organization-jsonld.ts` è clone-free (builder minimi, nessun preambolo
+  strutturale condiviso), le ~27 righe aggiunte a `(marketing)/page.tsx` non introducono cloni e il
+  `.test.ts` è escluso dal corpus jscpd → **nessun ratchet**, baseline resta a **247** fingerprint. C2
+  green (`gitleaks:3 osv:4 semgrep:0 rls:3`, **0 nuovi ≥HIGH**): il JSON-LD è solo-logica, la difesa
+  anti-XSS è il riuso di `serializeJsonLdSafe` (nessuna serializzazione artigianale), base/nome da env
+  pubbliche (`getLandingBaseUrl`/`getBrandName`, mai l'Host della richiesta — A05:2025), nessun segreto,
+  nessuna nuova policy RLS, nessuna dep. tsc: nessun errore nuovo (solo il TS2589 invariante di
+  `e2e/effects.spec.ts`).
 - **`seo-metadata` (PUB-321):** C1 green con **`dup:248` e blockers VUOTI** (0 cloni nuovi): i due file
   toccati (`(marketing)/layout.tsx` +metadataBase, `(marketing)/page.tsx` +`generateMetadata`) non introducono
   preambolo clonato e il `.test.ts` è escluso dal corpus jscpd → **nessun ratchet**, baseline resta a **247**.
@@ -180,6 +207,52 @@ il lato metadati di `blog-post` (PUB-431). **`seo-sitemap` (PUB-311) è CHIUSO**
 - **Budget**: un macrotask alla volta; loop di fix con tetto in `references/oracles/thresholds.md`.
 
 ## 5. Esiti dell'ultima sessione (framing onesto)
+
+**BUILD `seo-jsonld` (PUB-331) — CHIUSO+MERGIATO (`744b0ae`, atomico `853aa09`).** Aggiunge alla home
+marketing due blocchi JSON-LD di schema.org — `Organization` e `WebSite` — con **builder PURI**
+(`src/domain/marketing/organization-jsonld.ts`: `buildOrganizationJsonLd(baseUrl, name)` /
+`buildWebSiteJsonLd(baseUrl, name)`, `@context`/`@type` costanti, `name` e `url` dagli ARGOMENTI, nessun
+env). La home (`(marketing)/page.tsx`, server component) risolve `base = getLandingBaseUrl()` (mai l'Host
+della richiesta — A05:2025) e `name = getBrandName()`, serializza con **`serializeJsonLdSafe` RIUSATO**
+(`@/domain/generation/jsonld`, nessuna serializzazione artigianale) e monta due
+`<script type="application/ld+json">` come **figlio TESTUALE** (mai `dangerouslySetInnerHTML`), fratelli
+del `<main>`. Target test `tests/jsonld-organization.test.ts` (5): 2 unit sui builder puri + Gruppo B che
+RENDE la home (jsdom, `createElement` + `NextIntlClientProvider` coi cataloghi reali) con **brand ostile**
+`Ulaba</script><script>alert(1)</script>` iniettato via `vi.stubEnv('NEXT_PUBLIC_BRAND_NAME', …)` e
+`NEXT_PUBLIC_LANDING_URL` pinnata (landing ≠ sito): AC-331-1 (≥2 script, uno `Organization` + uno
+`WebSite`), AC-331-2 (nessun `</script>` grezzo, `<` presente, nessuno `<script>` eseguibile nato dal
+breakout), AC-331-3 (round-trip `JSON.parse` trasparente, `name`/`url` ricostruiti). Checkpoint **4/4**:
+C1 green (`dup:248`, **0 nuovi**, nessun ratchet, baseline 247), C2 green (`gitleaks:3 osv:4 semgrep:0
+rls:3`, **0 nuovi ≥HIGH**), C3 **1996 passati / 1 rosso** (il rosso è `scaffold.test.ts`→typecheck, SOLO
+per il TS2589 invariante di `e2e/effects.spec.ts`; **+5 test nuovi verdi**), C4 target **5/5**. Mutazione
+**3/3** (M1 figlio testuale → `dangerouslySetInnerHTML` con JSON grezzo ⇒ AC-331-2 rosso, M2 rimozione del
+blocco `WebSite` ⇒ AC-331-1 rosso, M3 `serializeJsonLdSafe`→`JSON.stringify` grezzo ⇒ AC-331-2 rosso;
+ciascuno red + restore sha256 bit-identico, driver `.trueline/pub-jsonld-mutants.mjs`). tsc nessun errore
+nuovo; eslint 0 sui 3 file; `next build` exit 0 (`/[locale]` **ƒ** già dinamica, nessuna nuova rotta); e2e
+non impattato; **nessuna migrazione**. **Merge `744b0ae` + push su main ESEGUITI su via umana esplicita
+(deploy coupled su ulaba.net).**
+
+- **Lezioni (carry-over seo-jsonld):** (1) **il target_test `.ts` NON accetta JSX** in questo setup
+  oxc/vite (`PARSE_ERROR "Expected > but found Identifier"`): il modulo 14-seo-jsonld.md nomina
+  `tests/jsonld-organization.test.ts` (non `.tsx`) → build-to-spec, si compone l'albero con
+  `createElement`, mai JSX. (2) **`createElement(Component, props, children)` con props che ESIGONO
+  `children`**: il 3° arg posizionale NON soddisfa il tipo in TS strict (TS2769 "Property 'children' is
+  missing") → si mette `children` DENTRO le props (`createElement(NextIntlClientProvider, { locale,
+  messages, children: ui })`). (3) **le non-null assertion `!` accendono
+  `@typescript-eslint/no-non-null-assertion`** → il test scaffold `npm run lint` va rosso (un **2° rosso**
+  oltre l'invariante typecheck); si narrowa con `if (x === undefined) throw` invece di `x!`. ⚠️ **Un run
+  full con 2 rossi va DIAGNOSTICATO, non liquidato**: qui il 1° era il typecheck invariante, il 2° il lint
+  sulle mie `!` — la baseline attesa è **1** rosso, quindi 2 = una regressione mia da chiudere (fatto:
+  fix TS2769 + rimozione `!` → tornati a 1 rosso). (4) **React monta il figlio testuale di `<script>` via
+  `textContent`, e dentro un raw-text element NON escapa le entità HTML**: è proprio perché React non
+  difende qui che serve `serializeJsonLdSafe`; una variante non-escaped lascia il `</script>` grezzo e
+  toglie `<` dal testo (M3 red). (5) **un server component può leggere env al RENDER**
+  (`getLandingBaseUrl`/`getBrandName` chiamate dentro `MarketingHomePage`, non a import-time) → l'import
+  statico del test è sicuro e `vi.stubEnv` pilota i valori per-caso; leggere env in un server component
+  NON cambia la staticità (`/[locale]` resta `ƒ` per il cookie-read del layout radice, come per
+  `seo-metadata`). (6) Ri-confermato il gotcha `.snap`: `vitest run` full ha riscritto
+  `onboarding-generation-regression.test.ts.snap` col solo EOL → ripristinato (`git checkout`, file
+  committato), staged solo i 3 file del macrotask.
 
 **BUILD `seo-metadata` (PUB-321) — CHIUSO+MERGIATO (`374e2f7`, atomico `16318d7`).** Aggiunge
 i **metadati della landing** alla superficie marketing. `(marketing)/layout.tsx` imposta **una volta**
@@ -702,19 +775,33 @@ ripristino bit-identico sha256). `next build` ok; e2e non impattato (export non 
 
 ## 6. Prossimi passi
 
-- **13/22 macrotask done** (`host-classify`, `host-guard`, `marketing-i18n`, `marketing-layout`,
+- **14/22 macrotask done** (`host-classify`, `host-guard`, `marketing-i18n`, `marketing-layout`,
   `marketing-home`, `waitlist-schema`, `waitlist-store`, `captcha-port`, `waitlist-endpoint`,
-  `waitlist-form`, `seo-robots`, `seo-sitemap`, `seo-metadata` — tutti mergiati su main; `seo-metadata` = `374e2f7`). **Prossima sessione = BUILD di un eleggibile** (§1):
-  `seo-jsonld` (PUB-331 — JSON-LD Organization+WebSite via `serializeJsonLdSafe`, anti-XSS),
+  `waitlist-form`, `seo-robots`, `seo-sitemap`, `seo-metadata`, `seo-jsonld` — tutti mergiati su main;
+  `seo-jsonld` = `744b0ae`). **Prossima sessione = BUILD di un eleggibile** (§1):
   `privacy-page` (PUB-341 — da `marketing-layout`), `blog-pipeline` (PUB-401, nuove dep
   markdown/rehype → registrare sotto OSV). `cutover` per ultimo. **`privacy-page` (PUB-341)** è un candidato
-  naturale ora (la home ha già canonical/OG/hreflang HTML-level; /privacy dichiarerà il PROPRIO canonical);
-  `blog-post` (PUB-431) ha ora sbloccato il lato metadati (dipende da `seo-metadata` + `seo-jsonld`);
-  `blog-sitemap` (PUB-441) è sbloccato sul lato SEO ma attende `blog-content`. Il canale
+  naturale ora (la home ha già canonical/OG/hreflang HTML-level + JSON-LD; /privacy dichiarerà il PROPRIO
+  canonical); **`blog-post` (PUB-431)** ha ora ENTRAMBE le dipendenze metadati verdi (`seo-metadata` +
+  `seo-jsonld`), ma attende ancora `blog-content` (→ `blog-pipeline`); `blog-sitemap` (PUB-441) è sbloccato
+  sul lato SEO ma attende `blog-content`. Il canale
   waitlist resta **completo end-to-end**: resta un **gate visivo umano** opportuno sulla landing (la home È
   la demo) e, al go-live, la site key pubblica `NEXT_PUBLIC_TURNSTILE_SITE_KEY` + il secret
   `TURNSTILE_SECRET_KEY` su Vercel (finché assenti: form `unavailable` + endpoint che degrada, inerti
   dichiarati, nessun 500).
+- **Copertura dichiarata seo-jsonld (§6):** target_test `tests/jsonld-organization.test.ts` copre AC-331-1
+  (la home resa espone ≥2 `<script type="application/ld+json">`, uno `@type` `Organization` e uno
+  `WebSite`), AC-331-2 (con un nome brand ostile contenente `</script>`: nessuno dei due testi contiene la
+  sequenza grezza di chiusura, `<` non sopravvive → è diventato `<`, e gli UNICI `<script>` della
+  pagina sono `application/ld+json` — nessuno eseguibile nato dal breakout), AC-331-3 (round-trip
+  `JSON.parse` trasparente: `@type`/`name`/`url` ricostruiti, `url` == base landing pinnata) + 2 unit sui
+  builder puri (`@context`/`@type`/`name`/`url` dagli argomenti). Mutazione 3/3 (§5). **NON coperto
+  (dichiarato):** il **render SSR reale** del `<script>` da parte di Next è provato indirettamente via
+  `next build` (compila, `/[locale]` ƒ) e via il componente in jsdom, non da un GET reale del `<head>`;
+  il JSON-LD **`Article`** dei post del blog è di `blog-post` (PUB-431), il **`LocalBusiness`** delle rotte
+  `/s/<slug>` è di P4 (immutato, non su questa rotta); la **validazione dei tipi schema.org** presso i
+  motori di ricerca (Rich Results) è azione esterna; il **wiring reale** su `NEXT_PUBLIC_LANDING_URL`/
+  `NEXT_PUBLIC_BRAND_NAME` di produzione è provato solo strutturalmente (env stubbata nel verde).
 - **⚑ Flag di design (hreflang sitemap) — RISOLTO da `seo-metadata` (PUB-321) con l’opzione (b):** l’hreflang
   **HTML `<link rel=alternate>`** è ora emesso dalla home via `alternates.languages { it, es }` (reciproco per
   costruzione), la reciprocità che la sola sitemap non garantiva; la **sitemap resta com’è** (spec-conforme,
