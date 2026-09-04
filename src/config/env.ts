@@ -122,18 +122,32 @@ export function getSiteBaseUrl(source: Record<string, string | undefined> = proc
 
 // PUB-102 (macrotask host-classify, p6a-public-surface) — gli accessor della LANDING (P6a). Config
 // PUBBLICA (l'origine con cui la landing e' servita, la stessa che il browser vede), non un segreto.
-// getLandingHost ricava l'HOSTNAME (per la classificazione host del middleware, PUB-111): parsa
-// NEXT_PUBLIC_LANDING_URL come URL e ne prende l'hostname minuscolo senza porta. FAIL-SAFE: assente,
-// whitespace o non-parsabile => null, cosi' a valle NESSUN Host e' classificato 'landing' senza config
-// valida (P6A-D2) — mai un dominio di ripiego hardcoded.
-export function getLandingHost(source: Record<string, string | undefined> = process.env): string | null {
-  const trimmed = source.NEXT_PUBLIC_LANDING_URL?.trim();
+// L'HOSTNAME (per la classificazione host di middleware/SEO via classifyRequestHost): parsa la URL di
+// config e ne prende l'hostname minuscolo senza porta. FAIL-SAFE: assente, whitespace o non-parsabile
+// => null, cosi' a valle NESSUN Host e' classificato senza config valida (P6A-D2) — mai un dominio di
+// ripiego hardcoded. Fattorizzato (PUB-301, come normalizeBaseUrl) cosi' che getLandingHost e getAppHost
+// non duplichino le stesse righe (dedup C1).
+function hostnameFromUrl(value: string | undefined): string | null {
+  const trimmed = value?.trim();
   if (trimmed === undefined || trimmed === '') return null;
   try {
     return new URL(trimmed).hostname.toLowerCase();
   } catch {
     return null;
   }
+}
+
+// getLandingHost ricava l'hostname della LANDING da NEXT_PUBLIC_LANDING_URL (per il middleware, PUB-111).
+export function getLandingHost(source: Record<string, string | undefined> = process.env): string | null {
+  return hostnameFromUrl(source.NEXT_PUBLIC_LANDING_URL);
+}
+
+// PUB-301 (macrotask seo-robots) — l'hostname dell'APP da NEXT_PUBLIC_APP_URL, gemello di getLandingHost:
+// serve al SEO host-aware (robots/sitemap) per classificare l'Host della richiesta con classifyRequestHost
+// (host-classify, PUB-101) senza rileggere/duplicare il parsing dell'URL. FAIL-SAFE: assente/whitespace/
+// non-parsabile => null (nessun Host classificato 'app' senza config valida).
+export function getAppHost(source: Record<string, string | undefined> = process.env): string | null {
+  return hostnameFromUrl(source.NEXT_PUBLIC_APP_URL);
 }
 
 // getLandingBaseUrl ricava la BASE URL ASSOLUTA (schema+host) della landing SENZA slash finale, da cui

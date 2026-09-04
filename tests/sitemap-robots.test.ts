@@ -80,6 +80,15 @@ vi.mock('@/data/site-document-revisions', () => ({
 }));
 vi.mock('@/data/generation-choose', () => ({ selectVariant: vi.fn(async () => undefined) }));
 
+// PUB-301 — robots() ora e' async e legge l'Host via headers() (host-aware). Qui l'host mockato e' un
+// dominio CUSTOM (ne app ne landing: senza NEXT_PUBLIC_APP_URL/LANDING_URL classifica 'custom'), cosi'
+// robots() emette la postura LEGACY P5/P4 asserita da AC-411-3 (non-regressione). cookies() e' uno stub
+// inerte (nessun consumatore reale nel percorso di questo test: i seam auth sono gia' mockati).
+vi.mock('next/headers', () => ({
+  headers: async () => new Headers({ host: 'belora.example' }),
+  cookies: async () => ({ get: () => undefined, getAll: () => [], set: () => {}, delete: () => {} }),
+}));
+
 // Import DOPO i mock.
 import { GET } from '@/app/s/[slug]/sitemap.xml/route';
 import robots from '@/app/robots';
@@ -210,13 +219,14 @@ describe('T-411 sitemap.xml — match esatto su public_slug, isolamento prefisso
 // AC-411-3 — robots.txt: Allow /s/, Disallow editor/preview, riga Sitemap:
 // ═══════════════════════════════════════════════════════════════════════════════════════════════
 describe('T-411 robots.txt — allow /s/, disallow editor/preview, Sitemap: (AC-411-3)', () => {
-  const rulesOf = (r: ReturnType<typeof robots>) => (Array.isArray(r.rules) ? r.rules : [r.rules!]);
+  const rulesOf = (r: Awaited<ReturnType<typeof robots>>) =>
+    Array.isArray(r.rules) ? r.rules : [r.rules!];
   const asArray = (v: string | string[] | undefined): string[] =>
     v === undefined ? [] : Array.isArray(v) ? v : [v];
 
   // covers: AC-411-3
-  it('Allow su /s/ e NESSUN Disallow che copra /s/', () => {
-    const r = robots();
+  it('Allow su /s/ e NESSUN Disallow che copra /s/', async () => {
+    const r = await robots();
     const rules = rulesOf(r);
     const allows = rules.flatMap((rule) => asArray(rule.allow));
     const disallows = rules.flatMap((rule) => asArray(rule.disallow));
@@ -227,15 +237,15 @@ describe('T-411 robots.txt — allow /s/, disallow editor/preview, Sitemap: (AC-
   });
 
   // covers: AC-411-3
-  it('Disallow su editor e preview (locale-prefissati)', () => {
-    const disallows = rulesOf(robots()).flatMap((rule) => asArray(rule.disallow));
+  it('Disallow su editor e preview (locale-prefissati)', async () => {
+    const disallows = rulesOf(await robots()).flatMap((rule) => asArray(rule.disallow));
     expect(disallows).toContain('/*/editor'); // covers: AC-411-3
     expect(disallows).toContain('/*/preview'); // covers: AC-411-3
   });
 
   // covers: AC-411-3
-  it('contiene una riga Sitemap: (base di config)', () => {
-    const r = robots();
+  it('contiene una riga Sitemap: (base di config)', async () => {
+    const r = await robots();
     const sitemaps = asArray(r.sitemap as string | string[] | undefined);
     expect(sitemaps.length).toBeGreaterThan(0); // covers: AC-411-3
     expect(sitemaps).toContain(`${BASE}/sitemap.xml`); // covers: AC-411-3
