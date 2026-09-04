@@ -10,8 +10,8 @@
 |---|---|
 | **Progetto** | Ulaba/Belora — P6a (superficie pubblica) |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase Cloud EU) |
-| **Ultimo aggiornamento** | 2026-09-03 (BUILD `waitlist-endpoint` — checkpoint 4/4 verde, MERGIATO `193ba0e`) |
-| **Sessione corrente (BUILD `waitlist-endpoint`, PUB-231/232)** | **CHIUSO+MERGIATO** (`193ba0e`, atomico `92d4013`, deploy coupled; nessuna migrazione). **9/22 macrotask done.** |
+| **Ultimo aggiornamento** | 2026-09-04 (BUILD `waitlist-form` — checkpoint 4/4 verde, MERGIATO `4c5cb52`) |
+| **Sessione corrente (BUILD `waitlist-form`, PUB-241/242)** | **CHIUSO+MERGIATO** (`4c5cb52`, atomico `fedafe4`, deploy coupled; nessuna migrazione). **10/22 macrotask done.** |
 
 ---
 
@@ -30,7 +30,7 @@
 | 07 | `waitlist-store` (PUB-211) | **done** | 4/4 ✅ (`70418f2`) | `waitlist-schema` |
 | 08 | `captcha-port` (PUB-221/222) | **done** | 4/4 ✅ (`5933c12`) | — |
 | 09 | `waitlist-endpoint` (PUB-231/232) | **done** | 4/4 ✅ (`193ba0e`) | `waitlist-store`, `captcha-port` |
-| 10 | `waitlist-form` (PUB-241/242) | **todo** | — | `marketing-home`, `waitlist-endpoint` |
+| 10 | `waitlist-form` (PUB-241/242) | **done** | 4/4 ✅ (`4c5cb52`) | `marketing-home`, `waitlist-endpoint` |
 | 11 | `seo-robots` (PUB-301) | **todo** | — | `marketing-layout` |
 | 12 | `seo-sitemap` (PUB-311) | **todo** | — | `marketing-layout` |
 | 13 | `seo-metadata` (PUB-321) | **todo** | — | `marketing-layout` |
@@ -44,24 +44,23 @@
 | 21 | `blog-seed` (PUB-451) | **todo** | — | `blog-content` |
 | 22 | `cutover` (PUB-501) | **todo** | — | (tutte le superfici pubbliche) |
 
-**Eleggibili ora (dipendenze verdi):** **`waitlist-form`** (PUB-241/242 — ORA SBLOCCATO: ha sia
-`marketing-home` sia `waitlist-endpoint` verdi; il form client nei 2 `waitlist-slot` della home, con
-honeypot + widget Turnstile + POST a `/api/waitlist`, stati inserted/already/errore dal contratto
-`{ status }`), `seo-robots`/`seo-sitemap`/`seo-metadata`/`privacy-page` (sbloccati da `marketing-layout`),
-`seo-jsonld` (sbloccato da `marketing-home`), `blog-pipeline` (PUB-401 — nuove dep markdown/rehype →
-registrare sotto OSV). `cutover` per ultimo.
+**Eleggibili ora (dipendenze verdi):** `seo-robots`/`seo-sitemap`/`seo-metadata`/`privacy-page`
+(PUB-301/311/321/341 — sbloccati da `marketing-layout`), `seo-jsonld` (PUB-331 — sbloccato da
+`marketing-home`), `blog-pipeline` (PUB-401 — nuove dep markdown/rehype → registrare sotto OSV).
+`cutover` per ultimo. **`waitlist-form` (PUB-241/242) è CHIUSO** (`4c5cb52`): il form client nei 2
+`waitlist-slot` della home, con honeypot + widget Turnstile + consenso GDPR + POST a `/api/waitlist`
+(stati inserted/already/errore dal contratto `{ status }`), è in main.
 
 ## 2. Macrotask corrente
 
-- **Nessuno in corso** — `waitlist-endpoint` (09) chiuso e mergiato. `POST /api/waitlist`
-  (`src/app/api/waitlist/route.ts`) compone i pezzi verdi: `guardMutatingRequest` (same-origin + tetto
-  byte) + zod-shape + honeypot (200 silente, no insert) + `CaptchaVerifier` iniettabile (default
-  `getTurnstileVerifier`, verificata solo se `isTurnstileConfigured`, non-ok → 4xx, inerte senza env → no
-  500) + `insertLead` idempotente (`inserted`/`already` entrambi 200, anti-enumerazione; email malformata
-  → 422). Il canale di scrittura della waitlist è pronto lato server: manca solo il form client. Il
-  prossimo BUILD sceglie un eleggibile (§1) rispettando il DAG: **`waitlist-form`** (PUB-241/242 — ORA
-  SBLOCCATO: ha `marketing-home` + `waitlist-endpoint`; form nei 2 `waitlist-slot` con honeypot + widget
-  Turnstile + POST a `/api/waitlist`), `seo-jsonld` (PUB-331 → JSON-LD via `serializeJsonLdSafe`), i
+- **Nessuno in corso** — `waitlist-form` (10) chiuso e mergiato. `WaitlistForm` client
+  (`src/ui/waitlist/WaitlistForm.tsx`) + confine `waitlist-calls.ts` (gemello di `domain-calls.ts`: POST
+  same-origin a `/api/waitlist`, mappa `{ status }` → `{ kind: inserted|already|error }`, non-2xx/rete
+  caduta → error) montato nei 2 `data-testid=waitlist-slot` della home (`MarketingHome`, PUB-141). Widget
+  Turnstile solo con la site key PUBBLICA `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (assente → `unavailable`, no
+  crash); consenso GDPR NON pre-spuntato che blocca il submit; link privacy `/{locale}/privacy` fisso. Il
+  canale waitlist è ora completo end-to-end (form → endpoint → store → tabella). Il prossimo BUILD sceglie
+  un eleggibile (§1) rispettando il DAG: `seo-jsonld` (PUB-331 → JSON-LD via `serializeJsonLdSafe`), i
   quattro `seo-robots`/`seo-sitemap`/`seo-metadata`/`privacy-page` (da `marketing-layout`), `blog-pipeline`
   (PUB-401) — indipendenti tra loro.
 - **Metodo**: UN macrotask per sessione via **dynamic workflow command-free** (builder solo Read/Write/
@@ -74,10 +73,10 @@ registrare sotto OSV). `cutover` per ultimo.
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `trueline/build/waitlist-endpoint` (atomico `92d4013`, **mergiato** in `main`) |
-| Ultimo commit | `193ba0e` (merge `--no-ff` waitlist-endpoint in main) + docs session-end + push |
+| Branch di lavoro | `trueline/build/waitlist-form` (atomico `fedafe4`, **mergiato** in `main`) |
+| Ultimo commit | `4c5cb52` (merge `--no-ff` waitlist-form in main) + docs session-end + push |
 | Stato merge su `main` | **done** (checkpoint 4/4 verde → verifica locale → merge → push, deploy coupled; nessuna migrazione) |
-| Deploy-coupling | **coupled** (push su `main` = deploy su ulaba.net) → verifica locale FATTA prima del merge (vitest full **1969/1970**, unico rosso = TS2589 scaffold pre-esistente invariante; next build exit 0 con `/api/waitlist` ƒ registrata; e2e non impattato — rotta `/api` additiva, il middleware esclude `/api`, nessuna UI/middleware/rotta esistente toccata). Nessuna migrazione in questo macrotask |
+| Deploy-coupling | **coupled** (push su `main` = deploy su ulaba.net) → verifica locale FATTA prima del merge (vitest full **1976/1977**, unico rosso = TS2589 scaffold pre-esistente invariante; next build exit 0 con `/[locale]` e `/api/waitlist` ƒ registrate; e2e non impattato — nessun `goto` alla home `/{locale}`, solo UI additiva client). Nessuna migrazione in questo macrotask |
 
 ## 4. Baseline & budget
 
@@ -111,13 +110,91 @@ registrare sotto OSV). `cutover` per ultimo.
   vuoti** (C1 green): il route handler condivide il preambolo guard+parse+`jsonError` con `generate`/
   `domains/connect` ma sotto-soglia jscpd (nessun clone nuovo), il getter `getTurnstileVerifier` è gemello
   di `getVercelDomainProvider` e i `.test.ts` sono esclusi dal corpus → **0 nuovi cloni, nessun ratchet**
-  (baseline resta a 245). C2 su `waitlist-endpoint` = `gitleaks:3 osv:4 semgrep:0 rls:3`, **0 nuovi
+  (baseline resta a 245). In `waitlist-form` C1 ha mostrato **1 clone NUOVO** (`dup:247`, fingerprint
+  `a58520bad9f5ce3b39f6ff954c4ef355`) su `src/app/api/domains/connect/route.ts` [116-123] ↔
+  `waitlist/route.ts` [66-73] e `generate/route.ts` [105-112] — il **preambolo dei route handler**
+  (guard+parse+`jsonError`, 65 token) che a `waitlist-endpoint` era sotto-soglia e ora è affiorato dal
+  **cambio-corpus jscpd** dei miei 2 file client. Prova triangolata su `.trueline/jscpd-c1`: **0 dei 137
+  cloni tocca `waitlist-calls.ts`/`WaitlistForm.tsx`/`MarketingHome.tsx`** → il mio diff aggiunge **0
+  cloni**; il +1 è codice PRE-ESISTENTE su main, fuori dal diff. Risoluzione = **ratchet additivo onesto
+  245→246 fingerprint** (`pub-hygiene-ratchet.mjs`), NON un refactor dei route (fuori scope, churn su file
+  non toccati); dopo il ratchet C1 torna green (0 nuovi). C2 su `waitlist-endpoint` = `gitleaks:3 osv:4 semgrep:0 rls:3`, **0 nuovi
   ≥HIGH**: nessun segreto nel sorgente (il secret Turnstile resta dietro l'adattatore `server-only`, letto
   da env nel getter), **nessuna `service_role` nel percorso utente** (la scrittura passa SOLO da
-  `insertLead`), same-origin presente (`guardMutatingRequest`), nessuna nuova policy RLS.
+  `insertLead`), same-origin presente (`guardMutatingRequest`), nessuna nuova policy RLS. In
+  `waitlist-form` C2 ha inizialmente segnalato **1 finding NUOVO ≥HIGH** (`gitleaks:4`, CRITICAL) su
+  `tests/ui-waitlist-form.test.tsx`: il rule custom della skill `trueline-generic-assigned-secret` ha
+  colto `const SITE_KEY = 'NEXT_PUBLIC_TURNSTILE_SITE_KEY'` — identificatore "sensibile" (contiene KEY) +
+  valore ≥24 char `[a-z0-9_-]`. **Falso positivo** (`NEXT_PUBLIC_TURNSTILE_SITE_KEY` è il NOME della env,
+  non un segreto; e la site key è comunque PUBBLICA). Fix onesto = **rinominare** la costante di test
+  `SITE_KEY`→`TURNSTILE_ENV` (identificatore non-sensibile) così il rule non scatta più — NON un baseline
+  del FP: dopo il fix C2 = `gitleaks:3 osv:4 semgrep:0 rls:3`, **0 nuovi ≥HIGH**. Il componente
+  `WaitlistForm.tsx` legge la site key con `process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY` (RHS non-quotata →
+  il rule non la vede) e non contiene alcun segreto (solo la site key pubblica, A07:2025).
 - **Budget**: un macrotask alla volta; loop di fix con tetto in `references/oracles/thresholds.md`.
 
 ## 5. Esiti dell'ultima sessione (framing onesto)
+
+**BUILD `waitlist-form` (PUB-241/242) — CHIUSO+MERGIATO (`4c5cb52`, atomico `fedafe4`).** Completa il
+canale waitlist end-to-end (form → endpoint → store → tabella) montando il form client nei due
+`data-testid=waitlist-slot` della home (`MarketingHome`, PUB-141). **PUB-241 (componente + stati +
+confine):** `src/ui/waitlist/WaitlistForm.tsx` (`'use client'`) consuma il namespace `landing.waitlist`
+e rende email + submit + regione widget + esito; `src/ui/waitlist/waitlist-calls.ts` (gemello di
+`domain-calls.ts`) è l'UNICO punto che conosce la rotta, POSTa **same-origin** a `/api/waitlist` e mappa
+il contratto `{ status }` (PUB-232) al tipo stretto `{ kind: 'inserted'|'already'|'error' }` — un
+non-2xx/rete caduta/forma inattesa → `'error'` (la UI non inventa uno stato). Stati: `idle` →
+`submitting` → `successNew` (inserted) / `successExisting` (already, **amichevole non errore**) / `error`.
+Il **widget Turnstile** si monta SOLO con la site key PUBBLICA `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (letta
+LETTERALE nel render, inline Next; lo script Cloudflare caricato una volta, idempotente); assente →
+regione `unavailable`, nessun crash (inerte, P6A-D6/D9, coerente con l'endpoint che degrada senza il
+secret). **Honeypot** invisibile (fuori dal tab order, `aria-hidden`). **PUB-242 (consenso GDPR):**
+checkbox NON pre-spuntato (opt-in esplicito, P6A-D7); il submit resta **BLOCCATO** (`disabled` + guardia
+nell'handler, nessun fetch) finché il consenso non è dato; link privacy con href interno **FISSO**
+`/{locale}/privacy` (mai da input utente, anti open-redirect). Presentazionale: riflette l'esito del
+server, non decide (P6A-D5); output SOLO testo JSX (escaping React), nessun `innerHTML`; nel client vive
+SOLO la site key pubblica (A07:2025). Target test `tests/ui-waitlist-form.test.tsx` (7 test): AC-241-1
+(inserted → successNew + POST a `/api/waitlist` con `{email, locale:'it'}`), AC-241-2 (already →
+successExisting, + contro-prova non-2xx → error), AC-241-3 (senza site key → `unavailable`, nessun
+`.cf-turnstile`, nessun throw), AC-242-1 (consenso non spuntato → submit `disabled`, nessun fetch),
+AC-242-2 (spuntato → submit abilitato, fetch invocato una volta), AC-242-3 (href = `/it/privacy`). Store
+e rete iniettati via `fetch` mockato + `vi.stubEnv` (nessuna chiave/DB nel verde). Checkpoint **4/4**:
+C1 green (`dup:247 cycle:0 dead-code:0`, **0 nuovi dopo ratchet onesto 245→246** del clone PRE-ESISTENTE
+sui route handler, §4), C2 green (`gitleaks:3 osv:4 semgrep:0 rls:3`, **0 nuovi ≥HIGH** dopo la rimozione
+del FP `trueline-generic-assigned-secret`, §4), C3 **1976/1977** (unico rosso = TS2589 scaffold
+pre-esistente in `e2e/effects.spec.ts`, invariato; **+7 test nuovi verdi**), C4 target test **7/7**.
+Mutazione **4/4** (M1 `already`→error nel confine ⇒ AC-241-2 rosso, M2 widget-mancante-lancia ⇒ AC-241-3
+rosso, M3 consenso pre-spuntato `useState(true)` ⇒ AC-242-1 rosso, M4 submit non-gated dal consenso ⇒
+AC-242-1 rosso; ciascuno red + restore sha256 bit-identico, driver `.trueline/pub-form-mutants.mjs`
+multi-file src). tsc nessun errore nuovo; `next build` exit 0 (`/[locale]` e `/api/waitlist` ƒ); e2e non
+impattato (nessun `goto` alla home); **nessuna migrazione**.
+
+- **Lezioni (carry-over waitlist-form):** (1) **il rule gitleaks della skill colpisce l'identificatore, non
+  il valore** — `const SITE_KEY = 'NEXT_PUBLIC_TURNSTILE_SITE_KEY'` accende `trueline-generic-assigned-secret`
+  perché l'identificatore contiene `key` E il valore (il NOME della env, 30 char) supera la soglia
+  ≥24-char/entropia. Falso positivo (la site key è pubblica; quello è il nome della variabile). Fix onesto:
+  **rinominare** la costante (`SITE_KEY`→`TURNSTILE_ENV`, senza `key/token/secret/cred/passwd/password`) — il
+  rule pretende un identificatore sensibile IMMEDIATAMENTE prima di `=`, quindi con un nome innocuo non
+  scatta, indipendentemente dal valore. NON baselinare un FP che si può eliminare alla radice. **Trappola
+  `sed g`**: `s/SITE_KEY/TURNSTILE_ENV/g` corrompe anche `NEXT_PUBLIC_TURNSTILE_SITE_KEY` dentro la stringa
+  → il nome env va ripristinato (deve restare quello reale letto dal componente). (2) **il componente legge
+  NEXT_PUBLIC con RHS non-quotata** (`process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY`, member-expression) → il
+  rule (che pretende `["'](valore)["']`) non lo vede: solo la stringa-literal nel test lo accendeva. La
+  lettura è **letterale nel render** (non un getter con `source`): Next inietta la NEXT_PUBLIC a build-time
+  solo sulle occorrenze letterali `process.env.NEXT_PUBLIC_*`, e `vi.stubEnv` la pilota per-caso nei test
+  (un getter parametrico romperebbe l'inlining nel browser). (3) **il clone C1 era PRE-ESISTENTE affiorato,
+  non mio** — il `dup:247` è il preambolo dei route handler (`guard+parse+jsonError`, 65 token) tra
+  `connect`/`waitlist`/`generate` route.ts, sotto-soglia a `waitlist-endpoint` e affiorato dal cambio-corpus
+  dei miei 2 file client. Prova su `.trueline/jscpd-c1`: 0/137 cloni tocca i miei file → **0 cloni miei**,
+  ratchet additivo onesto (come host-classify/marketing-home), NON refactor dei route (fuori scope). (4)
+  **montare il form nei slot NON rompe `marketing-home`** — i due `<div data-testid=waitlist-slot>` restano
+  (il form è loro FIGLIO), quindi AC-141-2 (conteggio 2) tiene; lo `hero-preview-slot` è un div separato,
+  AC-141-1 (vuoto) invariato; con `NEXT_PUBLIC_TURNSTILE_SITE_KEY` assente il form rende `unavailable`,
+  nessuna asserzione della home tocca il form → 3/3 verde. (5) **il gate del submit è `disabled` + guardia
+  nell'handler**: la mutazione che rimuove `!consent` dal `disabled` è colta dall'asserzione
+  `disabled===true` di AC-242-1 anche se la guardia dell'handler blocca comunque il fetch (belt-and-
+  suspenders: due mutazioni distinte, entrambe rosse). (6) Ri-confermato il gotcha `.snap`: `vitest run`
+  full ha riscritto `onboarding-generation-regression.test.ts.snap` col solo EOL → ripristinato (`git
+  checkout`), mai committato (staged solo i 5 file del macrotask + la hygiene-baseline).
 
 **BUILD `waitlist-endpoint` (PUB-231/232) — CHIUSO+MERGIATO (`193ba0e`, atomico `92d4013`).** Crea
 `POST /api/waitlist` (`src/app/api/waitlist/route.ts`), l'UNICO canale di scrittura della waitlist
@@ -448,16 +525,28 @@ ripristino bit-identico sha256). `next build` ok; e2e non impattato (export non 
 
 ## 6. Prossimi passi
 
-- **9/22 macrotask done** (`host-classify`, `host-guard`, `marketing-i18n`, `marketing-layout`,
-  `marketing-home`, `waitlist-schema`, `waitlist-store`, `captcha-port`, `waitlist-endpoint`). **Prossima
-  sessione = BUILD di un eleggibile** (§1): **`waitlist-form`** (PUB-241/242 — ORA SBLOCCATO: ha
-  `marketing-home` + `waitlist-endpoint`; il form client nei 2 `waitlist-slot` della home
-  (`data-slot=hero`/`closing`), con honeypot + widget Turnstile (site key pubblica `NEXT_PUBLIC_*`) + POST
-  a `/api/waitlist`, stati inserted/already/errore dal contratto `{ status }`; copy dal namespace
-  `landing`; GATE VISIVO umano opportuno), `seo-jsonld` (PUB-331 — JSON-LD Organization+WebSite via
-  `serializeJsonLdSafe`, anti-XSS), `seo-robots`/`seo-sitemap`/`seo-metadata`/`privacy-page`
-  (PUB-301/311/321/341 — da `marketing-layout`), `blog-pipeline` (PUB-401, nuove dep markdown/rehype →
-  registrare sotto OSV). `cutover` per ultimo.
+- **10/22 macrotask done** (`host-classify`, `host-guard`, `marketing-i18n`, `marketing-layout`,
+  `marketing-home`, `waitlist-schema`, `waitlist-store`, `captcha-port`, `waitlist-endpoint`,
+  `waitlist-form`). **Prossima sessione = BUILD di un eleggibile** (§1): `seo-jsonld` (PUB-331 — JSON-LD
+  Organization+WebSite via `serializeJsonLdSafe`, anti-XSS), `seo-robots`/`seo-sitemap`/`seo-metadata`/
+  `privacy-page` (PUB-301/311/321/341 — da `marketing-layout`), `blog-pipeline` (PUB-401, nuove dep
+  markdown/rehype → registrare sotto OSV). `cutover` per ultimo. Il canale waitlist è **completo
+  end-to-end** (form client → endpoint → store → tabella): resta un **gate visivo umano** opportuno sulla
+  landing (la home È la demo del prodotto) e, al go-live, la site key pubblica `NEXT_PUBLIC_TURNSTILE_SITE_KEY`
+  + il secret `TURNSTILE_SECRET_KEY` da valorizzare su Vercel (finché assenti: form `unavailable` +
+  endpoint che degrada, entrambi inerti dichiarati, nessun 500).
+- **Copertura dichiarata waitlist-form (§6):** target_test `tests/ui-waitlist-form.test.tsx` copre AC-241-1
+  (inserted → `successNew` + POST a `/api/waitlist` con `{email, locale}`), AC-241-2 (already →
+  `successExisting`, + contro-prova non-2xx → `error`), AC-241-3 (senza site key → `unavailable`, nessun
+  `.cf-turnstile`, nessun throw), AC-242-1 (consenso non spuntato → submit `disabled`, nessun fetch),
+  AC-242-2 (spuntato → abilitato + fetch invocato), AC-242-3 (href `/it/privacy`). Mutazione 4/4 (§5).
+  **NON coperto (dichiarato):** l'**esecuzione reale del challenge Turnstile** (lo script Cloudflare non gira
+  in jsdom; il token è letto da `cf-turnstile-response` se presente, altrimenti stringa vuota → il server
+  decide) e il **wiring reale** su una site key valida (provato solo strutturalmente: con la site key stubbata
+  si monta `.cf-turnstile` con `data-sitekey`, senza si mostra `unavailable`); l'**estetica/responsive** del
+  form (brand, spaziature) — cura del polish, non gate qui; la **prova di consenso lato server** (IP/timestamp
+  legale) è fuori scope v1 (P6A-D7); il render SSR end-to-end della home col form è provato indirettamente
+  via `next build` (compila, `/[locale]` ƒ) e via il componente in jsdom, non da un render SSR reale.
 - **Copertura dichiarata captcha-port (§6):** target_test `tests/captcha-port.test.ts` copre AC-221-1
   (fake `{ ok: true }` → `verify` risolve `{ ok: true }`), AC-221-2 (fake `{ ok: false }` → `{ ok: false }`)
   + un guard di purezza (nessun import di rete/env/adattatore); `tests/captcha-turnstile.test.ts` copre
