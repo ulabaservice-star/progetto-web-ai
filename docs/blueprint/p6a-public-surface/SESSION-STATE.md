@@ -10,8 +10,8 @@
 |---|---|
 | **Progetto** | Ulaba/Belora — P6a (superficie pubblica) |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase Cloud EU) |
-| **Ultimo aggiornamento** | 2026-09-04 (BUILD `seo-sitemap` — checkpoint 4/4 verde, MERGIATO `52fb2c5`) |
-| **Sessione corrente (BUILD `seo-sitemap`, PUB-311)** | **CHIUSO+MERGIATO** (`52fb2c5`, atomico `42a866d`, deploy coupled; nessuna migrazione). **12/22 macrotask done.** |
+| **Ultimo aggiornamento** | 2026-09-04 (BUILD `seo-metadata` — checkpoint 4/4 verde + mutazione 3/3, atomico `16318d7` sul branch; MERGE su main IN ATTESA di via umana) |
+| **Sessione corrente (BUILD `seo-metadata`, PUB-321)** | **VERDE 4/4 + mutazione 3/3 — atomico `16318d7` sul branch `trueline/build/seo-metadata`; MERGE su main GATED da via umana** (deploy coupled; nessuna migrazione). **13/22 macrotask done** (12 mergiati + 1 sul branch). |
 
 ---
 
@@ -33,7 +33,7 @@
 | 10 | `waitlist-form` (PUB-241/242) | **done** | 4/4 ✅ (`4c5cb52`) | `marketing-home`, `waitlist-endpoint` |
 | 11 | `seo-robots` (PUB-301) | **done** | 4/4 ✅ (`90d0907`) | `marketing-layout` |
 | 12 | `seo-sitemap` (PUB-311) | **done** | 4/4 ✅ (`52fb2c5`) | `marketing-layout` |
-| 13 | `seo-metadata` (PUB-321) | **todo** | — | `marketing-layout` |
+| 13 | `seo-metadata` (PUB-321) | **done** | 4/4 ✅ (`16318d7`, branch) | `marketing-layout` |
 | 14 | `seo-jsonld` (PUB-331) | **todo** | — | `marketing-home` |
 | 15 | `privacy-page` (PUB-341) | **todo** | — | `marketing-layout` |
 | 16 | `blog-pipeline` (PUB-401) | **todo** | — | — |
@@ -44,17 +44,25 @@
 | 21 | `blog-seed` (PUB-451) | **todo** | — | `blog-content` |
 | 22 | `cutover` (PUB-501) | **todo** | — | (tutte le superfici pubbliche) |
 
-**Eleggibili ora (dipendenze verdi):** `seo-metadata`/`privacy-page`
-(PUB-321/341 — sbloccati da `marketing-layout`), `seo-jsonld` (PUB-331 — sbloccato da
-`marketing-home`), `blog-pipeline` (PUB-401 — nuove dep markdown/rehype → registrare sotto OSV).
-`cutover` per ultimo. **`seo-sitemap` (PUB-311) è CHIUSO** (`52fb2c5`): `src/app/sitemap.ts`
+**Eleggibili ora (dipendenze verdi):** `privacy-page` (PUB-341 — da `marketing-layout`),
+`seo-jsonld` (PUB-331 — da `marketing-home`), `blog-pipeline` (PUB-401 — nuove dep markdown/rehype →
+registrare sotto OSV). `cutover` per ultimo. **`seo-metadata` (PUB-321) è CHIUSO sul branch** (`16318d7`,
+merge su main gated): `generateMetadata` della home marketing (canonical fisso landing + OG 1200×630 +
+twitter + hreflang HTML-level it/es) — RISOLVE il flag hreflang di seo-sitemap con l’opzione (b) e sblocca
+il lato metadati di `blog-post` (PUB-431). **`seo-sitemap` (PUB-311) è CHIUSO** (`52fb2c5`): `src/app/sitemap.ts`
 (MetadataRoute.Sitemap) landing — home + `/privacy` + indice `/blog`, ognuno con hreflang IT↔ES da
 `getLandingBaseUrl` — è in main e materializza la Sitemap che `robots.ts` (PUB-301) già nomina sul ramo
 `'landing'`. Sblocca `blog-sitemap` (PUB-441) sul lato SEO.
 
 ## 2. Macrotask corrente
 
-- **Nessuno in corso** — `seo-sitemap` (12) chiuso e mergiato. `src/app/sitemap.ts`
+- **`seo-metadata` (13) CHIUSO sul branch `trueline/build/seo-metadata` (`16318d7`), MERGE su main GATED da
+  via umana.** `src/app/[locale]/(marketing)/layout.tsx` fissa `metadataBase` (host landing da
+  `getLandingBaseUrl`, UNA volta) e `src/app/[locale]/(marketing)/page.tsx` aggiunge `generateMetadata` alla
+  home: canonical = `getLandingBaseUrl()` (P6A-D4, invariante a locale/Host), `alternates.languages { it, es }`
+  (hreflang HTML-level reciproco), `openGraph` title/description/url + `images` 1200×630 placeholder,
+  `twitter.card ’summary_large_image’`; title/description da `landing.meta.*` (it/es). Il precedente
+  `seo-sitemap` (12) resta mergiato: `src/app/sitemap.ts`
   (`MetadataRoute.Sitemap`, file convention Next) è la sitemap della LANDING (`/sitemap.xml`), sorella
   pubblica della sitemap per-sito `/s/<slug>/sitemap.xml` (P4). Emette le **tre pagine stabili** — home
   (`${base}/it`), `/privacy`, indice `/blog` — ciascuna con **una voce** `alternates.languages { it, es }`
@@ -64,7 +72,7 @@
   richiesta (nessun `headers()`) → `/sitemap.xml` resta **statico** (`○`), diverso da `robots.ts` che è
   `ƒ`. I singoli post del blog restano fuori (li aggiunge `blog-sitemap`, PUB-441). Il prossimo BUILD
   sceglie un eleggibile (§1) rispettando il DAG: `seo-jsonld` (PUB-331 → JSON-LD via `serializeJsonLdSafe`),
-  `seo-metadata`/`privacy-page` (da `marketing-layout`), `blog-pipeline` (PUB-401) — indipendenti tra loro.
+  `privacy-page` (da `marketing-layout`), `blog-pipeline` (PUB-401) — indipendenti tra loro.
 - **Metodo**: UN macrotask per sessione via **dynamic workflow command-free** (builder solo Read/Write/
   Edit; oracoli — checkpoint 4/4 + mutazione — in **foreground** dall'orchestratore, unico giudice del
   verde). Vedi 00-INDEX §Granularità e la memoria `dynamic-workflow-build-method`.
@@ -75,13 +83,21 @@
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `trueline/build/seo-sitemap` (atomico `42a866d`, **mergiato** in `main` e cancellato) |
-| Ultimo commit | `52fb2c5` (merge `--no-ff` seo-sitemap in main) + docs session-end + push |
-| Stato merge su `main` | **done** (checkpoint 4/4 verde → verifica locale → merge → push `3df1ae9..52fb2c5`, deploy coupled; nessuna migrazione) |
-| Deploy-coupling | **coupled** (push su `main` = deploy su ulaba.net) → verifica locale FATTA prima del merge (vitest full **1986 passati / 1 rosso** = TS2589 scaffold pre-esistente invariante `scaffold.test.ts`→`e2e/effects.spec.ts`, **+4 test nuovi** `sitemap-landing.test.ts`; next build exit 0 con **`/sitemap.xml` STATICO `○`** — nuova rotta, oltre a `/s/[slug]/sitemap.xml` ƒ e `/robots.txt` ƒ immutati; e2e non impattato — la sitemap è una rotta metadata a-lato-build, nessun flusso Playwright la tocca, nessuna pagina/goto cambiata). Nessuna migrazione in questo macrotask. Push `3df1ae9..52fb2c5` OK al primo tentativo |
+| Branch di lavoro | `trueline/build/seo-metadata` (atomico `16318d7`, **NON ancora mergiato** — merge su main gated da via umana) |
+| Ultimo commit (branch) | `16318d7` (feat seo-metadata PUB-321); `main` resta a `52fb2c5` |
+| Stato merge su `main` | **IN ATTESA di via umana** (checkpoint 4/4 verde + mutazione 3/3 + next build exit 0; merge su `main` = deploy su ulaba.net → richiede via esplicita; e2e Chromium full da eseguire al gate di merge — metadata-only, non impattato) |
+| Deploy-coupling | **coupled** (push su `main` = deploy su ulaba.net). Verifica locale FATTA sul branch: vitest full **1991 passati / 1 rosso** = TS2589 scaffold pre-esistente invariante (`scaffold.test.ts`→`e2e/effects.spec.ts`), **+5 test nuovi** `marketing-metadata.test.ts`; tsc nessun errore nuovo; next build exit 0 (`/[locale]` **ƒ** — già dinamica per il cookie-read di `resolveInitialLocale`, NON un effetto dei metadati; `/sitemap.xml` ○ e `/robots.txt` ƒ immutati, nessuna nuova rotta). e2e non impattato (metadata-only nel `<head>`, corpo `MarketingHome` invariato, nessun `goto` alla home). Nessuna migrazione. **Merge/push su main NON eseguiti (gated).** |
 
 ## 4. Baseline & budget
 
+- **`seo-metadata` (PUB-321):** C1 green con **`dup:248` e blockers VUOTI** (0 cloni nuovi): i due file
+  toccati (`(marketing)/layout.tsx` +metadataBase, `(marketing)/page.tsx` +`generateMetadata`) non introducono
+  preambolo clonato e il `.test.ts` è escluso dal corpus jscpd → **nessun ratchet**, baseline resta a **247**.
+  C2 green (`gitleaks:3 osv:4 semgrep:0 rls:3`, **0 nuovi ≥HIGH**): canonical/OG/metadataBase nascono da
+  `getLandingBaseUrl` (env, mai l’Host della richiesta né testo libero — A05:2025), nessun segreto (la site key
+  resta di `waitlist-form`), nessuna nuova policy RLS, nessuna dep. tsc: nessun errore nuovo (solo il TS2589
+  invariante di `e2e/effects.spec.ts`); la union `Twitter` di Next non espone `card` in accesso diretto → nel
+  test si asserisce con `toMatchObject`, non con `.card`.
 - **`seo-sitemap` (PUB-311):** C1 green con **`dup:248` e blockers VUOTI** (0 cloni nuovi): `src/app/sitemap.ts`
   è un modulo nuovo e clone-free (non condivide preambolo strutturale né con `robots.ts` né con il route
   handler della sitemap per-sito), i `.test.ts` sono esclusi dal corpus jscpd → **nessun ratchet**, la
@@ -166,6 +182,47 @@
 - **Budget**: un macrotask alla volta; loop di fix con tetto in `references/oracles/thresholds.md`.
 
 ## 5. Esiti dell'ultima sessione (framing onesto)
+
+**BUILD `seo-metadata` (PUB-321) — CHIUSO sul branch (`16318d7`), MERGE su main GATED da via umana.** Aggiunge
+i **metadati della landing** alla superficie marketing. `(marketing)/layout.tsx` imposta **una volta**
+`metadataBase = new URL(getLandingBaseUrl())` (host LANDING da `NEXT_PUBLIC_LANDING_URL`, config pubblica, MAI
+l’Host della richiesta — A05:2025 host-injection/open-redirect; `getLandingBaseUrl` ha un ripiego di sviluppo
+valido → `new URL()` non lancia). `(marketing)/page.tsx` aggiunge `generateMetadata` alla **home**:
+`alternates.canonical` = `getLandingBaseUrl()` **FISSO** (P6A-D4, invariante al locale E all’Host della
+richiesta — la home = radice della landing, canonical della PROPRIA pagina, NON un canonical unico nel layout
+che /privacy e /blog erediterebbero), `alternates.languages { it, es }` (**hreflang HTML-level reciproco** —
+questo RISOLVE il flag di design di seo-sitemap con l’opzione (b): la sitemap resta com’è, la reciprocità la
+garantisce il `<head>`), `openGraph` con title/description/url + `images [{ url, width:1200, height:630 }]`
+(placeholder finché il founder non carica l’immagine, VISION §10), `twitter.card ’summary_large_image’`.
+title/description vengono da `landing.meta.title`/`landing.meta.description` (nuove chiavi in it/es, parità
+mantenuta). Target test `tests/marketing-metadata.test.ts` (AC-321-1/2/3/4): `getTranslations` mockato sui
+cataloghi REALI it/es (idioma dashboard-onboarding-cta), accessor env REALI pinnati con **landing ≠ site**
+(uccide la mutazione canonical→origine diversa). Checkpoint **4/4**: C1 green (`dup:248`, **0 nuovi**, nessun
+ratchet, baseline 247), C2 green (`gitleaks:3 osv:4 semgrep:0 rls:3`, **0 nuovi ≥HIGH**), C3 **1991 passati /
+1 rosso** (il rosso è `scaffold.test.ts`→typecheck, SOLO per il TS2589 invariante di `e2e/effects.spec.ts`;
+**+5 test nuovi verdi**), C4 target **5/5** (4 AC + 1 localizzazione). Mutazione **3/3** (M1 canonical con origine
+diversa dalla landing ⇒ AC-321-1 rosso, M2 og:image ≠ 1200×630 ⇒ AC-321-2 rosso, M3 rimozione ramo `es` da
+`alternates.languages` ⇒ AC-321-3 rosso; ciascuno red + restore sha256 bit-identico, driver
+`.trueline/pub-metadata-mutants.mjs`). tsc nessun errore nuovo; `next build` exit 0 (`/[locale]` **ƒ** — già
+dinamica prima, non un effetto dei metadati); e2e non impattato; **nessuna migrazione**. **Merge/push su main
+NON eseguiti — gated da via umana.**
+
+- **Lezioni (carry-over seo-metadata):** (1) **canonical della home = base landing NUDA, non `${base}/it`**:
+  il DoD/AC-321-1 vogliono `alternates.canonical === getLandingBaseUrl()` (la radice), invariante al locale — la
+  home canonicalizza alla radice della landing (che redirige a /it), coerente con l’host fisso P6A-D4; gli
+  hreflang `alternates.languages` sono invece per-locale (`${base}/it`, `${base}/es`). (2) **la union `Twitter`
+  di Next non espone `.card` in accesso diretto** (un membro ne è privo) → in TS strict `meta.twitter?.card` dà
+  TS2339; si asserisce con `expect(meta.twitter).toMatchObject({ card: … })`, senza toccare la proprietà sul
+  tipo union. (3) **`getTranslations({ locale, namespace })` in `generateMetadata`**: si passa il `locale`
+  esplicito (generateMetadata può girare prima di `setRequestLocale`); nei test si mocka `next-intl/server`
+  risolvendo dai cataloghi REALI (namespace annidato `landing.meta` risolto per split del path). (4)
+  **metadataBase nel layout, canonical per-pagina**: un `alternates.canonical` nel layout sarebbe ereditato da
+  /privacy e /blog (tutte canonicalizzate alla home) → il layout mette SOLO `metadataBase`, ogni pagina dichiara
+  il proprio canonical. (5) **`/[locale]` era GIÀ `ƒ`**: il cookie-read di `resolveInitialLocale` (layout radice)
+  la rende dinamica da prima; aggiungere `generateMetadata` NON cambia la staticità (diverso da robots, dove
+  `headers()` portò `/robots.txt` da ○ a ƒ). (6) Ri-confermato il gotcha `.snap`: `vitest run` full ha riscritto
+  `onboarding-generation-regression.test.ts.snap` col solo EOL → ripristinato (`git checkout`, file committato),
+  staged solo i 5 file del macrotask.
 
 **BUILD `seo-sitemap` (PUB-311) — CHIUSO+MERGIATO (`52fb2c5`, atomico `42a866d`).** Crea
 `src/app/sitemap.ts` (`MetadataRoute.Sitemap`, file convention Next), la **sitemap della LANDING**
@@ -647,19 +704,24 @@ ripristino bit-identico sha256). `next build` ok; e2e non impattato (export non 
 
 ## 6. Prossimi passi
 
-- **12/22 macrotask done** (`host-classify`, `host-guard`, `marketing-i18n`, `marketing-layout`,
+- **13/22 macrotask done** (`host-classify`, `host-guard`, `marketing-i18n`, `marketing-layout`,
   `marketing-home`, `waitlist-schema`, `waitlist-store`, `captcha-port`, `waitlist-endpoint`,
-  `waitlist-form`, `seo-robots`, `seo-sitemap`). **Prossima sessione = BUILD di un eleggibile** (§1):
+  `waitlist-form`, `seo-robots`, `seo-sitemap` — mergiati; `seo-metadata` — sul branch `16318d7`, merge su main
+  gated da via umana). **Prossima sessione = BUILD di un eleggibile** (§1):
   `seo-jsonld` (PUB-331 — JSON-LD Organization+WebSite via `serializeJsonLdSafe`, anti-XSS),
-  `seo-metadata`/`privacy-page` (PUB-321/341 — da `marketing-layout`), `blog-pipeline` (PUB-401, nuove dep
-  markdown/rehype → registrare sotto OSV). `cutover` per ultimo. **`seo-metadata` (PUB-321)** è un candidato
-  naturale ora (le pagine landing hanno la sitemap ma non ancora canonical/OG/hreflang a livello di
-  `<head>`); `blog-sitemap` (PUB-441) è sbloccato sul lato SEO ma attende `blog-content`. Il canale
+  `privacy-page` (PUB-341 — da `marketing-layout`), `blog-pipeline` (PUB-401, nuove dep
+  markdown/rehype → registrare sotto OSV). `cutover` per ultimo. **`privacy-page` (PUB-341)** è un candidato
+  naturale ora (la home ha già canonical/OG/hreflang HTML-level; /privacy dichiarerà il PROPRIO canonical);
+  `blog-post` (PUB-431) ha ora sbloccato il lato metadati (dipende da `seo-metadata` + `seo-jsonld`);
+  `blog-sitemap` (PUB-441) è sbloccato sul lato SEO ma attende `blog-content`. Il canale
   waitlist resta **completo end-to-end**: resta un **gate visivo umano** opportuno sulla landing (la home È
   la demo) e, al go-live, la site key pubblica `NEXT_PUBLIC_TURNSTILE_SITE_KEY` + il secret
   `TURNSTILE_SECRET_KEY` su Vercel (finché assenti: form `unavailable` + endpoint che degrada, inerti
   dichiarati, nessun 500).
-- **⚑ Flag di design (hreflang sitemap, da valutare col mercato ES/LATAM):** `seo-sitemap` emette **una
+- **⚑ Flag di design (hreflang sitemap) — RISOLTO da `seo-metadata` (PUB-321) con l’opzione (b):** l’hreflang
+  **HTML `<link rel=alternate>`** è ora emesso dalla home via `alternates.languages { it, es }` (reciproco per
+  costruzione), la reciprocità che la sola sitemap non garantiva; la **sitemap resta com’è** (spec-conforme,
+  discovery), nessun emendamento a DoD/test della sitemap. Storico del flag: `seo-sitemap` emetteva **una
   voce per pagina** con `alternates.languages { it, es }` (idioma `MetadataRoute` di Next, conforme al DoD
   P6A-D8). Non è **strettamente reciproco** secondo Google (il `/es` non ha un proprio `<loc>` con il
   return-link verso `/it`; e non c'è ancora hreflang HTML-level, che arriverà con `seo-metadata` PUB-321).
@@ -669,6 +731,17 @@ ripristino bit-identico sha256). `next build` ok; e2e non impattato (export non 
   su ogni pagina (reciproco per costruzione), lasciando la sitemap come discovery. **Raccomandazione:** (b)
   — la sitemap resta com'è (spec-conforme) e la reciprocità la garantisce PUB-321 nel `<head>`. Decisione
   utente/ledger da prendere al BUILD di `seo-metadata`.
+- **Copertura dichiarata seo-metadata (§6):** target_test `tests/marketing-metadata.test.ts` copre AC-321-1
+  (canonical della home == `getLandingBaseUrl()`, invariante it/es, con base landing ≠ base sito pinnata → mai
+  l’Host della richiesta o il sito), AC-321-2 (`openGraph.images[0]` width 1200 × height 630), AC-321-3
+  (`alternates.languages` contiene it ed es, con languages.es == base/es → uccide la rimozione del ramo es),
+  AC-321-4 (`twitter.card` == `summary_large_image`) + un test extra di localizzazione (title/description da
+  `landing.meta.*`, it ≠ es). Mutazione 3/3 (§5). **NON coperto (dichiarato):** l’**og:image reale** (il file
+  1200×630 è azione manuale del founder, VISION §10 — qui solo il path placeholder `/og-image.png` risolto da
+  metadataBase); il **render reale di `<meta>`/`<link rel=alternate>`** da parte di Next è provato solo
+  indirettamente via `next build` (compila, `/[locale]` ƒ), non da un GET reale del `<head>`; il **canonical di
+  /privacy e /blog** è dei rispettivi macrotask (PUB-341 e blog), qui solo la home; il **wiring reale** su
+  `NEXT_PUBLIC_LANDING_URL` di produzione è provato solo strutturalmente (env stubbato nel verde).
 - **Copertura dichiarata seo-sitemap (§6):** target_test `tests/sitemap-landing.test.ts` copre AC-311-1
   (voce home con `alternates.languages { it: `${base}/it`, es: `${base}/es` }`, base landing pinnata),
   AC-311-2 (esiste la voce `/privacy` localizzata `{ it, es }`; + contro-prova indice `/blog` presente e
