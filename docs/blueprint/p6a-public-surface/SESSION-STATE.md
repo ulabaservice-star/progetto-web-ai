@@ -10,8 +10,8 @@
 |---|---|
 | **Progetto** | Ulaba/Belora — P6a (superficie pubblica) |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase Cloud EU) |
-| **Ultimo aggiornamento** | 2026-09-05 (BUILD `privacy-page` — checkpoint 4/4 verde + mutazione 3/3, MERGIATO `a329b41`) |
-| **Sessione corrente (BUILD `privacy-page`, PUB-341)** | **CHIUSO+MERGIATO** (`a329b41`, atomico `65aa7a7`, deploy coupled; nessuna migrazione). **15/22 macrotask done.** |
+| **Ultimo aggiornamento** | 2026-09-05 (BUILD `blog-pipeline` — checkpoint 4/4 verde + mutazione 2/2, MERGIATO `b1e41ce`) |
+| **Sessione corrente (BUILD `blog-pipeline`, PUB-401)** | **CHIUSO+MERGIATO** (`b1e41ce`, atomico `bcaa800`, deploy coupled; nessuna migrazione; 7 nuove dep sotto OSV). **16/22 macrotask done.** |
 
 ---
 
@@ -36,7 +36,7 @@
 | 13 | `seo-metadata` (PUB-321) | **done** | 4/4 ✅ (`16318d7`, branch) | `marketing-layout` |
 | 14 | `seo-jsonld` (PUB-331) | **done** | 4/4 ✅ (`853aa09`, merge `744b0ae`) | `marketing-home` |
 | 15 | `privacy-page` (PUB-341) | **done** | 4/4 ✅ (`65aa7a7`, merge `a329b41`) | `marketing-layout` |
-| 16 | `blog-pipeline` (PUB-401) | **todo** | — | — |
+| 16 | `blog-pipeline` (PUB-401) | **done** | 4/4 ✅ (`bcaa800`, merge `b1e41ce`) | — |
 | 17 | `blog-content` (PUB-411) | **todo** | — | `blog-pipeline` |
 | 18 | `blog-list` (PUB-421) | **todo** | — | `blog-content`, `marketing-layout` |
 | 19 | `blog-post` (PUB-431) | **todo** | — | `blog-content`, `seo-metadata`, `seo-jsonld` |
@@ -44,8 +44,19 @@
 | 21 | `blog-seed` (PUB-451) | **todo** | — | `blog-content` |
 | 22 | `cutover` (PUB-501) | **todo** | — | (tutte le superfici pubbliche) |
 
-**Eleggibili ora (dipendenze verdi):** `blog-pipeline` (PUB-401 — nuove dep markdown/rehype →
-registrare sotto OSV). `cutover` per ultimo. **`privacy-page` (PUB-341) è CHIUSO+MERGIATO**
+**Eleggibili ora (dipendenze verdi):** `blog-content` (PUB-411 — da `blog-pipeline`, ora verde: loader
+`content/blog/{it,es}` + schema frontmatter zod + `translationKey`). `cutover` per ultimo. **`blog-pipeline`
+(PUB-401) è CHIUSO+MERGIATO** (`b1e41ce`, atomico `bcaa800`): modulo di dominio PURO
+`src/domain/blog/markdown.ts` che esporta `renderMarkdown(raw): { frontmatter, html }` — `gray-matter`
+per il frontmatter + catena `unified` (`remark-parse` → `remark-rehype` `allowDangerousHtml` →
+`rehype-raw` → `rehype-sanitize` → `rehype-stringify`) per il corpo, SINCRONA (`processSync`) e
+deterministica, nessun accesso a env/FS/rete. `rehype-raw` è la scelta che rende la sanificazione
+OSSERVABILE (ri-parsa l'HTML grezzo in veri elementi hast, così `rehype-sanitize` lo VEDE e rimuove
+`<script>`/`on*`/`javascript:` — P6A-D9); senza di esso `remark-rehype` scarterebbe l'HTML grezzo e la
+mutazione «togli sanitize» sarebbe un placebo. 7 nuove dep runtime (unified, remark-parse, remark-rehype,
+rehype-raw, rehype-sanitize, rehype-stringify, gray-matter) sotto OSV (0 nuovi ≥HIGH). Nessuna dep di
+altri macrotask, nessuna rotta (la resa è di `blog-post` PUB-431), nessuna migrazione. Sblocca la catena
+blog (→ `blog-content` → `blog-list`/`blog-post`/`blog-sitemap`/`blog-seed`). **`privacy-page` (PUB-341) è CHIUSO+MERGIATO**
 (`a329b41`, atomico `65aa7a7`): pagina pubblica `/{locale}/privacy` sotto il chrome marketing
 (PUB-131) + namespace i18n `privacy` (17 path-foglia, parità it↔es, ES localizzato non calco).
 Client component `src/ui/marketing/PrivacyNotice.tsx` (`useTranslations('privacy')`, 7 sezioni con
@@ -69,6 +80,24 @@ CHIUSO** (`52fb2c5`): `src/app/sitemap.ts` (MetadataRoute.Sitemap) landing — h
 
 ## 2. Macrotask corrente
 
+- **`blog-pipeline` (16) CHIUSO+MERGIATO** (`b1e41ce`, atomico `bcaa800`, branch locale ancora presente).
+  Nuovo modulo di dominio PURO `src/domain/blog/markdown.ts`: `renderMarkdown(raw: string): { frontmatter:
+  Record<string, unknown>; html: string }`. `gray-matter` estrae il frontmatter (mappa opaca — la
+  validazione zod + `translationKey` sono di `blog-content` PUB-411); la catena `unified`
+  (`remark-parse` → `remark-rehype` con `allowDangerousHtml: true` → `rehype-raw` → `rehype-sanitize`
+  schema di default → `rehype-stringify`) converte il corpo in HTML SANIFICATO. Il processore è costruito
+  e **congelato** una sola volta (`.freeze()`) e riusato: `processSync` → PURA, SINCRONA, deterministica,
+  nessun accesso a env/FS/rete (dominio puro, confermato dal contratto globale `architecture-contract`).
+  **Decisione di implementazione (oltre i 6 dep del DoD): aggiunto `rehype-raw`.** Il DoD elencava la
+  catena-scheletro senza `rehype-raw`, ma `remark-rehype` di default SCARTA l'HTML grezzo del markdown →
+  `<script>`/`<img onerror>` sparirebbero da soli e `rehype-sanitize` non avrebbe nulla da rimuovere
+  (placebo). Con `allowDangerousHtml` + `rehype-raw` l'HTML grezzo entra come nodi `raw`, viene ri-parsato
+  in veri elementi hast, e SOLO allora `rehype-sanitize` li VEDE e neutralizza (P6A-D9, A05:2025). Prova
+  empirica: con la catena completa `<script>`/`onerror`/`onclick` rimossi e `<h1>`/`<p>` presenti; togliendo
+  `rehype-sanitize` SOPRAVVIVONO (→ la mutazione M1 è rossa, non placebo). La resa dell'HTML nella pagina è
+  di `blog-post` (PUB-431), il loading dei file di `blog-content` (PUB-411). **Nessuna UI → nessun gate
+  visivo dovuto.** Il prossimo BUILD sceglie l'eleggibile `blog-content` (PUB-411, unica dip = questo
+  macrotask, ora verde); a valle `blog-list`/`blog-post`/`blog-sitemap`/`blog-seed`, poi `cutover` per ultimo.
 - **`seo-jsonld` (14) CHIUSO+MERGIATO** (`744b0ae`, atomico `853aa09`, branch cancellato). Aggiunge alla
   home marketing (`src/app/[locale]/(marketing)/page.tsx`, server component) due blocchi JSON-LD di
   schema.org — `Organization` e `WebSite` — costruiti da funzioni PURE (`src/domain/marketing/organization-jsonld.ts`:
@@ -108,13 +137,26 @@ CHIUSO** (`52fb2c5`): `src/app/sitemap.ts` (MetadataRoute.Sitemap) landing — h
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `trueline/build/privacy-page` (atomico `65aa7a7`, **mergiato** in `main`; branch locale ancora presente) |
-| Ultimo commit | `a329b41` (merge `--no-ff` privacy-page in main) + docs session-end (in corso) |
-| Stato merge su `main` | **done** (via umana esplicita → merge `a329b41` → push, deploy coupled; nessuna migrazione) |
-| Deploy-coupling | **coupled** (push su `main` = deploy su ulaba.net) → verifica locale FATTA prima del merge (vitest full **1999 passati / 1 rosso** = TS2589 scaffold pre-esistente invariante `scaffold.test.ts`→`e2e/effects.spec.ts`, **+3 test nuovi** `privacy-page.test.tsx`; tsc nessun errore nuovo; eslint 0 sui 3 file di codice; next build exit 0 con `/[locale]/privacy` **ƒ** come la home, nessun'altra rotta cambiata; e2e non impattato — rotta additiva, nessuno spec e2e referenzia privacy). Nessuna migrazione. Push OK (`ad1b207..a329b41`) |
+| Branch di lavoro | `trueline/build/blog-pipeline` (atomico `bcaa800`, **mergiato** in `main`; branch locale ancora presente) |
+| Ultimo commit | `b1e41ce` (merge `--no-ff` blog-pipeline in main) + docs session-end (in corso) |
+| Stato merge su `main` | **done** (via umana esplicita → merge `b1e41ce` → push, deploy coupled; nessuna migrazione) |
+| Deploy-coupling | **coupled** (push su `main` = deploy su ulaba.net) → verifica locale FATTA prima del merge (vitest full **2003 passati / 1 rosso** = TS2589 scaffold pre-esistente invariante `scaffold.test.ts`→`e2e/effects.spec.ts`, **+4 test nuovi** `blog-pipeline.test.ts`; tsc solo il TS2589 invariante, nessun errore nuovo; eslint 0 sui 2 file di codice; next build exit 0, **nessuna rotta cambiata** — `blog-pipeline` è dominio puro, non una rotta). Nessuna migrazione. 7 nuove dep runtime (`package.json`/`package-lock.json`) sotto OSV. Push OK (`ce6b341..b1e41ce`) |
 
 ## 4. Baseline & budget
 
+- **`blog-pipeline` (PUB-401):** C1 green con **`dead-code:0 dup:246 cycle:0` e blockers VUOTI** (0 cloni
+  nuovi): il nuovo modulo `src/domain/blog/markdown.ts` è clone-free (catena `unified` minimale, nessun
+  preambolo strutturale condiviso) e il `.test.ts` è escluso dal corpus jscpd → **nessun ratchet**, la
+  baseline resta a **247** fingerprint (il `dup:246` è il conteggio raw jscpd corpus-sensitive, non
+  fingerprint nuovi). C2 green (`gitleaks:3 scan-scope-escl:46 osv:4 semgrep:0 rls:3`, **0 nuovi ≥HIGH**):
+  **le 7 nuove dep del blog (unified/remark-parse/remark-rehype/rehype-raw/rehype-sanitize/rehype-stringify/
+  gray-matter) passano OSV senza nuovi ≥HIGH** — `osv:4` invariato (le voci pre-esistenti: postcss + altre;
+  `nanoid` HIGH via postcss e `qs` via stripe erano GIÀ nel lock di `main` prima di questo BUILD → non sono
+  finding NUOVI del macrotask). Nessun segreto nel sorgente (dominio puro, nessun env/FS/rete), nessuna
+  policy RLS toccata, la difesa anti-XSS è LIBRERIA provata (`rehype-sanitize`), non artigianale. tsc:
+  nessun errore nuovo (solo il TS2589 invariante di `e2e/effects.spec.ts`). **Nota OSV/C2 (registrazione
+  dep, session-end punto 4):** primo macrotask del workstream a introdurre dep nuove; il gate OSV le vede e
+  le assolve.
 - **`privacy-page` (PUB-341):** C1 green con **`dead-code:0 dup:248 cycle:0` e blockers VUOTI** (0 cloni
   nuovi): il componente `PrivacyNotice.tsx` è ripetitivo per struttura (7 sezioni simili) ma **sotto la
   soglia jscpd** (i blocchi `<section>` variano per `data-testid`/`id`/chiave i18n; nessuna sequenza
@@ -227,6 +269,45 @@ CHIUSO** (`52fb2c5`): `src/app/sitemap.ts` (MetadataRoute.Sitemap) landing — h
 - **Budget**: un macrotask alla volta; loop di fix con tetto in `references/oracles/thresholds.md`.
 
 ## 5. Esiti dell'ultima sessione (framing onesto)
+
+**BUILD `blog-pipeline` (PUB-401) — CHIUSO+MERGIATO (`b1e41ce`, atomico `bcaa800`).** Modulo di dominio
+PURO `src/domain/blog/markdown.ts`: `renderMarkdown(raw) → { frontmatter, html }` con `gray-matter` +
+catena `unified` `remark-parse → remark-rehype(allowDangerousHtml) → rehype-raw → rehype-sanitize →
+rehype-stringify`, `processSync` deterministica, nessun I/O. Checkpoint **4/4 verde** (C1
+`dead-code:0 dup:246 cycle:0` 0-nuovi, nessun ratchet; C2 `gitleaks:3 osv:4 semgrep:0 rls:3` 0-nuovi
+≥HIGH, **7 dep nuove sotto OSV assolte**; C3 suite full **2003 pass / 1 rosso invariante** pre-esistente
+`scaffold.test.ts`→TS2589; C4 target `tests/blog-pipeline.test.ts` **4/4**). Mutazione **2/2** (M1 rimuovi
+`rehype-sanitize` → AC-401-2/3 rossi, `<script>`/`onerror`/`onclick` sopravvivono; M2 passo
+non-deterministico `+ Math.random()` → AC-401-4 rosso; entrambi ripristinati sha256 bit-identico, MAI git
+checkout). next build exit 0 (nessuna rotta cambiata). Metodo: authoring diretto dell'orchestratore (un
+solo file di dominio + test + mutanti, strettamente accoppiati: i mutanti citano stringhe-sorgente esatte
+→ sequenziali dopo il modulo) + **verifica avversariale empirica ANTE-scrittura** (probe throwaway sui reali
+comportamenti di libreria), poi oracoli in foreground = unico giudice.
+
+**Lezioni nuove (carry-over `blog-pipeline`):**
+- **`rehype-raw` non è opzionale se la sanificazione dev'essere OSSERVABILE (anti-placebo).** Il DoD
+  elencava 6 dep (senza `rehype-raw`) e la catena-scheletro `remark-parse → remark-rehype →
+  rehype-sanitize → rehype-stringify`. Ma `remark-rehype` di **default** (senza `allowDangerousHtml`)
+  **scarta** l'HTML grezzo del markdown: `<script>`/`<img onerror>` spariscono da soli, così gli AC-401-2/3
+  passerebbero **anche senza `rehype-sanitize`** e la mutazione «togli sanitize» **non andrebbe rossa**
+  (placebo). La correzione — provata empiricamente PRIMA di scrivere il modulo (probe: con la catena
+  completa i tag pericolosi sono rimossi; senza sanitize sopravvivono) — è `allowDangerousHtml: true` +
+  `rehype-raw`, che ri-parsa il grezzo in veri elementi hast così `rehype-sanitize` li VEDE e neutralizza.
+  È la sola implementazione che onora SIA gli AC SIA la mutazione del self-check (P6A-D9). Aggiungere un
+  dep oltre la lista del DoD è **legittimo quando serve a rendere reale/osservabile la proprietà di
+  sicurezza dichiarata** — registrato e giustificato qui, non deriva silenziosa. Generalizza le lezioni
+  «anti-placebo» del workstream (test RLS DB-reale sotto anon; hreflang solo fra traduzioni reali).
+- **Registrazione OSV delle dep nuove (session-end C2).** Primo macrotask P6a a introdurre dipendenze: le
+  7 dep del blog (unified/remark-parse/remark-rehype/rehype-raw/rehype-sanitize/rehype-stringify/gray-matter)
+  passano il gate OSV senza nuovi ≥HIGH (`osv:4` invariato). Attenzione al **framing onesto**: `npm audit`
+  segnala `nanoid` HIGH (via postcss) e `qs` (via stripe), ma **entrambi erano GIÀ nel lock di `main`
+  prima del BUILD** (provato con `git show main:package-lock.json`) → non sono finding del macrotask; e
+  osv-scanner (DB OSV.dev, gate baseline-delta) non li conta come nuovi ≥HIGH. `npm audit` ≠ osv-scanner:
+  il giudice è l'oracolo C2, non `npm audit`.
+- **ESM-only + tsc/vitest/next OK.** L'ecosistema `unified@11` è ESM puro; con `moduleResolution: 'bundler'`
+  (tsconfig) tsc risolve senza attriti, vitest importa nativamente, next build compila. Il tipo `Processor`
+  di unified non è stato annotato (l'inferenza del chain `.use().freeze()` basta; annotarlo con `Processor`
+  nudo causerebbe mismatch dei parametri di tipo e un import inutilizzato → knip).
 
 **BUILD `privacy-page` (PUB-341) — CHIUSO+MERGIATO (`a329b41`, atomico `65aa7a7`).** Aggiunge la
 pagina pubblica `/{locale}/privacy` (route group `(marketing)`, chrome PUB-131) e il namespace i18n
@@ -847,22 +928,34 @@ ripristino bit-identico sha256). `next build` ok; e2e non impattato (export non 
 
 ## 6. Prossimi passi
 
-- **15/22 macrotask done** (`host-classify`, `host-guard`, `marketing-i18n`, `marketing-layout`,
+- **16/22 macrotask done** (`host-classify`, `host-guard`, `marketing-i18n`, `marketing-layout`,
   `marketing-home`, `waitlist-schema`, `waitlist-store`, `captcha-port`, `waitlist-endpoint`,
-  `waitlist-form`, `seo-robots`, `seo-sitemap`, `seo-metadata`, `seo-jsonld`, `privacy-page` — tutti
-  mergiati su main; `privacy-page` = `a329b41`). **Prossima sessione = BUILD di un eleggibile** (§1):
-  `blog-pipeline` (PUB-401, nuove dep markdown/rehype → registrare sotto OSV). `cutover` per ultimo.
-  **`blog-pipeline` (PUB-401)** è ora il candidato naturale: nessuna dipendenza, apre la catena blog
-  (→ `blog-content` → `blog-list`/`blog-post`/`blog-sitemap`/`blog-seed`); introduce le prime dep nuove
-  del workstream (unified/rehype-sanitize/gray-matter) → **registrarle sotto OSV (C2)** e provare la
-  pipeline pura. **`blog-post` (PUB-431)** ha ENTRAMBE le dipendenze metadati verdi (`seo-metadata` +
-  `seo-jsonld`) ma attende `blog-content` (→ `blog-pipeline`); `blog-sitemap` (PUB-441) è sbloccato sul
-  lato SEO ma attende `blog-content`. Superfici pubbliche home-side ora complete (chrome + home + i quattro
-  SEO + privacy); resta solo la catena blog e il cutover. Il canale
+  `waitlist-form`, `seo-robots`, `seo-sitemap`, `seo-metadata`, `seo-jsonld`, `privacy-page`,
+  `blog-pipeline` — tutti mergiati su main; `blog-pipeline` = `b1e41ce`). **Prossima sessione = BUILD di
+  un eleggibile** (§1): **`blog-content` (PUB-411)** è ora il candidato naturale — unica dipendenza
+  `blog-pipeline`, ora verde: loader `content/blog/{it,es}` + schema frontmatter (zod) + accoppiamento
+  `translationKey`. A valle `blog-list` (PUB-421, +`marketing-layout`), `blog-post` (PUB-431, ha ENTRAMBE
+  le dep metadati verdi `seo-metadata`+`seo-jsonld` + userà `renderMarkdown` per la resa sanificata),
+  `blog-sitemap` (PUB-441, +`seo-sitemap`), `blog-seed` (PUB-451). `cutover` per ULTIMO. Superfici
+  pubbliche home-side complete (chrome + home + i quattro SEO + privacy) + **cuore della pipeline blog
+  posato**; resta la catena blog a valle (content/list/post/sitemap/seed) e il cutover. Il canale
   waitlist resta **completo end-to-end**: resta un **gate visivo umano** opportuno sulla landing (la home È
   la demo) e, al go-live, la site key pubblica `NEXT_PUBLIC_TURNSTILE_SITE_KEY` + il secret
   `TURNSTILE_SECRET_KEY` su Vercel (finché assenti: form `unavailable` + endpoint che degrada, inerti
   dichiarati, nessun 500).
+- **Copertura dichiarata blog-pipeline (§6):** target_test `tests/blog-pipeline.test.ts` copre AC-401-1
+  (frontmatter `title` == valore + `html` contiene `<h1>Benvenuto</h1>` e `<p>` col testo del corpo),
+  AC-401-2 (`<script>alert(1)</script>` nel corpo → `html` NON contiene `<script`, ma il testo circostante
+  resta), AC-401-3 (`<img onerror>`/`<a onclick>` → `html` NON contiene `onerror` né `onclick`), AC-401-4
+  (stesso `raw` → i due `html` identici). Mutazione **2/2** (§5). **NON coperto (dichiarato):** la
+  **validazione zod** del frontmatter e l'accoppiamento `translationKey` sono di `blog-content` (PUB-411),
+  qui `frontmatter` è una mappa opaca (`gray-matter` restituisce anche `date` come `Date`, non normalizzato);
+  la **resa reale** dell'HTML in una pagina (React `dangerouslySetInnerHTML` sul solo output GIÀ sanificato)
+  è di `blog-post` (PUB-431) — qui la pipeline non tocca il DOM; il **caricamento file/FS** è fuori (dominio
+  puro); la robustezza della sanificazione oltre i tre vettori testati (`<script>`, `on*`) è quella dello
+  **schema di default di `rehype-sanitize`** (libreria provata, non ridefinito qui) — la fiducia è nella
+  libreria, non in un allow-list artigianale; il comportamento su markdown malformato / frontmatter assente
+  non ha asserzioni dedicate (fuori dagli AC). Nessuna tabella/RLS/auth toccata (dominio puro).
 - **Copertura dichiarata privacy-page (§6):** target_test `tests/privacy-page.test.tsx` copre AC-341-1
   (la pagina resa in it: i contenitori `privacy-controller`/`privacy-purpose`/`privacy-rights` esistono,
   l'h2 di ciascuno == `itMessages.privacy[key].heading`, il corpo è reso e non vuoto), AC-341-2 (resa in
