@@ -10,8 +10,8 @@
 |---|---|
 | **Progetto** | Ulaba/Belora — P6a (superficie pubblica) |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase Cloud EU) |
-| **Ultimo aggiornamento** | 2026-09-04 (BUILD `seo-metadata` — checkpoint 4/4 verde + mutazione 3/3, atomico `16318d7` sul branch; MERGE su main IN ATTESA di via umana) |
-| **Sessione corrente (BUILD `seo-metadata`, PUB-321)** | **VERDE 4/4 + mutazione 3/3 — atomico `16318d7` sul branch `trueline/build/seo-metadata`; MERGE su main GATED da via umana** (deploy coupled; nessuna migrazione). **13/22 macrotask done** (12 mergiati + 1 sul branch). |
+| **Ultimo aggiornamento** | 2026-09-04 (BUILD `seo-metadata` — checkpoint 4/4 verde + mutazione 3/3, MERGIATO `374e2f7`) |
+| **Sessione corrente (BUILD `seo-metadata`, PUB-321)** | **CHIUSO+MERGIATO** (`374e2f7`, atomico `16318d7`, deploy coupled; nessuna migrazione). **13/22 macrotask done.** |
 
 ---
 
@@ -46,8 +46,7 @@
 
 **Eleggibili ora (dipendenze verdi):** `privacy-page` (PUB-341 — da `marketing-layout`),
 `seo-jsonld` (PUB-331 — da `marketing-home`), `blog-pipeline` (PUB-401 — nuove dep markdown/rehype →
-registrare sotto OSV). `cutover` per ultimo. **`seo-metadata` (PUB-321) è CHIUSO sul branch** (`16318d7`,
-merge su main gated): `generateMetadata` della home marketing (canonical fisso landing + OG 1200×630 +
+registrare sotto OSV). `cutover` per ultimo. **`seo-metadata` (PUB-321) è CHIUSO+MERGIATO** (`374e2f7`): `generateMetadata` della home marketing (canonical fisso landing + OG 1200×630 +
 twitter + hreflang HTML-level it/es) — RISOLVE il flag hreflang di seo-sitemap con l’opzione (b) e sblocca
 il lato metadati di `blog-post` (PUB-431). **`seo-sitemap` (PUB-311) è CHIUSO** (`52fb2c5`): `src/app/sitemap.ts`
 (MetadataRoute.Sitemap) landing — home + `/privacy` + indice `/blog`, ognuno con hreflang IT↔ES da
@@ -56,8 +55,7 @@ il lato metadati di `blog-post` (PUB-431). **`seo-sitemap` (PUB-311) è CHIUSO**
 
 ## 2. Macrotask corrente
 
-- **`seo-metadata` (13) CHIUSO sul branch `trueline/build/seo-metadata` (`16318d7`), MERGE su main GATED da
-  via umana.** `src/app/[locale]/(marketing)/layout.tsx` fissa `metadataBase` (host landing da
+- **`seo-metadata` (13) CHIUSO+MERGIATO** (`374e2f7`, atomico `16318d7`, branch cancellato). `src/app/[locale]/(marketing)/layout.tsx` fissa `metadataBase` (host landing da
   `getLandingBaseUrl`, UNA volta) e `src/app/[locale]/(marketing)/page.tsx` aggiunge `generateMetadata` alla
   home: canonical = `getLandingBaseUrl()` (P6A-D4, invariante a locale/Host), `alternates.languages { it, es }`
   (hreflang HTML-level reciproco), `openGraph` title/description/url + `images` 1200×630 placeholder,
@@ -83,10 +81,10 @@ il lato metadati di `blog-post` (PUB-431). **`seo-sitemap` (PUB-311) è CHIUSO**
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `trueline/build/seo-metadata` (atomico `16318d7`, **NON ancora mergiato** — merge su main gated da via umana) |
-| Ultimo commit (branch) | `16318d7` (feat seo-metadata PUB-321); `main` resta a `52fb2c5` |
-| Stato merge su `main` | **IN ATTESA di via umana** (checkpoint 4/4 verde + mutazione 3/3 + next build exit 0; merge su `main` = deploy su ulaba.net → richiede via esplicita; e2e Chromium full da eseguire al gate di merge — metadata-only, non impattato) |
-| Deploy-coupling | **coupled** (push su `main` = deploy su ulaba.net). Verifica locale FATTA sul branch: vitest full **1991 passati / 1 rosso** = TS2589 scaffold pre-esistente invariante (`scaffold.test.ts`→`e2e/effects.spec.ts`), **+5 test nuovi** `marketing-metadata.test.ts`; tsc nessun errore nuovo; next build exit 0 (`/[locale]` **ƒ** — già dinamica per il cookie-read di `resolveInitialLocale`, NON un effetto dei metadati; `/sitemap.xml` ○ e `/robots.txt` ƒ immutati, nessuna nuova rotta). e2e non impattato (metadata-only nel `<head>`, corpo `MarketingHome` invariato, nessun `goto` alla home). Nessuna migrazione. **Merge/push su main NON eseguiti (gated).** |
+| Branch di lavoro | `trueline/build/seo-metadata` (atomico `16318d7`, **mergiato** in `main` e cancellato) |
+| Ultimo commit | `374e2f7` (merge `--no-ff` seo-metadata in main) + docs session-end MERGIATO + push |
+| Stato merge su `main` | **done** (via umana → merge `374e2f7` → push, deploy coupled; nessuna migrazione) |
+| Deploy-coupling | **coupled** (push su `main` = deploy su ulaba.net) → verifica locale FATTA prima del merge (vitest full **1991 passati / 1 rosso** = TS2589 scaffold pre-esistente invariante `scaffold.test.ts`→`e2e/effects.spec.ts`, **+5 test nuovi** `marketing-metadata.test.ts`; tsc nessun errore nuovo; next build exit 0 con `/[locale]` **ƒ** già dinamica, `/sitemap.xml` ○ e `/robots.txt` ƒ immutati, nessuna nuova rotta; e2e non impattato — metadata-only nel `<head>`, corpo `MarketingHome` invariato, nessun `goto` alla home). Nessuna migrazione. Push OK |
 
 ## 4. Baseline & budget
 
@@ -183,7 +181,7 @@ il lato metadati di `blog-post` (PUB-431). **`seo-sitemap` (PUB-311) è CHIUSO**
 
 ## 5. Esiti dell'ultima sessione (framing onesto)
 
-**BUILD `seo-metadata` (PUB-321) — CHIUSO sul branch (`16318d7`), MERGE su main GATED da via umana.** Aggiunge
+**BUILD `seo-metadata` (PUB-321) — CHIUSO+MERGIATO (`374e2f7`, atomico `16318d7`).** Aggiunge
 i **metadati della landing** alla superficie marketing. `(marketing)/layout.tsx` imposta **una volta**
 `metadataBase = new URL(getLandingBaseUrl())` (host LANDING da `NEXT_PUBLIC_LANDING_URL`, config pubblica, MAI
 l’Host della richiesta — A05:2025 host-injection/open-redirect; `getLandingBaseUrl` ha un ripiego di sviluppo
@@ -204,8 +202,8 @@ ratchet, baseline 247), C2 green (`gitleaks:3 osv:4 semgrep:0 rls:3`, **0 nuovi 
 diversa dalla landing ⇒ AC-321-1 rosso, M2 og:image ≠ 1200×630 ⇒ AC-321-2 rosso, M3 rimozione ramo `es` da
 `alternates.languages` ⇒ AC-321-3 rosso; ciascuno red + restore sha256 bit-identico, driver
 `.trueline/pub-metadata-mutants.mjs`). tsc nessun errore nuovo; `next build` exit 0 (`/[locale]` **ƒ** — già
-dinamica prima, non un effetto dei metadati); e2e non impattato; **nessuna migrazione**. **Merge/push su main
-NON eseguiti — gated da via umana.**
+dinamica prima, non un effetto dei metadati); e2e non impattato; **nessuna migrazione**. **Merge `374e2f7` + push su main ESEGUITI su via umana
+(deploy coupled su ulaba.net).**
 
 - **Lezioni (carry-over seo-metadata):** (1) **canonical della home = base landing NUDA, non `${base}/it`**:
   il DoD/AC-321-1 vogliono `alternates.canonical === getLandingBaseUrl()` (la radice), invariante al locale — la
@@ -706,8 +704,7 @@ ripristino bit-identico sha256). `next build` ok; e2e non impattato (export non 
 
 - **13/22 macrotask done** (`host-classify`, `host-guard`, `marketing-i18n`, `marketing-layout`,
   `marketing-home`, `waitlist-schema`, `waitlist-store`, `captcha-port`, `waitlist-endpoint`,
-  `waitlist-form`, `seo-robots`, `seo-sitemap` — mergiati; `seo-metadata` — sul branch `16318d7`, merge su main
-  gated da via umana). **Prossima sessione = BUILD di un eleggibile** (§1):
+  `waitlist-form`, `seo-robots`, `seo-sitemap`, `seo-metadata` — tutti mergiati su main; `seo-metadata` = `374e2f7`). **Prossima sessione = BUILD di un eleggibile** (§1):
   `seo-jsonld` (PUB-331 — JSON-LD Organization+WebSite via `serializeJsonLdSafe`, anti-XSS),
   `privacy-page` (PUB-341 — da `marketing-layout`), `blog-pipeline` (PUB-401, nuove dep
   markdown/rehype → registrare sotto OSV). `cutover` per ultimo. **`privacy-page` (PUB-341)** è un candidato
