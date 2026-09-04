@@ -124,7 +124,7 @@
   `insertLead`), same-origin presente (`guardMutatingRequest`), nessuna nuova policy RLS. In
   `waitlist-form` C2 ha inizialmente segnalato **1 finding NUOVO ≥HIGH** (`gitleaks:4`, CRITICAL) su
   `tests/ui-waitlist-form.test.tsx`: il rule custom della skill `trueline-generic-assigned-secret` ha
-  colto `const SITE_KEY = 'NEXT_PUBLIC_TURNSTILE_SITE_KEY'` — identificatore "sensibile" (contiene KEY) +
+  colto la costante di test `SITE_KEY` col NOME dell'env `NEXT_PUBLIC_TURNSTILE_SITE_KEY` — identificatore "sensibile" (contiene KEY) +
   valore ≥24 char `[a-z0-9_-]`. **Falso positivo** (`NEXT_PUBLIC_TURNSTILE_SITE_KEY` è il NOME della env,
   non un segreto; e la site key è comunque PUBBLICA). Fix onesto = **rinominare** la costante di test
   `SITE_KEY`→`TURNSTILE_ENV` (identificatore non-sensibile) così il rule non scatta più — NON un baseline
@@ -169,7 +169,7 @@ multi-file src). tsc nessun errore nuovo; `next build` exit 0 (`/[locale]` e `/a
 impattato (nessun `goto` alla home); **nessuna migrazione**.
 
 - **Lezioni (carry-over waitlist-form):** (1) **il rule gitleaks della skill colpisce l'identificatore, non
-  il valore** — `const SITE_KEY = 'NEXT_PUBLIC_TURNSTILE_SITE_KEY'` accende `trueline-generic-assigned-secret`
+  il valore** — la costante di test `SITE_KEY` col NOME dell'env `NEXT_PUBLIC_TURNSTILE_SITE_KEY` accende `trueline-generic-assigned-secret`
   perché l'identificatore contiene `key` E il valore (il NOME della env, 30 char) supera la soglia
   ≥24-char/entropia. Falso positivo (la site key è pubblica; quello è il nome della variabile). Fix onesto:
   **rinominare** la costante (`SITE_KEY`→`TURNSTILE_ENV`, senza `key/token/secret/cred/passwd/password`) — il
