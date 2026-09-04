@@ -377,5 +377,38 @@
       "privacy": "Privacy",
       "blog": "Blog"
     }
+  },
+  "privacy": {
+    "title": "Informativa sulla privacy — lista d’attesa",
+    "intro": "La presente informativa descrive come Ulaba tratta i dati personali raccolti tramite la lista d’attesa per l’accesso anticipato al servizio, nel rispetto del Regolamento (UE) 2016/679 (GDPR).",
+    "controller": {
+      "heading": "Titolare del trattamento",
+      "body": "Il titolare del trattamento dei tuoi dati è Ulaba. Per qualsiasi questione relativa al trattamento puoi contattarci all’indirizzo privacy@ulaba.net."
+    },
+    "purpose": {
+      "heading": "Finalità del trattamento",
+      "body": "Raccogliamo il tuo indirizzo email al solo scopo di gestire la lista d’attesa e avvisarti quando apriamo l’accesso anticipato. Non effettuiamo alcuna profilazione e non cediamo i tuoi dati a terzi per finalità pubblicitarie."
+    },
+    "lawfulBasis": {
+      "heading": "Base giuridica",
+      "body": "La base giuridica del trattamento è il tuo consenso, ai sensi dell’art. 6, par. 1, lett. a) del GDPR, che presti spuntando l’apposita casella nel modulo di iscrizione."
+    },
+    "dataCollected": {
+      "heading": "Dati raccolti",
+      "body": "Raccogliamo esclusivamente il tuo indirizzo email e la tua preferenza di lingua. Non memorizziamo il tuo indirizzo IP, non utilizziamo cookie di tracciamento e non raccogliamo alcun altro dato personale."
+    },
+    "retention": {
+      "heading": "Conservazione dei dati",
+      "body": "I dati sono conservati su infrastruttura Supabase, ospitata in un’area dell’Unione Europea e gestita da Ulaba. Li conserviamo fino al lancio del servizio oppure fino a quando revochi il consenso o ti disiscrivi, dopodiché vengono cancellati."
+    },
+    "noDoubleOptIn": {
+      "heading": "Iscrizione in un solo passaggio",
+      "body": "L’iscrizione avviene in un unico passaggio: non inviamo alcuna email di conferma e non è previsto un doppio opt-in."
+    },
+    "rights": {
+      "heading": "I tuoi diritti",
+      "body": "Hai il diritto di accedere ai tuoi dati, di chiederne la rettifica o la cancellazione e di revocare il consenso in qualsiasi momento, con un clic o scrivendoci. Puoi disiscriverti quando vuoi.",
+      "contact": "Per esercitare i tuoi diritti o revocare il consenso, scrivi a privacy@ulaba.net."
+    }
   }
 }
