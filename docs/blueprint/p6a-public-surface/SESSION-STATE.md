@@ -10,8 +10,9 @@
 |---|---|
 | **Progetto** | Ulaba/Belora — P6a (superficie pubblica) |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase Cloud EU) |
-| **Ultimo aggiornamento** | 2026-09-05 (BUILD `blog-pipeline` — checkpoint 4/4 verde + mutazione 2/2, MERGIATO `b1e41ce`) |
-| **Sessione corrente (BUILD `blog-pipeline`, PUB-401)** | **CHIUSO+MERGIATO** (`b1e41ce`, atomico `bcaa800`, deploy coupled; nessuna migrazione; 7 nuove dep sotto OSV). **16/22 macrotask done.** |
+| **Ultimo aggiornamento** | 2026-09-05 (BUILD `blog-content` — checkpoint 4/4 verde + mutazione 4/4, MERGIATO `0a5b16b`) |
+| **Sessione corrente (BUILD `blog-content`, PUB-411)** | **CHIUSO+MERGIATO** (`0a5b16b`, atomico `1954efd`, deploy coupled; nessuna migrazione; nessuna dep nuova). **17/22 macrotask done.** |
+| **Sessione precedente (BUILD `blog-pipeline`, PUB-401)** | **CHIUSO+MERGIATO** (`b1e41ce`, atomico `bcaa800`, deploy coupled; nessuna migrazione; 7 nuove dep sotto OSV). |
 
 ---
 
@@ -37,15 +38,33 @@
 | 14 | `seo-jsonld` (PUB-331) | **done** | 4/4 ✅ (`853aa09`, merge `744b0ae`) | `marketing-home` |
 | 15 | `privacy-page` (PUB-341) | **done** | 4/4 ✅ (`65aa7a7`, merge `a329b41`) | `marketing-layout` |
 | 16 | `blog-pipeline` (PUB-401) | **done** | 4/4 ✅ (`bcaa800`, merge `b1e41ce`) | — |
-| 17 | `blog-content` (PUB-411) | **todo** | — | `blog-pipeline` |
+| 17 | `blog-content` (PUB-411) | **done** | 4/4 ✅ (`1954efd`, merge `0a5b16b`) | `blog-pipeline` |
 | 18 | `blog-list` (PUB-421) | **todo** | — | `blog-content`, `marketing-layout` |
 | 19 | `blog-post` (PUB-431) | **todo** | — | `blog-content`, `seo-metadata`, `seo-jsonld` |
 | 20 | `blog-sitemap` (PUB-441) | **todo** | — | `seo-sitemap`, `blog-content` |
 | 21 | `blog-seed` (PUB-451) | **todo** | — | `blog-content` |
 | 22 | `cutover` (PUB-501) | **todo** | — | (tutte le superfici pubbliche) |
 
-**Eleggibili ora (dipendenze verdi):** `blog-content` (PUB-411 — da `blog-pipeline`, ora verde: loader
-`content/blog/{it,es}` + schema frontmatter zod + `translationKey`). `cutover` per ultimo. **`blog-pipeline`
+**Eleggibili ora (dipendenze verdi):** `blog-list` (PUB-421 — da `blog-content`+`marketing-layout`, ora
+entrambe verdi), `blog-post` (PUB-431 — da `blog-content`+`seo-metadata`+`seo-jsonld`, tutte verdi),
+`blog-sitemap` (PUB-441 — da `seo-sitemap`+`blog-content`), `blog-seed` (PUB-451 — da `blog-content`).
+`cutover` per ULTIMO. **`blog-content` (PUB-411) è CHIUSO+MERGIATO** (`0a5b16b`, atomico `1954efd`): nuovo
+modulo di dominio `src/domain/blog/content.ts` — il **loader** dei post sopra `content/blog/{it,es}/<slug>.md`,
+poggiato sulla pipeline pura `renderMarkdown` (PUB-401). Espone `listPosts(locale, {root?})` (post del locale
+esclusi i `draft`, ordinati per data DESC; `[]` se la dir non esiste ancora — il seed arriva con PUB-451),
+`getPost(locale, slug, {root?})` (`{ slug, locale, frontmatter, html }` con html SANIFICATO, o `null` se il
+file non esiste), `resolvePostAlternates(locale, slug, {root?})` (le traduzioni dell'ALTRO locale che
+condividono `translationKey`; `[]` senza controparte = nessun hreflang fittizio, P6A-D9) e
+`blogFrontmatterSchema` (zod: `title`/`description`/`date`/`translationKey` stringhe non vuote, `draft`
+opzionale; fail-closed che NOMINA il campo mancante/invalido). **Sicurezza:** slug vincolato a `[a-z0-9-]+`
+PRIMA di comporre il path (A01:2025 path-traversal, CWE-22: nessun `readFile` fuori da `content/blog`,
+fail-closed a `null`; la stessa guardia filtra i nomi letti da `listPosts`); corpo sanificato a valle
+(rehype-sanitize, PUB-401), frontmatter validato zod; `import 'server-only'` (la lettura FS non finisce nel
+bundle client — risolto a empty.js nei test come gli adattatori `src/data/**`). **Root del contenuto
+INIETTABILE** (default `join(process.cwd(),'content','blog')`) → il test gira su fixture temporanea senza
+dipendere dal seed. `date` è una STRINGA ISO (nel markdown va QUOTATA, o YAML la coerce a Date e zod la
+respinge — gotcha documentato per PUB-451). Nessuna rotta (la resa è di `blog-post` PUB-431), nessuna dep
+nuova, nessuna migrazione. Sblocca l'intera catena blog a valle. **`blog-pipeline`
 (PUB-401) è CHIUSO+MERGIATO** (`b1e41ce`, atomico `bcaa800`): modulo di dominio PURO
 `src/domain/blog/markdown.ts` che esporta `renderMarkdown(raw): { frontmatter, html }` — `gray-matter`
 per il frontmatter + catena `unified` (`remark-parse` → `remark-rehype` `allowDangerousHtml` →
@@ -80,6 +99,16 @@ CHIUSO** (`52fb2c5`): `src/app/sitemap.ts` (MetadataRoute.Sitemap) landing — h
 
 ## 2. Macrotask corrente
 
+- **`blog-content` (17) CHIUSO+MERGIATO** (`0a5b16b`, atomico `1954efd`, branch `trueline/build/blog-content`
+  locale ancora presente). Nuovo modulo di dominio `src/domain/blog/content.ts`: `listPosts`/`getPost`/
+  `resolvePostAlternates` + `blogFrontmatterSchema` (zod). Legge `content/blog/{it,es}/<slug>.md` con **root
+  iniettabile** (default alla dir reale); usa `renderMarkdown` (PUB-401) per l'HTML sanificato del corpo e
+  valida il frontmatter con zod (fail-closed che nomina il campo). Guardia anti path-traversal `[a-z0-9-]+`
+  sullo slug PRIMA di comporre il path; `import 'server-only'` (la lettura FS mai nel bundle client);
+  ordinamento per data DESC (stringa ISO quotata), `draft` esclusi da `listPosts`, accoppiamento traduzioni
+  per `translationKey` senza alternate fittizi (P6A-D9). **Nessuna UI → nessun gate visivo dovuto.** Il
+  prossimo BUILD sceglie un eleggibile della catena blog: `blog-list` (PUB-421), `blog-post` (PUB-431),
+  `blog-sitemap` (PUB-441) o `blog-seed` (PUB-451) — indipendenti fra loro sui file; `cutover` per ULTIMO.
 - **`blog-pipeline` (16) CHIUSO+MERGIATO** (`b1e41ce`, atomico `bcaa800`, branch locale ancora presente).
   Nuovo modulo di dominio PURO `src/domain/blog/markdown.ts`: `renderMarkdown(raw: string): { frontmatter:
   Record<string, unknown>; html: string }`. `gray-matter` estrae il frontmatter (mappa opaca — la
@@ -137,13 +166,25 @@ CHIUSO** (`52fb2c5`): `src/app/sitemap.ts` (MetadataRoute.Sitemap) landing — h
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `trueline/build/blog-pipeline` (atomico `bcaa800`, **mergiato** in `main`; branch locale ancora presente) |
-| Ultimo commit | `b1e41ce` (merge `--no-ff` blog-pipeline in main) + docs session-end (in corso) |
-| Stato merge su `main` | **done** (via umana esplicita → merge `b1e41ce` → push, deploy coupled; nessuna migrazione) |
-| Deploy-coupling | **coupled** (push su `main` = deploy su ulaba.net) → verifica locale FATTA prima del merge (vitest full **2003 passati / 1 rosso** = TS2589 scaffold pre-esistente invariante `scaffold.test.ts`→`e2e/effects.spec.ts`, **+4 test nuovi** `blog-pipeline.test.ts`; tsc solo il TS2589 invariante, nessun errore nuovo; eslint 0 sui 2 file di codice; next build exit 0, **nessuna rotta cambiata** — `blog-pipeline` è dominio puro, non una rotta). Nessuna migrazione. 7 nuove dep runtime (`package.json`/`package-lock.json`) sotto OSV. Push OK (`ce6b341..b1e41ce`) |
+| Branch di lavoro | `trueline/build/blog-content` (atomico `1954efd`, **mergiato** in `main`; branch locale ancora presente) |
+| Ultimo commit | `0a5b16b` (merge `--no-ff` blog-content in main) + docs session-end (in corso) |
+| Stato merge su `main` | **done** (via umana esplicita → merge `0a5b16b` → push, deploy coupled; nessuna migrazione) |
+| Deploy-coupling | **coupled** (push su `main` = deploy su ulaba.net) → verifica locale FATTA prima del merge (vitest full **2011 passati / 1 rosso** = TS2589 scaffold pre-esistente invariante `scaffold.test.ts`→`e2e/effects.spec.ts`, **+8 test nuovi** `blog-content.test.ts` = 5 AC + 3 sullo schema DoD; tsc solo il TS2589 invariante, nessun errore nuovo; eslint 0 sui 2 file; next build exit 0, **nessuna rotta cambiata** — `blog-content` è un loader di dominio, non una rotta). Nessuna migrazione. Nessuna dep nuova. Push OK (`ac6cfe0..0a5b16b`) |
 
 ## 4. Baseline & budget
 
+- **`blog-content` (PUB-411):** C1 green con **`dead-code:0 dup:246 cycle:0` e blockers VUOTI**. **Gotcha
+  affrontato in-sessione:** al primo giro C1 era **rosso** con **2 dead-code NUOVI** su `content.ts` —
+  `blogFrontmatterSchema` (export) e `BlogFrontmatter` (tipo). Non era codice morto accidentale: il DoD
+  **impone** di esportare lo schema zod (consumatori a valle: `blog-list`/`blog-post`). Risolto **senza
+  baseline** e in modo migliore: aggiunti 3 test che **importano ed esercitano lo schema** (fail-closed che
+  nomina il campo + `draft` opzionale + `title` vuoto), coprendo un **bullet del DoD fuori dai 5 AC** e
+  rendendo gli export CONSUMATI (knip segue gli import dei `.test.ts` via plugin vitest) → C1 verde, 0
+  fingerprint aggiunti alla baseline (resta **247**). C2 green (`gitleaks:3 osv:4 semgrep:0 rls:3`, **0
+  nuovi ≥HIGH**): **nessuna dep nuova** (osv invariato), nessun segreto (FS server-side dietro `server-only`,
+  nessun env nel sorgente), nessuna tabella/policy RLS toccata. tsc: nessun errore nuovo (solo il TS2589
+  invariante di `e2e/effects.spec.ts`); eslint 0 sui 2 file. next build exit 0, route list invariata (loader
+  di dominio, non una rotta).
 - **`blog-pipeline` (PUB-401):** C1 green con **`dead-code:0 dup:246 cycle:0` e blockers VUOTI** (0 cloni
   nuovi): il nuovo modulo `src/domain/blog/markdown.ts` è clone-free (catena `unified` minimale, nessun
   preambolo strutturale condiviso) e il `.test.ts` è escluso dal corpus jscpd → **nessun ratchet**, la
@@ -269,6 +310,51 @@ CHIUSO** (`52fb2c5`): `src/app/sitemap.ts` (MetadataRoute.Sitemap) landing — h
 - **Budget**: un macrotask alla volta; loop di fix con tetto in `references/oracles/thresholds.md`.
 
 ## 5. Esiti dell'ultima sessione (framing onesto)
+
+**BUILD `blog-content` (PUB-411) — CHIUSO+MERGIATO (`0a5b16b`, atomico `1954efd`).** Nuovo modulo di
+dominio `src/domain/blog/content.ts`: il **loader** dei post sopra `content/blog/{it,es}/<slug>.md`, sopra
+la pipeline pura `renderMarkdown` (PUB-401). Espone `listPosts(locale,{root?})` (draft esclusi, data DESC,
+`[]` se dir assente), `getPost(locale,slug,{root?})` (`{slug,locale,frontmatter,html}` o `null`),
+`resolvePostAlternates(locale,slug,{root?})` (traduzioni per `translationKey`, `[]` senza controparte) e
+`blogFrontmatterSchema` (zod). Checkpoint **4/4 verde** (C1 `dead-code:0 dup:246 cycle:0` 0-nuovi dopo la
+risoluzione del rosso iniziale, vedi sotto; C2 `gitleaks:3 osv:4 semgrep:0 rls:3` 0-nuovi ≥HIGH, **nessuna
+dep nuova**; C3 suite full **2011 pass / 1 rosso invariante** pre-esistente `scaffold.test.ts`→TS2589; C4
+target `tests/blog-content.test.ts` **8/8** = 5 AC + 3 sullo schema). Mutazione **4/4** (M1 inverti
+ordinamento → AC-411-1 rosso; M2 rimuovi filtro `draft` → AC-411-1 rosso, il post `draft:true` con data
+più recente compare in testa; M3 regex slug permissiva `/^.*$/` → AC-411-5 rosso, `../../secret` supera la
+guardia e il file fuori da `content/blog` viene letto; M4 accoppiamento a prescindere da `translationKey`
+→ AC-411-4 rosso; tutti ripristinati sha256 bit-identico, MAI git checkout — file uncommitted).
+
+**Lezioni `blog-content`:**
+- **Bug di destrutturazione colto dal C4 al primo giro (rosso→verde in-sessione):** avevo scritto
+  `const { data, html } = renderMarkdown(...)`, ma il tipo di ritorno è `{ frontmatter, html }` (non
+  `{ data }`, che è la forma di `gray-matter` grezzo). `data` era `undefined` → `zodSchema.parse(undefined)`
+  lanciava «Expected object, received undefined» su 4/5 test. Fix: `const { frontmatter: raw, html } = …`.
+  **Lezione: quando riusi un modulo a valle, la firma è il contratto — non presumere che riesporti la forma
+  della libreria che incapsula** (`renderMarkdown` normalizza `gray-matter.data` in `.frontmatter`).
+- **Dead-code su export DoD-obbligatori: risolvibile con un test, meglio del baseline.** Il DoD impone di
+  esportare lo schema zod, ma il suo consumatore reale è a valle (`blog-list`/`blog-post`) → C1 lo vedeva
+  come dead-code (con `BlogFrontmatter`). Invece di baseline-are due export che il DoD forza, ho aggiunto 3
+  test che **importano ed esercitano** lo schema (fail-closed che nomina il campo + `draft` opzionale +
+  `title` vuoto): coprono un **bullet del DoD fuori dai 5 AC** e rendono gli export CONSUMATI. **knip segue
+  gli import dei `.test.ts`** (plugin vitest) → C1 verde, baseline invariata (247), zero fingerprint
+  aggiunti. **Preferire un test onesto al baseline quando l'export è pubblico ma il consumatore non è ancora
+  nato.**
+- **Anti-placebo del mutante path-traversal (M3):** togliere la guardia sullo slug NON basta a rendere
+  rosso AC-411-5 se il bersaglio non esiste (il `join` uscirebbe da `content/blog` in un ENOENT → `null`
+  comunque). Per rendere la mutazione ROSSA il test posa un `secret.md` VALIDO **due livelli sopra la root**
+  (`join(root,'it','../../secret.md') === tmp/secret.md`): senza guardia getPost lo legge e ritorna
+  non-`null`. Il test asserisce anche `existsSync(secret)` per provare che è la guardia a fermare la
+  lettura, non un file mancante. **Una guardia di sicurezza va testata contro un bersaglio realmente
+  raggiungibile, altrimenti la mutazione è cieca.**
+- **Gotcha `date` (per PUB-451):** `gray-matter`/YAML coerce una data NUDA (`date: 2026-03-01`) a un
+  oggetto `Date`; lo schema la vuole `z.string().min(1)` → nel markdown la data va **QUOTATA**
+  (`date: "2026-03-01"`). Documentato nel commento dello schema: il seed (PUB-451) deve quotare le date.
+- **`import 'server-only'` in un modulo di dominio:** legittimo qui perché il loader legge il filesystem e
+  non deve MAI finire nel bundle client (come gli adattatori `src/data/**`); vitest lo risolve a `empty.js`
+  (alias in `vitest.config.ts`), quindi non lancia nei test. Non viola il contratto di altitudine
+  (`server-only` non è uno strato). È il primo modulo `src/domain/**` che tocca l'FS: l'impurità è dichiarata
+  e circoscritta al confine server.
 
 **BUILD `blog-pipeline` (PUB-401) — CHIUSO+MERGIATO (`b1e41ce`, atomico `bcaa800`).** Modulo di dominio
 PURO `src/domain/blog/markdown.ts`: `renderMarkdown(raw) → { frontmatter, html }` con `gray-matter` +
@@ -928,21 +1014,38 @@ ripristino bit-identico sha256). `next build` ok; e2e non impattato (export non 
 
 ## 6. Prossimi passi
 
-- **16/22 macrotask done** (`host-classify`, `host-guard`, `marketing-i18n`, `marketing-layout`,
+- **17/22 macrotask done** (`host-classify`, `host-guard`, `marketing-i18n`, `marketing-layout`,
   `marketing-home`, `waitlist-schema`, `waitlist-store`, `captcha-port`, `waitlist-endpoint`,
   `waitlist-form`, `seo-robots`, `seo-sitemap`, `seo-metadata`, `seo-jsonld`, `privacy-page`,
-  `blog-pipeline` — tutti mergiati su main; `blog-pipeline` = `b1e41ce`). **Prossima sessione = BUILD di
-  un eleggibile** (§1): **`blog-content` (PUB-411)** è ora il candidato naturale — unica dipendenza
-  `blog-pipeline`, ora verde: loader `content/blog/{it,es}` + schema frontmatter (zod) + accoppiamento
-  `translationKey`. A valle `blog-list` (PUB-421, +`marketing-layout`), `blog-post` (PUB-431, ha ENTRAMBE
-  le dep metadati verdi `seo-metadata`+`seo-jsonld` + userà `renderMarkdown` per la resa sanificata),
-  `blog-sitemap` (PUB-441, +`seo-sitemap`), `blog-seed` (PUB-451). `cutover` per ULTIMO. Superfici
-  pubbliche home-side complete (chrome + home + i quattro SEO + privacy) + **cuore della pipeline blog
-  posato**; resta la catena blog a valle (content/list/post/sitemap/seed) e il cutover. Il canale
-  waitlist resta **completo end-to-end**: resta un **gate visivo umano** opportuno sulla landing (la home È
-  la demo) e, al go-live, la site key pubblica `NEXT_PUBLIC_TURNSTILE_SITE_KEY` + il secret
-  `TURNSTILE_SECRET_KEY` su Vercel (finché assenti: form `unavailable` + endpoint che degrada, inerti
-  dichiarati, nessun 500).
+  `blog-pipeline`, `blog-content` — tutti mergiati su main; `blog-content` = `0a5b16b`). **Prossima
+  sessione = BUILD di un eleggibile** (§1) della catena blog, ora tutti sbloccati e **indipendenti fra
+  loro sui file**: `blog-list` (PUB-421, +`marketing-layout` — la rotta indice `/blog` che elenca
+  `listPosts`), `blog-post` (PUB-431, +`seo-metadata`+`seo-jsonld` — la rotta `/blog/<slug>` che rende
+  `getPost().html` sanificato via `dangerouslySetInnerHTML`, con metadati/hreflang da
+  `resolvePostAlternates` e JSON-LD `Article`), `blog-sitemap` (PUB-441, +`seo-sitemap` — i post nella
+  sitemap landing), `blog-seed` (PUB-451 — i post `.md` reali IT+ES, **date QUOTATE** per lo schema).
+  `cutover` per ULTIMO. Superfici pubbliche home-side complete (chrome + home + i quattro SEO + privacy) +
+  **pipeline + loader del blog posati**; resta la catena di rotte blog a valle (list/post/sitemap/seed) e
+  il cutover. Il canale waitlist resta **completo end-to-end**: resta un **gate visivo umano** opportuno
+  sulla landing (la home È la demo) e, al go-live, la site key pubblica `NEXT_PUBLIC_TURNSTILE_SITE_KEY` +
+  il secret `TURNSTILE_SECRET_KEY` su Vercel (finché assenti: form `unavailable` + endpoint che degrada,
+  inerti dichiarati, nessun 500).
+- **Copertura dichiarata blog-content (§6):** target_test `tests/blog-content.test.ts` (8 test su fixture
+  temporanea con root iniettata) copre AC-411-1 (`listPosts('it')` → slug `['primo','secondo','terzo']` per
+  data DESC, il `draft:true` `bozza` — data la più recente — NON compare), AC-411-2 (`getPost('it','primo')`
+  → `frontmatter.title === 'Primo'` + `html` non vuoto che contiene `<p>Corpo primo.</p>`; slug inesistente
+  → `null`), AC-411-3 (`resolvePostAlternates('it','primo')` → `[{locale:'es',slug:'primo-es'}]`, + il
+  reciproco es→it), AC-411-4 (`resolvePostAlternates('it','secondo')` con `translationKey 'solo-it'` → `[]`),
+  AC-411-5 (`getPost('it','../../secret')` → `null` con bersaglio reale posato fuori da root) + **3 test del
+  DoD sullo schema** (frontmatter conforme con `draft` opzionale assente; frontmatter senza `translationKey`
+  → `safeParse` fallisce NOMINANDO il campo; `title` vuoto → fallisce). Mutazione **4/4** (§5). **NON coperto
+  (dichiarato):** le **rotte** di listing/post (`blog-list` PUB-421 / `blog-post` PUB-431) e la **resa reale**
+  dell'HTML in pagina; i **post seed reali** (`blog-seed` PUB-451 — qui solo fixture sintetiche); il
+  comportamento su un file con **frontmatter invalido dentro `listPosts`** (fail-closed: zod lancia, non
+  testato con asserzione dedicata — content fidato via git review); la robustezza della **sanificazione** è
+  quella di `renderMarkdown`/`rehype-sanitize` (PUB-401), non ri-testata qui; l'ordinamento assume **date ISO
+  quotate** valide (`Date.parse`), una data malformata degraderebbe l'ordine ma il contenuto è git-reviewed.
+  Nessuna tabella/RLS/auth toccata (loader di dominio, lettura FS server-side dietro `server-only`).
 - **Copertura dichiarata blog-pipeline (§6):** target_test `tests/blog-pipeline.test.ts` copre AC-401-1
   (frontmatter `title` == valore + `html` contiene `<h1>Benvenuto</h1>` e `<p>` col testo del corpo),
   AC-401-2 (`<script>alert(1)</script>` nel corpo → `html` NON contiene `<script`, ma il testo circostante
