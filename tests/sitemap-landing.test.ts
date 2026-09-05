@@ -59,7 +59,7 @@ describe('PUB-311 sitemap landing — voce /privacy con hreflang IT/ES (AC-311-2
     }); // covers: AC-311-2 — localizzata nelle due lingue
   });
 
-  it('esiste anche la voce indice /blog (pagina stabile), ma nessun post singolo', () => {
+  it('esiste anche la voce indice /blog (pagina stabile) accanto a home e /privacy', () => {
     const base = getLandingBaseUrl();
     const map = sitemap();
     const blog = map.find((e) => /\/blog$/.test(e.url));
@@ -68,9 +68,13 @@ describe('PUB-311 sitemap landing — voce /privacy con hreflang IT/ES (AC-311-2
       it: `${base}/it/blog`,
       es: `${base}/es/blog`,
     });
-    // Solo le 3 pagine stabili: home, /privacy, indice /blog. Nessuna voce per i singoli post (PUB-441).
-    expect(map).toHaveLength(3);
-    expect(map.some((e) => /\/blog\/.+/.test(e.url))).toBe(false);
+    // Le tre pagine STABILI (home, /privacy, indice /blog) sono sempre presenti, a prescindere dal
+    // contenuto. Le voci per i SINGOLI post (aggiunte da PUB-441 quando esistono seed reali, PUB-451)
+    // sono coperte da blog-sitemap.test.ts col loader mockato: qui non si asserisce piu' la loro assenza
+    // (col seed reale su disco esistono davvero, e questo test gira sulla root reale — non mocka nulla).
+    for (const stable of [`${base}/it`, `${base}/it/privacy`, `${base}/it/blog`]) {
+      expect(map.some((e) => e.url === stable)).toBe(true);
+    }
   });
 });
 
