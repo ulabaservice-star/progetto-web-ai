@@ -410,5 +410,12 @@
       "body": "Tienes derecho a acceder a tus datos, a solicitar su rectificación o supresión y a retirar tu consentimiento en cualquier momento, con un clic o escribiéndonos. Puedes darte de baja cuando quieras.",
       "contact": "Para ejercer tus derechos o retirar tu consentimiento, escribe a privacy@ulaba.net."
     }
+  },
+  "blog": {
+    "pageTitle": "El blog de Ulaba",
+    "listHeading": "Guías y novedades para llevar tu negocio local a internet",
+    "readMore": "Leer el artículo",
+    "dateLabel": "Publicado el",
+    "empty": "Todavía no hay artículos. Vuelve pronto: estamos escribiendo las primeras guías."
   }
 }
