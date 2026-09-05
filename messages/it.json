@@ -410,5 +410,12 @@
       "body": "Hai il diritto di accedere ai tuoi dati, di chiederne la rettifica o la cancellazione e di revocare il consenso in qualsiasi momento, con un clic o scrivendoci. Puoi disiscriverti quando vuoi.",
       "contact": "Per esercitare i tuoi diritti o revocare il consenso, scrivi a privacy@ulaba.net."
     }
+  },
+  "blog": {
+    "pageTitle": "Il blog di Ulaba",
+    "listHeading": "Guide e novità per portare online la tua attività locale",
+    "readMore": "Leggi l’articolo",
+    "dateLabel": "Pubblicato il",
+    "empty": "Non ci sono ancora articoli. Torna presto: stiamo scrivendo le prime guide."
   }
 }
