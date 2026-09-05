@@ -10,9 +10,9 @@
 |---|---|
 | **Progetto** | Ulaba/Belora — P6a (superficie pubblica) |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase Cloud EU) |
-| **Ultimo aggiornamento** | 2026-09-05 (BUILD `blog-list` — checkpoint 4/4 verde + mutazione 5/5, MERGIATO `12a3ca2`) |
-| **Sessione corrente (BUILD `blog-list`, PUB-421)** | **CHIUSO+MERGIATO** (`12a3ca2`, atomico `280e905`, deploy coupled; nessuna migrazione; nessuna rotta API; nessuna dep nuova). **18/22 macrotask done.** |
-| **Sessione precedente (BUILD `blog-content`, PUB-411)** | **CHIUSO+MERGIATO** (`0a5b16b`, atomico `1954efd`, deploy coupled; nessuna migrazione; nessuna dep nuova). |
+| **Ultimo aggiornamento** | 2026-09-05 (BUILD `blog-post` — checkpoint 4/4 verde + mutazione 5/5, MERGIATO `b7c0294`) |
+| **Sessione corrente (BUILD `blog-post`, PUB-431)** | **CHIUSO+MERGIATO** (`b7c0294`, atomico `6d55cf6`, deploy coupled; nessuna migrazione; nessuna rotta API; nessuna dep nuova). **19/22 macrotask done.** |
+| **Sessione precedente (BUILD `blog-list`, PUB-421)** | **CHIUSO+MERGIATO** (`12a3ca2`, atomico `280e905`, deploy coupled; nessuna migrazione; nessuna rotta API; nessuna dep nuova). |
 
 ---
 
@@ -40,14 +40,26 @@
 | 16 | `blog-pipeline` (PUB-401) | **done** | 4/4 ✅ (`bcaa800`, merge `b1e41ce`) | — |
 | 17 | `blog-content` (PUB-411) | **done** | 4/4 ✅ (`1954efd`, merge `0a5b16b`) | `blog-pipeline` |
 | 18 | `blog-list` (PUB-421) | **done** | 4/4 ✅ (`280e905`, merge `12a3ca2`) | `blog-content`, `marketing-layout` |
-| 19 | `blog-post` (PUB-431) | **todo** | — | `blog-content`, `seo-metadata`, `seo-jsonld` |
+| 19 | `blog-post` (PUB-431) | **done** | 4/4 ✅ (`6d55cf6`, merge `b7c0294`) | `blog-content`, `seo-metadata`, `seo-jsonld` |
 | 20 | `blog-sitemap` (PUB-441) | **todo** | — | `seo-sitemap`, `blog-content` |
 | 21 | `blog-seed` (PUB-451) | **todo** | — | `blog-content` |
 | 22 | `cutover` (PUB-501) | **todo** | — | (tutte le superfici pubbliche) |
 
-**Eleggibili ora (dipendenze verdi):** `blog-post` (PUB-431 — da `blog-content`+`seo-metadata`+`seo-jsonld`,
-tutte verdi), `blog-sitemap` (PUB-441 — da `seo-sitemap`+`blog-content`), `blog-seed` (PUB-451 — da
-`blog-content`). `cutover` per ULTIMO. **`blog-list` (PUB-421) è CHIUSO+MERGIATO** (`12a3ca2`, atomico
+**Eleggibili ora (dipendenze verdi):** `blog-sitemap` (PUB-441 — da `seo-sitemap`+`blog-content`),
+`blog-seed` (PUB-451 — da `blog-content`). Sono **indipendenti fra loro sui file**; `cutover` per ULTIMO.
+**`blog-post` (PUB-431) è CHIUSO+MERGIATO** (`b7c0294`, atomico `6d55cf6`): la rotta del singolo post
+`src/app/[locale]/(marketing)/blog/[slug]/page.tsx` (Server Component, SSG) — `generateStaticParams` enumera i
+post di TUTTI i locali (`routing.locales.flatMap` su `listPosts`, PUB-411), la pagina rende `getPost().html`
+via **`dangerouslySetInnerHTML` alimentato SOLO dall'HTML già sanificato** dalla pipeline `renderMarkdown`
+(PUB-401, mai testo grezzo di corpo/frontmatter, A05:2025), emette un `<script type="application/ld+json">`
+`@type Article` (headline dal frontmatter) serializzato con **`serializeJsonLdSafe` RIUSATO** (PUB-331,
+anti-breakout del tag, montato come figlio testuale), e `generateMetadata` produce canonical/OG assoluti su
+`getLandingBaseUrl()` (host landing, mai l'Host) + `alternates.languages` popolato **SOLO fra traduzioni REALI**
+(`resolvePostAlternates`, P6A-D9: un post mono-lingua NON emette hreflang; con controparte il set è reciproco,
+self incluso). Slug inesistente → `getPost` null → `notFound()` (404), come `/s/<slug>` (P4). Checkpoint 4/4 +
+mutazione 5/5, `next build` 0 con `/[locale]/blog/[slug]` come **`●` SSG**, e2e 37/37. Nessuna rotta API, nessuna
+migrazione, nessuna dep nuova. Restano a valle `blog-sitemap` (PUB-441) e `blog-seed` (PUB-451, date QUOTATE),
+poi `cutover`. **`blog-list` (PUB-421) è CHIUSO+MERGIATO** (`12a3ca2`, atomico
 `280e905`): la rotta di listing `src/app/[locale]/(marketing)/blog/page.tsx` (Server Component, SSG) —
 `generateStaticParams` enumera `routing.locales` → `[{it},{es}]` (AC-421-2), carica i post con `listPosts(locale)`
 (PUB-411) e **delega la resa delle card al componente client** `src/ui/marketing/BlogList.tsx` (renderizzabile in
@@ -111,6 +123,27 @@ CHIUSO** (`52fb2c5`): `src/app/sitemap.ts` (MetadataRoute.Sitemap) landing — h
 
 ## 2. Macrotask corrente
 
+- **`blog-post` (19) CHIUSO+MERGIATO** (`b7c0294`, atomico `6d55cf6`, branch `trueline/build/blog-post` locale
+  ancora presente). Rotta del singolo post `src/app/[locale]/(marketing)/blog/[slug]/page.tsx` (Server Component,
+  SSG) dentro il route group `(marketing)` (chrome PUB-131). **`generateStaticParams`** enumera i post di TUTTI i
+  locali (`routing.locales.flatMap((locale) => listPosts(locale).map(...))` → voci `{ locale, slug }`; con
+  `content/blog` ancora vuoto il seed arriva con PUB-451 → 0 voci prerese, ma la rotta è registrata SSG `●`). La
+  **page** carica `getPost(locale, slug)` (PUB-411): `null` → `notFound()` (404, come `/s/<slug>` P4); altrimenti
+  rende `post.html` via **`dangerouslySetInnerHTML`** — l'**UNICO** html iniettato è quello GIÀ passato da
+  `rehype-sanitize` nella pipeline PURA `renderMarkdown` (PUB-401), MAI testo grezzo di corpo/frontmatter
+  (A05:2025) — con titolo/data come figli di testo React (escaping). Emette un `<script
+  type="application/ld+json">` `@type Article` (headline/description/datePublished dal frontmatter) serializzato
+  con **`serializeJsonLdSafe` RIUSATO** da `@/domain/generation/jsonld` (`<` `>` `&` U+2028/U+2029 → escape
+  unicode: la chiusura del tag è irrappresentabile anche se il titolo la contenesse), montato come **figlio
+  TESTUALE** del `<script>`, mai `innerHTML` grezzo. **`generateMetadata`**: `canonical =
+  ${getLandingBaseUrl()}/${locale}/blog/${slug}` (host landing, mai l'Host della richiesta), `openGraph`
+  (type `article`, url canonical, `images` 1200×630 placeholder, `locale` BCP-47), `twitter.card
+  summary_large_image`, e **`alternates.languages` popolato SOLO fra traduzioni REALI** (`resolvePostAlternates`,
+  P6A-D9): un post mono-lingua → nessun blocco `languages` (nessun hreflang fittizio); con controparte → set
+  reciproco (self + i locali reali). **UI → gate visivo umano DOVUTO ma RINVIATO** (in blocco su tutta la
+  superficie pubblica prima del `cutover`: la home È la demo). Nessuna rotta API, nessuna migrazione, nessuna dep
+  nuova. Il prossimo BUILD sceglie un eleggibile della catena blog: `blog-sitemap` (PUB-441) o `blog-seed`
+  (PUB-451) — indipendenti fra loro sui file; `cutover` per ULTIMO.
 - **`blog-list` (18) CHIUSO+MERGIATO** (`12a3ca2`, atomico `280e905`, branch `trueline/build/blog-list` locale
   ancora presente). Rotta di listing `src/app/[locale]/(marketing)/blog/page.tsx` (Server Component, SSG):
   `generateStaticParams` → `[{it},{es}]`; carica i post con `listPosts(locale)` (PUB-411) e **delega la resa al
@@ -191,13 +224,29 @@ CHIUSO** (`52fb2c5`): `src/app/sitemap.ts` (MetadataRoute.Sitemap) landing — h
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `trueline/build/blog-list` (atomico `280e905`, **mergiato** in `main`; branch locale ancora presente) |
-| Ultimo commit | `12a3ca2` (merge `--no-ff` blog-list in main) + docs session-end (in corso) |
-| Stato merge su `main` | **done** (via umana esplicita → merge `12a3ca2` → push, deploy coupled; nessuna migrazione) |
-| Deploy-coupling | **coupled** (push su `main` = deploy su ulaba.net) → verifica locale FATTA prima del merge (vitest full **2015 passati / 1 rosso** = TS2589 scaffold pre-esistente invariante `scaffold.test.ts`→`e2e/effects.spec.ts`, **+4 test nuovi** = `blog-list-route.test.tsx` 3/3 + `blog-i18n-parity.test.ts` 1/1; tsc solo il TS2589 invariante, nessun errore nuovo sui file del macrotask; next build exit 0 con la rotta **`/[locale]/blog`** presente; **e2e Chromium 37/37**). Nessuna migrazione. Nessuna rotta API. Nessuna dep nuova. Push OK (`8620a00..12a3ca2`) |
+| Branch di lavoro | `trueline/build/blog-post` (atomico `6d55cf6`, **mergiato** in `main`; branch locale ancora presente) |
+| Ultimo commit | `b7c0294` (merge `--no-ff` blog-post in main) + docs session-end (in corso) |
+| Stato merge su `main` | **done** (via umana esplicita → merge `b7c0294` → push, deploy coupled; nessuna migrazione) |
+| Deploy-coupling | **coupled** (push su `main` = deploy su ulaba.net) → verifica locale FATTA prima del merge (vitest full **2021 passati / 1 rosso** = **lo STESSO** TS2589 scaffold pre-esistente invariante `scaffold.test.ts`→`e2e/effects.spec.ts:103` — riprodotto con i file del macrotask RIMOSSI, quindi NON è una regressione; **+6 test nuovi** = `blog-post-route.test.tsx` 6/6; tsc solo il TS2589 invariante, nessun errore nuovo sui file del macrotask; next build exit 0 con la rotta **`/[locale]/blog/[slug]` `●` SSG**; **e2e Chromium 37/37**). Nessuna migrazione. Nessuna rotta API. Nessuna dep nuova. Push OK (`5ecf441..b7c0294`) |
 
 ## 4. Baseline & budget
 
+- **`blog-post` (PUB-431):** C1 green con **`dead-code:0 dup:246 cycle:0 twin:degr` e blockers VUOTI** (nessuna
+  regressione d'igiene NUOVA). Nessun dead-code nuovo: `generateStaticParams` + `generateMetadata` + il default
+  della `page.tsx` sono entrypoint di rotta Next (knip li riconosce) e `tests/blog-post-route.test.tsx` importa
+  tutti e tre; nessun export orfano (i tipi importati dal test — `BlogLocale`/`BlogPost`/`PostAlternate` — sono di
+  `content.ts`, già consumati). C2 green (`gitleaks:3 scan-scope-escl:26 osv:4 semgrep:0 rls:3`, **0 nuovi
+  ≥HIGH**): **nessuna dep nuova** (osv `4` invariato), nessun segreto (nessun env nel sorgente; la rotta non tocca
+  `src/data`/`service_role`), nessuna tabella/policy RLS toccata (rotta pubblica statica). **Nota su
+  `dangerouslySetInnerHTML`:** semgrep è DIFFERITO a M4 nel checkpoint di questo ecosistema (C2 = gitleaks + rls +
+  osv), quindi non produce finding qui; la sicurezza del sink è provata **sull'effetto** dal target_test
+  (l'unico html è `post.html` già sanificato da `rehype-sanitize`; gli unici `<script>` sono `ld+json`) e dalla
+  mutazione M1/M3 (feed dal frontmatter / `JSON.stringify` nudo → ROSSI). tsc: nessun errore nuovo sui file del
+  macrotask — resta **solo** il TS2589 invariante di `e2e/effects.spec.ts:103` (Playwright `evaluateAll` generico,
+  file immutato dal 2026-08-13, riprodotto coi file del macrotask rimossi ⇒ pre-esistente, NON regressione; NON
+  intercettato da `next build`, il cui type-check app-reachable passa in 17s). next build exit 0 con
+  `/[locale]/blog/[slug]` marcata **`●` (SSG)** — `generateStaticParams` gira al build (0 voci finché il seed
+  PUB-451 non posa i `.md`). Mutazione **5/5** (§5).
 - **`blog-list` (PUB-421):** C1 green con **`dead-code:0 dup:246 cycle:0` e blockers VUOTI** (nessuna
   regressione d'igiene NUOVA; i pre-esistenti restano segnalati). Nessun dead-code nuovo: gli export del
   macrotask sono tutti CONSUMATI — `generateStaticParams` + il default della `page.tsx` sono entrypoint di rotta
@@ -346,6 +395,60 @@ CHIUSO** (`52fb2c5`): `src/app/sitemap.ts` (MetadataRoute.Sitemap) landing — h
 - **Budget**: un macrotask alla volta; loop di fix con tetto in `references/oracles/thresholds.md`.
 
 ## 5. Esiti dell'ultima sessione (framing onesto)
+
+**BUILD `blog-post` (PUB-431) — CHIUSO+MERGIATO (`b7c0294`, atomico `6d55cf6`).** La rotta del singolo post
+`src/app/[locale]/(marketing)/blog/[slug]/page.tsx` (Server Component SSG): `generateStaticParams` enumera i post
+di TUTTI i locali (`routing.locales.flatMap` su `listPosts`, PUB-411); la page carica `getPost(locale, slug)` →
+`null` → `notFound()` (404), altrimenti rende `post.html` via `dangerouslySetInnerHTML` (l'UNICO html è quello già
+sanificato da `rehype-sanitize` in `renderMarkdown` PUB-401) + un `<script>` JSON-LD `@type Article` serializzato
+con `serializeJsonLdSafe` RIUSATO (PUB-331); `generateMetadata` produce canonical/OG su `getLandingBaseUrl()` +
+`alternates.languages` SOLO fra traduzioni reali (`resolvePostAlternates`, P6A-D9). Checkpoint **4/4 verde** (C1
+`dead-code:0 dup:246 cycle:0 twin:degr`, 0-nuovi; C2 `gitleaks:3 osv:4 semgrep:0 rls:3`, 0-nuovi ≥HIGH, **nessuna
+dep nuova**; C3 suite full **2021 pass / 1 rosso invariante** pre-esistente `scaffold.test.ts`→TS2589; C4 target
+`tests/blog-post-route.test.tsx` **6/6** = AC-431-1/2/3/4 + DoD `generateStaticParams` su it+es). Mutazione **5/5**
+(M1 `dangerouslySetInnerHTML` dal `frontmatter.title` invece che `post.html` → AC-431-1 rosso, il corpo `<p>ciao</p>`
+sparisce; M2 `@type` non-`Article` → AC-431-2 rosso; M3 `JSON.stringify` nudo invece di `serializeJsonLdSafe` →
+AC-431-2 rosso, il `</script>` del titolo ostile sopravvive; M4 `alternates` forzati verso `es` sempre → AC-431-3
+rosso, un post mono-lingua emette un hreflang fittizio; M5 rimosso `notFound()` sulla page → AC-431-4 rosso, il
+render prosegue su `post` null; tutti ripristinati sha256 bit-identico, MAI git checkout — file uncommitted). next
+build exit 0 (`/[locale]/blog/[slug]` marcata **`●` SSG**), **e2e Chromium 37/37**.
+
+**Lezioni `blog-post`:**
+- **Il sink `dangerouslySetInnerHTML` è LEGITTIMO qui perché la sanificazione è a MONTE e la difesa si prova
+  sull'EFFETTO, non sulla fiducia.** L'unico `__html` è `post.html`, già passato da `rehype-sanitize` nella pipeline
+  pura `renderMarkdown` (PUB-401) dentro il loader `getPost` (PUB-411): il macrotask non ri-sanifica, riusa la
+  proprietà provata a monte. Il target_test lo pinna in modo falsificabile — con corpo `<p>ciao</p>` il DOM contiene
+  `<p>ciao</p>` E gli UNICI `<script>` della pagina sono `application/ld+json` (nessuno nato dal corpo) — e la
+  mutazione M1 (feed dal `frontmatter.title`) lo rende rosso. Il warning dell'hook di sicurezza sul sink è **atteso**:
+  la posizione è documentata nel sorgente e negli oracoli. semgrep (che avrebbe una regola sul sink) è DIFFERITO a M4
+  nel checkpoint dell'ecosistema, quindi C2 non lo segnala; la garanzia è il test + la mutazione, non l'assenza di
+  scanner.
+- **Anti-breakout del JSON-LD provato con un titolo OSTILE, non con `serializeJsonLdSafe` fidato ciecamente.** Il
+  target_test rende un post il cui `frontmatter.title` contiene `</script><script>alert(1)</script>`: asserisce che
+  il testo dello `<script>` NON contenga la chiusura grezza del tag, che `<` sia diventato `<`, e che
+  `JSON.parse` round-trippi headline == titolo esatto. Così la mutazione M3 (`JSON.stringify` nudo) è ROSSA a livello
+  di pagina, non solo di unità — stesso pattern falsificabile di `seo-jsonld` (PUB-331), riuso dello **stesso**
+  serializzatore.
+- **Hreflang ONESTO = gate su `resolvePostAlternates().length > 0`, e il killer è il caso MONO-LINGUA.** La
+  mutazione naturale «popola sempre l'altro locale» (M4: `alternates` forzati a `[{es, slug}]`) sopravviverebbe al
+  solo caso bilingue (dove sia l'onesto sia il mutante emettono `es`); a ucciderla è l'asserzione sul post
+  mono-lingua (`resolvePostAlternates` → `[]` → nessuna chiave `es`). Lezione generale: per una proprietà
+  «solo-quando-X», il test discriminante è il ramo **¬X**, non il ramo X.
+- **Render dell'async Server Component in jsdom = `render(await Page({ params: Promise.resolve(...) }))`.** Il default
+  export è `async` (attende `params`); si attende la funzione per ottenere il `ReactElement`, poi `render()` sincrono.
+  `getPost`/`resolvePostAlternates`/`listPosts` (il loader `server-only` che legge FS) sono **mockati** con spie
+  hoisted → nessuna fixture su disco, ogni test inietta il post che vuole. `next/navigation.notFound` è un
+  throw-sentinel hoisted (come `editor-route-guard`): AC-431-4 asserisce `rejects.toBe(NOT_FOUND)` + spy chiamata 1×.
+- **`next build`: la rotta `[slug]` con `generateStaticParams` risulta `●` (SSG) anche con 0 post** (il seed arriva
+  con PUB-451): `generateStaticParams` gira al build e la rotta è registrata SSG; a runtime uno slug senza `.md` →
+  `getPost` null → `notFound()`. Diversa dal listing `/[locale]/blog` (`ƒ`): la marcatura statica/dinamica è
+  un'analisi di Next, il contratto SSG del DoD (enumerazione dei post di tutti i locali) è soddisfatto a codice+test.
+- **Il rosso invariante `scaffold.test.ts`→TS2589 è pre-esistente, VERIFICATO rimuovendo i file del macrotask.** Con
+  `src/app/[locale]/(marketing)/blog/[slug]/` e `tests/blog-post-route.test.tsx` spostati fuori, `tsc --noEmit`
+  riproduce identico `e2e/effects.spec.ts(103,10): error TS2589` (Playwright `evaluateAll` generico, file immutato dal
+  2026-08-13). `npm run typecheck` È `tsc --noEmit` → lo scaffold test fallisce per lo stesso motivo su main pulito.
+  NON intercettato da `next build` (il suo type-check app-reachable passa in 17s, non tocca gli spec e2e). Coerente
+  con la sessione `blog-list` che lo registrava già.
 
 **BUILD `blog-list` (PUB-421) — CHIUSO+MERGIATO (`12a3ca2`, atomico `280e905`).** La rotta di listing
 `src/app/[locale]/(marketing)/blog/page.tsx` (Server Component SSG): `generateStaticParams` → `[{it},{es}]`,
@@ -1091,22 +1194,37 @@ ripristino bit-identico sha256). `next build` ok; e2e non impattato (export non 
 
 ## 6. Prossimi passi
 
-- **18/22 macrotask done** (`host-classify`, `host-guard`, `marketing-i18n`, `marketing-layout`,
+- **19/22 macrotask done** (`host-classify`, `host-guard`, `marketing-i18n`, `marketing-layout`,
   `marketing-home`, `waitlist-schema`, `waitlist-store`, `captcha-port`, `waitlist-endpoint`,
   `waitlist-form`, `seo-robots`, `seo-sitemap`, `seo-metadata`, `seo-jsonld`, `privacy-page`,
-  `blog-pipeline`, `blog-content`, `blog-list` — tutti mergiati su main; `blog-list` = `12a3ca2`). **Prossima
-  sessione = BUILD di un eleggibile** (§1) della catena blog, ora tutti sbloccati e **indipendenti fra
-  loro sui file**: `blog-post` (PUB-431, +`seo-metadata`+`seo-jsonld` — la rotta `/blog/<slug>` che rende
-  `getPost().html` sanificato via `dangerouslySetInnerHTML`, con metadati/hreflang da
-  `resolvePostAlternates` e JSON-LD `Article`), `blog-sitemap` (PUB-441, +`seo-sitemap` — i post nella
-  sitemap landing), `blog-seed` (PUB-451 — i post `.md` reali IT+ES, **date QUOTATE** per lo schema).
-  `cutover` per ULTIMO. Superfici pubbliche home-side complete (chrome + home + i quattro SEO + privacy) +
-  **pipeline + loader + rotta di listing `/blog` del blog posati**; resta la catena di rotte blog a valle
-  (post/sitemap/seed) e il cutover. **`blog-post` (PUB-431) è l'eleggibile naturale** (rende il singolo post,
-  usa `getPost`/`resolvePostAlternates` già pronti). Il canale waitlist resta **completo end-to-end**: resta un
-  **gate visivo umano** opportuno su TUTTA la superficie pubblica (landing + le pagine blog, la home È la demo)
-  e, al go-live, la site key pubblica `NEXT_PUBLIC_TURNSTILE_SITE_KEY` + il secret `TURNSTILE_SECRET_KEY` su
-  Vercel (finché assenti: form `unavailable` + endpoint che degrada, inerti dichiarati, nessun 500).
+  `blog-pipeline`, `blog-content`, `blog-list`, `blog-post` — tutti mergiati su main; `blog-post` = `b7c0294`).
+  **Prossima sessione = BUILD di un eleggibile** (§1) della catena blog, ora **indipendenti fra loro sui file**:
+  `blog-sitemap` (PUB-441, +`seo-sitemap` — i post reali nella sitemap landing) e `blog-seed` (PUB-451 — i post
+  `.md` reali IT+ES, **date QUOTATE** per lo schema, sblocca il render effettivo di listing/post). `cutover` per
+  ULTIMO. Superfici pubbliche home-side complete (chrome + home + i quattro SEO + privacy) + **pipeline + loader +
+  rotta di listing `/blog` + rotta del singolo post `/blog/<slug>` posati**; resta la sitemap dei post, il seed dei
+  contenuti reali e il cutover. **`blog-seed` (PUB-451) è quello che dà finalmente contenuto** (finché assente,
+  listing/post rendono a vuoto / 404). Il canale waitlist resta **completo end-to-end**: resta un **gate visivo
+  umano** opportuno su TUTTA la superficie pubblica (landing + le pagine blog, la home È la demo) e, al go-live, la
+  site key pubblica `NEXT_PUBLIC_TURNSTILE_SITE_KEY` + il secret `TURNSTILE_SECRET_KEY` su Vercel (finché assenti:
+  form `unavailable` + endpoint che degrada, inerti dichiarati, nessun 500).
+- **Copertura dichiarata blog-post (§6):** target_test `tests/blog-post-route.test.tsx` (6 test) copre AC-431-1
+  (post con `html '<p>ciao</p>'` → il DOM contiene `<p>ciao</p>` via `dangerouslySetInnerHTML` e gli UNICI
+  `<script>` sono `application/ld+json` → nessuno nato dal corpo), AC-431-2 (titolo OSTILE con `</script>` → lo
+  `<script ld+json>` ha `@type 'Article'` e `headline` == il titolo esatto via `JSON.parse`, MA il testo non
+  contiene la chiusura grezza del tag né `<` grezzo, `<` → `<`), AC-431-3 (post con controparte es →
+  `alternates.languages.es` == `${base}/es/blog/<slug-es>` + canonical su base landing ≠ host sito; post mono-lingua
+  → `languages` NON contiene `es`), AC-431-4 (`getPost` → null → `notFound()` throw-sentinel + spy 1×), + 1 test DoD
+  (`generateStaticParams` con `listPosts` mockato per it/es → voci `{ locale, slug }` di TUTTI i locali). Mutazione
+  **5/5** (§5). **NON coperto (dichiarato):** il **render SSR reale** della rotta da Next (provato indirettamente da
+  `next build`, `/[locale]/blog/[slug]` `●` SSG, e dal componente in jsdom, non da un GET reale); la **resa con post
+  SEED reali** (`blog-seed` PUB-451 — qui `getPost`/`resolvePostAlternates`/`listPosts` sono MOCKATI, nessun `.md`
+  su disco); la **robustezza della sanificazione** dell'html è quella di `renderMarkdown`/`rehype-sanitize` (PUB-401),
+  non ri-testata qui (il macrotask riusa la proprietà a monte, non la ri-prova); le **voci dei post nella sitemap**
+  (`blog-sitemap` PUB-441); l'**og:image reale** 1200×630 (azione founder, VISION §10 — qui solo il placeholder
+  `/og-image.png`); il **wiring reale** su `NEXT_PUBLIC_LANDING_URL` di produzione (env stubbata nel verde);
+  l'**estetica/responsive** della pagina post (cura del polish + gate visivo umano, non oracolabile). Nessuna
+  tabella/RLS/auth toccata (rotta pubblica, legge solo dal dominio `@/domain/blog/content`).
 - **Copertura dichiarata blog-list (§6):** target_test `tests/blog-list-route.test.tsx` (3 test) copre AC-421-1
   (`BlogList` con N card → N link `/it/blog/<slug>` + i titoli, sotto il `pageTitle` del catalogo `blog`),
   AC-421-2 (`generateStaticParams()` → `[{locale:'it'},{locale:'es'}]`), AC-421-3 (`posts=[]` → nessun
