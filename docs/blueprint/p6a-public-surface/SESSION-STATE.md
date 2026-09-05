@@ -10,9 +10,9 @@
 |---|---|
 | **Progetto** | Ulaba/Belora — P6a (superficie pubblica) |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase Cloud EU) |
-| **Ultimo aggiornamento** | 2026-09-05 (BUILD `blog-sitemap` — checkpoint 4/4 verde + mutazione 5/5, MERGIATO `0a30762`) |
-| **Sessione corrente (BUILD `blog-sitemap`, PUB-441)** | **CHIUSO+MERGIATO** (`0a30762`, atomico `5e17467`, deploy coupled; nessuna migrazione; nessuna rotta API; nessuna dep nuova). **20/22 macrotask done.** |
-| **Sessione precedente (BUILD `blog-post`, PUB-431)** | **CHIUSO+MERGIATO** (`b7c0294`, atomico `6d55cf6`, deploy coupled; nessuna migrazione; nessuna rotta API; nessuna dep nuova). |
+| **Ultimo aggiornamento** | 2026-09-05 (BUILD `blog-seed` — checkpoint 4/4 verde + mutazione 5/5, MERGIATO `24fcbc3`) |
+| **Sessione corrente (BUILD `blog-seed`, PUB-451)** | **CHIUSO+MERGIATO** (`24fcbc3`, atomico `b3797bf`, deploy coupled; nessuna migrazione; nessuna rotta API; nessuna dep nuova). **21/22 macrotask done.** Resta solo `cutover` (PUB-501). |
+| **Sessione precedente (BUILD `blog-sitemap`, PUB-441)** | **CHIUSO+MERGIATO** (`0a30762`, atomico `5e17467`, deploy coupled; nessuna migrazione; nessuna rotta API; nessuna dep nuova). |
 
 ---
 
@@ -42,12 +42,16 @@
 | 18 | `blog-list` (PUB-421) | **done** | 4/4 ✅ (`280e905`, merge `12a3ca2`) | `blog-content`, `marketing-layout` |
 | 19 | `blog-post` (PUB-431) | **done** | 4/4 ✅ (`6d55cf6`, merge `b7c0294`) | `blog-content`, `seo-metadata`, `seo-jsonld` |
 | 20 | `blog-sitemap` (PUB-441) | **done** | 4/4 ✅ (`5e17467`, merge `0a30762`) | `seo-sitemap`, `blog-content` |
-| 21 | `blog-seed` (PUB-451) | **todo** | — | `blog-content` |
+| 21 | `blog-seed` (PUB-451) | **done** | 4/4 ✅ (`b3797bf`, merge `24fcbc3`) | `blog-content` |
 | 22 | `cutover` (PUB-501) | **todo** | — | (tutte le superfici pubbliche) |
 
-**Eleggibili ora (dipendenze verdi):** `blog-seed` (PUB-451 — da `blog-content`, **date QUOTATE** per lo
-schema zod). È l'ULTIMO eleggibile prima di `cutover` (PUB-501, per ULTIMO) e **quello che dà finalmente
-contenuto reale**: finché assente, listing/post/sitemap-post rendono a vuoto / 404 (`listPosts` → `[]`).
+**Eleggibile ora (dipendenze verdi):** SOLO `cutover` (PUB-501) — è il macrotask FINALE, human-gated e in
+parte non-codice (azioni founder VISION §10 + sonde curl `evaluateCutover` nell'ordine obbligato P6A-D12).
+Tutte le 21 superfici pubbliche a monte sono done+mergiate. **`blog-seed` (PUB-451) è ora CHIUSO+MERGIATO**
+(`24fcbc3`, atomico `b3797bf`): due coppie di post seed reali sotto `content/blog/{it,es}` — non più
+`listPosts → []`, ora listing `/blog`, post `/blog/<slug>` e voci-post della sitemap **rendono contenuto
+reale** (§5). Restava, prima del seed, il buco «finché assente listing/post/sitemap rendono a vuoto / 404»:
+**colmato**.
 **`blog-sitemap` (PUB-441) è CHIUSO+MERGIATO** (`0a30762`, atomico `5e17467`): `src/app/sitemap.ts` (la
 sitemap landing di PUB-311) ora aggiunge, alle tre pagine stabili, **una voce per OGNI post pubblicato di
 ENTRAMBI i locali** (`routing.locales.flatMap` su `listPosts`, esclusi i draft, PUB-411) con url assoluto
@@ -258,13 +262,25 @@ CHIUSO** (`52fb2c5`): `src/app/sitemap.ts` (MetadataRoute.Sitemap) landing — h
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `trueline/build/blog-sitemap` (atomico `5e17467`, **mergiato** in `main`; branch locale **cancellato** dopo il merge) |
-| Ultimo commit | `0a30762` (merge `--no-ff` blog-sitemap in main) + docs session-end (in corso) |
-| Stato merge su `main` | **done** (via umana esplicita → merge `0a30762` → push, deploy coupled; nessuna migrazione) |
-| Deploy-coupling | **coupled** (push su `main` = deploy su ulaba.net) → verifica locale FATTA prima del merge (vitest full **2024 passati / 1 rosso** = **lo STESSO** TS2589 scaffold pre-esistente invariante `scaffold.test.ts`→`e2e/effects.spec.ts:103` — riprodotto con i file del macrotask STASHATI su clean main, quindi NON è una regressione; **+3 test nuovi** = `blog-sitemap.test.ts` 3/3; tsc solo il TS2589 invariante, nessun errore nuovo sui file del macrotask; next build exit 0 con **`/sitemap.xml` `○` Static**; **e2e Chromium 37/37**). Nessuna migrazione. Nessuna rotta API. Nessuna dep nuova. Push OK (`dc714db..0a30762`) |
+| Branch di lavoro | `trueline/build/blog-seed` (atomico `b3797bf`, **mergiato** in `main`; branch locale **cancellato** dopo il merge) |
+| Ultimo commit | `24fcbc3` (merge `--no-ff` blog-seed in main) + docs session-end (in corso) |
+| Stato merge su `main` | **done** (via umana esplicita → merge `24fcbc3` → push, deploy coupled; nessuna migrazione) |
+| Deploy-coupling | **coupled** (push su `main` = deploy su ulaba.net) → verifica locale FATTA prima del merge (vitest full **2028 passati / 1 rosso** = **lo STESSO** TS2589 scaffold pre-esistente invariante `scaffold.test.ts`→`e2e/effects.spec.ts:103` — confermato da `tsc --noEmit` che riporta SOLO quell'errore, quindi NON è una regressione; **+4 test nuovi** = `blog-seed.test.ts` 4/4; `sitemap-landing.test.ts` PUB-311 **aggiornato** per non asserire più l'assenza di post singoli / il totale di 3 voci — col seed reale su disco la sitemap landing include davvero le voci-post, era la sola regressione ed è risolta; next build exit 0 (18 pagine, rotte blog presenti); **e2e Chromium 37/37**). Nessuna migrazione. Nessuna rotta API. Nessuna dep nuova. Push OK (`6648bdb..24fcbc3`) |
 
 ## 4. Baseline & budget
 
+- **`blog-seed` (PUB-451):** C1 green con **`dead-code:0 dup:247 cycle:0 twin:degr` e blockers VUOTI** (nessuna
+  regressione d'igiene NUOVA; `dup:247` invariato = drift ambientale pre-esistente già assorbito dalla
+  `hygiene-baseline.json` in PUB-441). Il macrotask aggiunge **solo file di contenuto** (`content/blog/{it,es}/
+  *.md`) e **file di test** (`blog-seed.test.ts` nuovo, `sitemap-landing.test.ts` aggiornato): nessun modulo di
+  codice, quindi nessun nuovo export/entrypoint per knip. C2 green (`gitleaks:3 scan-scope-escl:28 osv:4
+  semgrep:0 rls:3`, **0 nuovi ≥HIGH**): **nessuna dep nuova** (osv `4` invariato), **nessuna tabella/policy RLS
+  toccata** (solo contenuto). **Nota FP gitleaks (risolto):** al primo giro C2 era ROSSO con **3 finding
+  CRITICAL NUOVI** (`trueline-generic-assigned-secret`) su `translationKey: "local-business-needs-website"` (28
+  char ≥ soglia 25) nei 2 seed della coppia A + nel test — falso positivo (slug pubblico di contenuto, non
+  segreto). **Eliminato alla radice** accorciando la chiave a `local-web-vs-social` (19 char) → C2 verde `0
+  nuovi`, senza toccare la config gitleaks della skill né indebolire la detection dei segreti veri. tsc: SOLO il
+  TS2589 invariante di `e2e/effects.spec.ts:103` (pre-esistente su clean main), nessun errore nuovo.
 - **`blog-sitemap` (PUB-441):** C1 green con **`dead-code:0 dup:247 cycle:0 twin:degr` e blockers VUOTI**
   (nessuna regressione d'igiene NUOVA). Nessun dead-code nuovo: `sitemap.ts` è un file convention Next
   (default export = entrypoint di rotta, riconosciuto da knip) e `tests/blog-sitemap.test.ts` importa `sitemap` +
@@ -444,6 +460,47 @@ CHIUSO** (`52fb2c5`): `src/app/sitemap.ts` (MetadataRoute.Sitemap) landing — h
 - **Budget**: un macrotask alla volta; loop di fix con tetto in `references/oracles/thresholds.md`.
 
 ## 5. Esiti dell'ultima sessione (framing onesto)
+
+**BUILD `blog-seed` (PUB-451) — CHIUSO+MERGIATO (`24fcbc3`, atomico `b3797bf`).** Due coppie di post seed
+REALI sotto `content/blog/{it,es}` (prima cartella inesistente → `listPosts` → `[]`): **coppia A**
+`local-web-vs-social` (it `perche-il-tuo-negozio-ha-bisogno-di-un-sito` ↔ es
+`por-que-tu-negocio-necesita-una-pagina-web`) e **coppia B** `build-site-with-ai` (it
+`crea-il-tuo-sito-con-ai-in-pochi-minuti` ↔ es `crea-tu-web-con-inteligencia-artificial`). Frontmatter valido
+per lo schema zod di `blog-content` (PUB-411): `title`/`description`/`date`/`translationKey` stringhe non
+vuote, **date QUOTATE** (`"2026-09-01"`/`"2026-08-20"` → YAML le tiene stringa, non `Date`), **nessun
+`draft`**, `translationKey` **condiviso** dentro ogni coppia e **distinto** fra le coppie (il distrattore prova
+che `resolvePostAlternates` accoppia per CHIAVE, non «l'altro locale»). Corpo ES **localizzato per il mercato
+ispano/LATAM** (non calco dell'IT: esempi propri, rilievo WhatsApp, registro naturale — P6A-D10), **rivisto in
+avversariale** da un revisore madrelingua nel workflow (draft → review → fix). Il markdown è **solo `##` +
+paragrafi + liste** (nessun tag HTML grezzo); il corpo rende via `renderMarkdown` (PUB-401) e la sanificazione
+non tocca il contenuto legittimo (AC-451-3 àncora l'`<h2>` noto «Il tuo sito lavora anche quando tu dormi»).
+
+- **Metodo:** **dynamic workflow command-free** (ultracode) — 4 builder paralleli su file disgiunti (2 post IT
+  + 2 post ES) + **revisione avversariale della localizzazione ES** (pipeline review→fix per ciascun post ES vs
+  la sua controparte IT); il **test** `blog-seed.test.ts` e la batteria di mutazione scritti dall'orchestratore
+  (invarianti pinnate); TUTTA la verifica (checkpoint 4/4 + mutazione + full suite + next build + e2e) in
+  **FOREGROUND** dall'orchestratore = unico giudice del verde.
+- **Checkpoint 4/4 verde (dal JSON):** C1 igiene green (`dead-code:0 dup:247` pre-esistente `cycle:0`,
+  blockers vuoti); C2 security green (`gitleaks:3` baseline **/ 0 nuovi** `osv:4 semgrep:0 rls:3`); C3
+  regressioni **2028 passed / 1 rosso** = TS2589 scaffold PRE-ESISTENTE invariante (confermato da `tsc --noEmit`
+  che riporta SOLO `e2e/effects.spec.ts:103`); C4 conformità green (`blog-seed.test.ts` **4/4**, AC-451-1/2/3 +
+  DoD listPosts). **Mutazione 5/5** (red && restored bit-identico): M1 campo `description` rimosso (AC-451-1),
+  M2 `translationKey` it divergente (AC-451-2), M3 `draft:true` aggiunto (AC-451-1), M4 `translationKey` es
+  divergente (AC-451-2), M5 h2 noto alterato (AC-451-3). `next build` exit 0 (18 pagine). e2e **37/37**.
+- **Lezione — falso positivo gitleaks `trueline-generic-assigned-secret` sui contenuti:** la regola matcha
+  «identificatore che contiene key/token/secret/… + valore quotato ≥25 char». La coppia A aveva
+  `translationKey: "local-business-needs-website"` (28 char) → 3 finding CRITICAL NUOVI (i 2 seed + il test).
+  `translationKey` è uno **slug pubblico di contenuto, non un segreto**: FP **eliminato alla radice** accorciando
+  la chiave a `local-web-vs-social` (19 char, < soglia) — nessun segreto ha requisiti di lunghezza, la
+  detection dei segreti VERI resta intatta. (La coppia B `build-site-with-ai`, 18 char, non tripava.) Nota per
+  i prossimi post: **translationKey corti** (< 25 char) evitano il FP.
+- **Lezione — non-regressione della sitemap landing:** aggiungere contenuti REALI rende `listPosts` non-vuoto →
+  `sitemap-landing.test.ts` (PUB-311) — che gira sulla root reale e **non mocka** — asseriva «esattamente 3
+  voci, nessun post singolo», vero solo a `content/blog` vuoto. Col seed la sitemap include davvero le voci-post
+  (PUB-441, corretto). Fix: il test ora verifica la **presenza delle 3 pagine stabili** (home/`/privacy`/indice
+  `/blog`) senza asserire l'assenza dei post né il totale. Gemello della lezione `domain-downgrade`: aggiungere
+  un effetto reale a una superficie testata esige aggiornare le assunzioni dei test a valle (leggi
+  `expected 3 to be 7`, non liquidarlo).
 
 **BUILD `blog-sitemap` (PUB-441) — CHIUSO+MERGIATO (`0a30762`, atomico `5e17467`).** `src/app/sitemap.ts`
 (la sitemap landing di PUB-311) ora aggiunge alle tre pagine stabili una voce per OGNI post pubblicato di
@@ -1279,20 +1336,35 @@ ripristino bit-identico sha256). `next build` ok; e2e non impattato (export non 
 
 ## 6. Prossimi passi
 
-- **20/22 macrotask done** (`host-classify`, `host-guard`, `marketing-i18n`, `marketing-layout`,
+- **21/22 macrotask done** (`host-classify`, `host-guard`, `marketing-i18n`, `marketing-layout`,
   `marketing-home`, `waitlist-schema`, `waitlist-store`, `captcha-port`, `waitlist-endpoint`,
   `waitlist-form`, `seo-robots`, `seo-sitemap`, `seo-metadata`, `seo-jsonld`, `privacy-page`,
-  `blog-pipeline`, `blog-content`, `blog-list`, `blog-post`, `blog-sitemap` — tutti mergiati su main;
-  `blog-sitemap` = `0a30762`). **Prossima sessione = BUILD di `blog-seed`** (PUB-451): è **l'ULTIMO eleggibile**
-  prima di `cutover` — i post `.md` reali IT+ES sotto `content/blog/{it,es}`, **date QUOTATE** per lo schema zod
-  di `blog-content` (PUB-411), accoppiati per `translationKey`. Sblocca il **render effettivo** di
-  listing/post/sitemap-post (finché assente `listPosts`→`[]` → listing/post/sitemap rendono a vuoto / 404).
-  `cutover` (PUB-501) per ULTIMO. Superfici pubbliche home-side complete (chrome + home + i quattro SEO +
-  privacy) + **pipeline + loader + listing `/blog` + post `/blog/<slug>` + sitemap dei post posati**; resta
-  **solo** il seed dei contenuti reali e poi il cutover. Il canale waitlist resta **completo end-to-end**: resta
-  un **gate visivo umano** opportuno su TUTTA la superficie pubblica (landing + le pagine blog, la home È la demo)
-  e, al go-live, la site key pubblica `NEXT_PUBLIC_TURNSTILE_SITE_KEY` + il secret `TURNSTILE_SECRET_KEY` su
-  Vercel (finché assenti: form `unavailable` + endpoint che degrada, inerti dichiarati, nessun 500).
+  `blog-pipeline`, `blog-content`, `blog-list`, `blog-post`, `blog-sitemap`, `blog-seed` — tutti mergiati su
+  main; `blog-seed` = `24fcbc3`). **Prossima sessione = BUILD di `cutover`** (PUB-501): è **l'ULTIMO** macrotask,
+  **human-gated** e in parte NON-CODICE. Riguarda le azioni infrastrutturali del founder (VISION §10) e le
+  **sonde curl `evaluateCutover`** che devono andare verdi **nell'ordine obbligato** (P6A-D12): non dichiarare
+  il go-live finché le sonde non sono verdi. Tutte le superfici pubbliche a monte sono complete e mergiate:
+  chrome + home + i quattro SEO + privacy + **catena blog completa** (pipeline + loader + listing `/blog` + post
+  `/blog/<slug>` + sitemap-post + **contenuti seed reali IT+ES**). Il render blog **non è più a vuoto**: con i 2
+  seed per locale, listing/post/sitemap mostrano contenuto reale. Il canale waitlist resta **completo
+  end-to-end**. Restano **fuori dal codice**: un **gate visivo umano** opportuno su TUTTA la superficie pubblica
+  (landing + le pagine blog, la home È la demo) — RINVIATO; e, al go-live, la site key pubblica
+  `NEXT_PUBLIC_TURNSTILE_SITE_KEY` + il secret `TURNSTILE_SECRET_KEY` su Vercel (finché assenti: form
+  `unavailable` + endpoint che degrada, inerti dichiarati, nessun 500).
+- **Copertura dichiarata blog-seed (§6):** target_test `tests/blog-seed.test.ts` (4 test, gira i seed REALI
+  sulla root reale `process.cwd()/content/blog`, non fixture) copre AC-451-1 (ognuno dei 4 seed ha frontmatter
+  valido allo schema zod di PUB-411 e `draft !== true`; le due coppie condividono il `translationKey`), AC-451-2
+  (`resolvePostAlternates('it', slugItA)` → esattamente `[{es, slugEsA}]` e `('it', slugItB)` → `[{es, slugEsB}]`
+  — col distrattore l'accoppiamento è per CHIAVE, non «l'altro locale»; + il reciproco es→it), AC-451-3
+  (`getPost('it', slugItA).html` contiene l'`<h2>` noto → la sanificazione conserva il contenuto legittimo) + 1
+  test DoD (i 4 seed compaiono in `listPosts('it'|'es')` e sono leggibili con `getPost`). Mutazione **5/5** (§5).
+  **NON coperto (dichiarato):** la **resa SSR reale** di listing/post/sitemap coi seed da parte di Next (provata
+  indirettamente da `next build` exit 0 con le rotte blog presenti + e2e 37/37, non da un GET reale dei feed);
+  la **qualità editoriale/legale e l'autenticità della localizzazione ES** oltre la revisione avversariale
+  (cura umana, non oracolabile — vale il gate visivo/di copy RINVIATO); l'**og:image reale** dei post (azione
+  founder, VISION §10); il **wiring reale** su `NEXT_PUBLIC_LANDING_URL` di produzione (env stubbata altrove);
+  la **validazione presso i motori di ricerca** (azione esterna). Nessuna tabella/RLS/auth toccata (solo file di
+  contenuto + test; nessuna migrazione, nessuna rotta API, nessuna dep nuova).
 - **Copertura dichiarata blog-sitemap (§6):** target_test `tests/blog-sitemap.test.ts` (3 test) copre AC-441-1
   (fixture con post it `guida` + post es `guia` → `sitemap()` include gli url ASSOLUTI `${LANDING_URL}/it/blog/guida`
   e `${LANDING_URL}/es/blog/guia`), AC-441-2 (il post it `guida`, con controparte es → la sua voce ha
