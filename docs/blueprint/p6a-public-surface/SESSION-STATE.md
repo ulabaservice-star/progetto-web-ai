@@ -10,9 +10,9 @@
 |---|---|
 | **Progetto** | Ulaba/Belora — P6a (superficie pubblica) |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase Cloud EU) |
-| **Ultimo aggiornamento** | 2026-09-05 (BUILD `blog-post` — checkpoint 4/4 verde + mutazione 5/5, MERGIATO `b7c0294`) |
-| **Sessione corrente (BUILD `blog-post`, PUB-431)** | **CHIUSO+MERGIATO** (`b7c0294`, atomico `6d55cf6`, deploy coupled; nessuna migrazione; nessuna rotta API; nessuna dep nuova). **19/22 macrotask done.** |
-| **Sessione precedente (BUILD `blog-list`, PUB-421)** | **CHIUSO+MERGIATO** (`12a3ca2`, atomico `280e905`, deploy coupled; nessuna migrazione; nessuna rotta API; nessuna dep nuova). |
+| **Ultimo aggiornamento** | 2026-09-05 (BUILD `blog-sitemap` — checkpoint 4/4 verde + mutazione 5/5, MERGIATO `0a30762`) |
+| **Sessione corrente (BUILD `blog-sitemap`, PUB-441)** | **CHIUSO+MERGIATO** (`0a30762`, atomico `5e17467`, deploy coupled; nessuna migrazione; nessuna rotta API; nessuna dep nuova). **20/22 macrotask done.** |
+| **Sessione precedente (BUILD `blog-post`, PUB-431)** | **CHIUSO+MERGIATO** (`b7c0294`, atomico `6d55cf6`, deploy coupled; nessuna migrazione; nessuna rotta API; nessuna dep nuova). |
 
 ---
 
@@ -41,12 +41,27 @@
 | 17 | `blog-content` (PUB-411) | **done** | 4/4 ✅ (`1954efd`, merge `0a5b16b`) | `blog-pipeline` |
 | 18 | `blog-list` (PUB-421) | **done** | 4/4 ✅ (`280e905`, merge `12a3ca2`) | `blog-content`, `marketing-layout` |
 | 19 | `blog-post` (PUB-431) | **done** | 4/4 ✅ (`6d55cf6`, merge `b7c0294`) | `blog-content`, `seo-metadata`, `seo-jsonld` |
-| 20 | `blog-sitemap` (PUB-441) | **todo** | — | `seo-sitemap`, `blog-content` |
+| 20 | `blog-sitemap` (PUB-441) | **done** | 4/4 ✅ (`5e17467`, merge `0a30762`) | `seo-sitemap`, `blog-content` |
 | 21 | `blog-seed` (PUB-451) | **todo** | — | `blog-content` |
 | 22 | `cutover` (PUB-501) | **todo** | — | (tutte le superfici pubbliche) |
 
-**Eleggibili ora (dipendenze verdi):** `blog-sitemap` (PUB-441 — da `seo-sitemap`+`blog-content`),
-`blog-seed` (PUB-451 — da `blog-content`). Sono **indipendenti fra loro sui file**; `cutover` per ULTIMO.
+**Eleggibili ora (dipendenze verdi):** `blog-seed` (PUB-451 — da `blog-content`, **date QUOTATE** per lo
+schema zod). È l'ULTIMO eleggibile prima di `cutover` (PUB-501, per ULTIMO) e **quello che dà finalmente
+contenuto reale**: finché assente, listing/post/sitemap-post rendono a vuoto / 404 (`listPosts` → `[]`).
+**`blog-sitemap` (PUB-441) è CHIUSO+MERGIATO** (`0a30762`, atomico `5e17467`): `src/app/sitemap.ts` (la
+sitemap landing di PUB-311) ora aggiunge, alle tre pagine stabili, **una voce per OGNI post pubblicato di
+ENTRAMBI i locali** (`routing.locales.flatMap` su `listPosts`, esclusi i draft, PUB-411) con url assoluto
+`<base>/<locale>/blog/<slug>` sulla base landing (`getLandingBaseUrl`, MAI l'Host né `getSiteBaseUrl` —
+A05:2025 host-injection) e `alternates.languages` popolato **SOLO fra traduzioni REALI**
+(`resolvePostAlternates`, P6A-D8/D9): il post tradotto porta le chiavi `it`+`es` (self + controparte), il post
+mono-lingua **non emette alcun hreflang fittizio** (idioma identico a `generateMetadata` di `blog-post`
+PUB-431: `alternates.length > 0 ? {…} : undefined`). Solo url pubblici della landing, mai host `app.`, mai
+rotte non pubbliche; funzione **PURA** (nessun `headers()`) → `/sitemap.xml` resta prerenderizzata **Static**
+in `next build`. Estensione **additiva**: le tre voci stabili di PUB-311 restano (provato nel test) e la suite
+esistente `sitemap-landing.test.ts` resta verde (senza seed `listPosts` → `[]`, la sitemap resta a 3 voci).
+Checkpoint 4/4 + mutazione 5/5, `next build` 0, e2e 37/37. Nessuna rotta API, nessuna migrazione, nessuna dep
+nuova. Restano a valle `blog-seed` (PUB-451) e poi `cutover` (PUB-501). Sono **indipendenti fra loro sui
+file**; `cutover` per ULTIMO.
 **`blog-post` (PUB-431) è CHIUSO+MERGIATO** (`b7c0294`, atomico `6d55cf6`): la rotta del singolo post
 `src/app/[locale]/(marketing)/blog/[slug]/page.tsx` (Server Component, SSG) — `generateStaticParams` enumera i
 post di TUTTI i locali (`routing.locales.flatMap` su `listPosts`, PUB-411), la pagina rende `getPost().html`
@@ -123,6 +138,25 @@ CHIUSO** (`52fb2c5`): `src/app/sitemap.ts` (MetadataRoute.Sitemap) landing — h
 
 ## 2. Macrotask corrente
 
+- **`blog-sitemap` (20) CHIUSO+MERGIATO** (`0a30762`, atomico `5e17467`, branch `trueline/build/blog-sitemap`
+  **cancellato** dopo il merge). Estende `src/app/sitemap.ts` (la sitemap landing di `seo-sitemap`, PUB-311):
+  alle tre pagine stabili (home/`/privacy`/indice `/blog`, invariate in una `const stable`) aggiunge un blocco
+  `posts` = `routing.locales.flatMap((locale) => listPosts(locale as BlogLocale).map(...))` — **una voce per OGNI
+  post pubblicato di ENTRAMBI i locali** (esclusi i `draft`, ereditato da `listPosts` PUB-411), con `url` assoluto
+  `${getLandingBaseUrl()}/${locale}/blog/${post.slug}` (base landing, **MAI** l'Host della richiesta né
+  `getSiteBaseUrl` — A05:2025 host-injection/open-redirect) e `alternates.languages` popolato **SOLO fra
+  traduzioni REALI** via `resolvePostAlternates` (P6A-D8/D9): il post tradotto porta `it`+`es` (self `[locale]:
+  url` + le controparti reali), il post mono-lingua → `languages` è `undefined` → voce `{ url }` senza alcun
+  hreflang fittizio. L'**idioma è identico** a `generateMetadata` di `blog-post` (PUB-431): `alternates.length >
+  0 ? {…} : undefined`. Solo url pubblici della landing, mai host `app.`, mai rotte non pubbliche; **nessun
+  `headers()`** → la funzione resta pura e `/sitemap.xml` resta **prerenderizzata Static** (`○`) in `next build`.
+  L'estensione è **additiva**: le tre voci stabili restano (asserito nel test) e la suite esistente
+  `sitemap-landing.test.ts` resta verde (senza seed `listPosts` → `[]`, la sitemap resta a 3 voci → `toHaveLength(3)`
+  regge). Oracolo `tests/blog-sitemap.test.ts` (3 test, AC-441-1..3) col loader di dominio **mockato** (fixture:
+  coppia tradotta `guida`↔`guia` + post solo-it `solo-it`), senza dipendere dal seed reale (PUB-451). **Nessuna UI
+  machine-readable → nessun gate visivo dovuto** (XML). Nessuna rotta API, nessuna migrazione, nessuna dep nuova.
+  Il prossimo BUILD è `blog-seed` (PUB-451, ultimo eleggibile: dà il contenuto reale IT+ES, **date QUOTATE**); poi
+  `cutover` (PUB-501) per ULTIMO.
 - **`blog-post` (19) CHIUSO+MERGIATO** (`b7c0294`, atomico `6d55cf6`, branch `trueline/build/blog-post` locale
   ancora presente). Rotta del singolo post `src/app/[locale]/(marketing)/blog/[slug]/page.tsx` (Server Component,
   SSG) dentro il route group `(marketing)` (chrome PUB-131). **`generateStaticParams`** enumera i post di TUTTI i
@@ -224,13 +258,28 @@ CHIUSO** (`52fb2c5`): `src/app/sitemap.ts` (MetadataRoute.Sitemap) landing — h
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `trueline/build/blog-post` (atomico `6d55cf6`, **mergiato** in `main`; branch locale ancora presente) |
-| Ultimo commit | `b7c0294` (merge `--no-ff` blog-post in main) + docs session-end (in corso) |
-| Stato merge su `main` | **done** (via umana esplicita → merge `b7c0294` → push, deploy coupled; nessuna migrazione) |
-| Deploy-coupling | **coupled** (push su `main` = deploy su ulaba.net) → verifica locale FATTA prima del merge (vitest full **2021 passati / 1 rosso** = **lo STESSO** TS2589 scaffold pre-esistente invariante `scaffold.test.ts`→`e2e/effects.spec.ts:103` — riprodotto con i file del macrotask RIMOSSI, quindi NON è una regressione; **+6 test nuovi** = `blog-post-route.test.tsx` 6/6; tsc solo il TS2589 invariante, nessun errore nuovo sui file del macrotask; next build exit 0 con la rotta **`/[locale]/blog/[slug]` `●` SSG**; **e2e Chromium 37/37**). Nessuna migrazione. Nessuna rotta API. Nessuna dep nuova. Push OK (`5ecf441..b7c0294`) |
+| Branch di lavoro | `trueline/build/blog-sitemap` (atomico `5e17467`, **mergiato** in `main`; branch locale **cancellato** dopo il merge) |
+| Ultimo commit | `0a30762` (merge `--no-ff` blog-sitemap in main) + docs session-end (in corso) |
+| Stato merge su `main` | **done** (via umana esplicita → merge `0a30762` → push, deploy coupled; nessuna migrazione) |
+| Deploy-coupling | **coupled** (push su `main` = deploy su ulaba.net) → verifica locale FATTA prima del merge (vitest full **2024 passati / 1 rosso** = **lo STESSO** TS2589 scaffold pre-esistente invariante `scaffold.test.ts`→`e2e/effects.spec.ts:103` — riprodotto con i file del macrotask STASHATI su clean main, quindi NON è una regressione; **+3 test nuovi** = `blog-sitemap.test.ts` 3/3; tsc solo il TS2589 invariante, nessun errore nuovo sui file del macrotask; next build exit 0 con **`/sitemap.xml` `○` Static**; **e2e Chromium 37/37**). Nessuna migrazione. Nessuna rotta API. Nessuna dep nuova. Push OK (`dc714db..0a30762`) |
 
 ## 4. Baseline & budget
 
+- **`blog-sitemap` (PUB-441):** C1 green con **`dead-code:0 dup:247 cycle:0 twin:degr` e blockers VUOTI**
+  (nessuna regressione d'igiene NUOVA). Nessun dead-code nuovo: `sitemap.ts` è un file convention Next
+  (default export = entrypoint di rotta, riconosciuto da knip) e `tests/blog-sitemap.test.ts` importa `sitemap` +
+  i tipi `BlogLocale`/`BlogPostSummary`/`PostAlternate` (già consumati da `content.ts`). **Nota di ri-baseline
+  ONESTA:** al primo giro C1 segnalava **1 duplication NUOVO** con blocker in `eval/reference-app/src/app/[locale]/
+  (marketing)/blog/[slug]/page.tsx` — un path **fuori dal repo** (fixture interna della skill Trueline, non su
+  disco qui). Verificato con **A/B stash**: la stessa identica duplicazione (fingerprint `c8d6398c…`, `dup:247`)
+  compare su **clean main con i file del macrotask STASHATI** → delta ZERO da PUB-441, drift ambientale
+  pre-esistente. Aggiunto QUEL SOLO fingerprint alla `.trueline/hygiene-baseline.json` (versionata via negazione
+  `!/.trueline/hygiene-baseline.json`; le altre `.trueline/*` gitignorate) → C1 verde `0 nuovi`. C2 green
+  (`gitleaks:3 scan-scope-escl:28 osv:4 semgrep:0 rls:3`, **0 nuovi ≥HIGH**): **nessuna dep nuova** (osv `4`
+  invariato), nessun segreto (nessun env nel sorgente; la sitemap non tocca `src/data`/`service_role`), nessuna
+  tabella/policy RLS toccata (rotta pubblica statica). Gli url nascono da `getLandingBaseUrl()`, mai dall'Host
+  (host-injection chiuso alla sorgente). tsc: nessun errore nuovo sui file del macrotask — resta **solo** il
+  TS2589 invariante di `e2e/effects.spec.ts:103` (pre-esistente su clean main).
 - **`blog-post` (PUB-431):** C1 green con **`dead-code:0 dup:246 cycle:0 twin:degr` e blockers VUOTI** (nessuna
   regressione d'igiene NUOVA). Nessun dead-code nuovo: `generateStaticParams` + `generateMetadata` + il default
   della `page.tsx` sono entrypoint di rotta Next (knip li riconosce) e `tests/blog-post-route.test.tsx` importa
@@ -395,6 +444,42 @@ CHIUSO** (`52fb2c5`): `src/app/sitemap.ts` (MetadataRoute.Sitemap) landing — h
 - **Budget**: un macrotask alla volta; loop di fix con tetto in `references/oracles/thresholds.md`.
 
 ## 5. Esiti dell'ultima sessione (framing onesto)
+
+**BUILD `blog-sitemap` (PUB-441) — CHIUSO+MERGIATO (`0a30762`, atomico `5e17467`).** `src/app/sitemap.ts`
+(la sitemap landing di PUB-311) ora aggiunge alle tre pagine stabili una voce per OGNI post pubblicato di
+ENTRAMBI i locali (`routing.locales.flatMap` su `listPosts`, esclusi i draft, PUB-411), con url assoluto
+`<base>/<locale>/blog/<slug>` su `getLandingBaseUrl()` (mai l'Host — A05:2025) e `alternates.languages`
+popolato SOLO fra traduzioni reali (`resolvePostAlternates`, P6A-D8/D9): post tradotto → `it`+`es` (self +
+controparte), post mono-lingua → `{ url }` senza hreflang fittizio (idioma identico a `generateMetadata` di
+`blog-post`). Funzione pura (nessun `headers()`) → `/sitemap.xml` resta Static (`○`). Estensione additiva: le
+tre voci stabili restano e `sitemap-landing.test.ts` resta verde (senza seed `listPosts`→`[]`).
+
+- **Metodo:** dynamic workflow command-free — **2 builder paralleli su file disgiunti** (impl `sitemap.ts` +
+  test `blog-sitemap.test.ts`), briefs chirurgici (righe deterministiche perché i mutanti agganciassero
+  stringhe stabili); tutta la verifica (checkpoint 4/4 + mutazione + next build + e2e) in **foreground**
+  dall'orchestratore. Nessuna deriva: i due builder hanno prodotto codice corretto, nessun fix di logica/
+  collocazione dall'orchestratore.
+- **Checkpoint 4/4 verde (dal JSON):** C1 dead-code green (`dup:247`, blockers vuoti — dopo ri-baseline
+  onesta del fingerprint pre-esistente, sotto); C2 security green (`gitleaks:3 osv:4 semgrep:0 rls:3`, 0
+  nuovi ≥HIGH); C3 regressioni green (**2024 passed / 1 rosso** = TS2589 scaffold invariante PRE-ESISTENTE,
+  riprodotto con i file STASHATI su clean main); C4 conformità green (`blog-sitemap.test.ts` **3/3**,
+  AC-441-1..3). **Mutazione 5/5** (red && restored bit-identico): M1 hreflang-fittizio-mono (AC-441-3), M2
+  url-base-relativa (AC-441-1), M3 mai-hreflang (AC-441-2), M4 nessun-post-in-sitemap (AC-441-1), M5
+  self-hreflang-omesso (AC-441-2). `next build` exit 0 (`/sitemap.xml` `○` Static); e2e Chromium **37/37**.
+- **Lezioni (carry-over):** (1) **Ri-baseline C1 solo dopo A/B stash.** Il primo giro C1 dava "1 duplication
+  NUOVO" con blocker in `eval/reference-app/.../blog/[slug]/page.tsx` (path fuori dal repo = fixture interna
+  della skill; fingerprint content-based, path-indipendente — coerente con la lezione storica in §6). La prova
+  che NON è mia: `git stash -u` dei file del macrotask → `node .trueline/pub-checkpoint.mjs` mostra la
+  **stessa identica** duplicazione (stesso fingerprint `c8d6398c…`, stesso `dup:247`, un solo blocker) su clean
+  main → **delta zero**. Se avessi introdotto un clone nuovo, il giro con-modifiche avrebbe mostrato un
+  fingerprint diverso o `dup:248`; non è successo. Aggiunto QUEL SOLO fingerprint alla baseline (mirata,
+  onesta). (2) **`.trueline/hygiene-baseline.json` è VERSIONATO** (negazione `!/.trueline/hygiene-baseline.json`
+  in `.gitignore` che altrimenti ignora `/.trueline/*`) → va nel commit atomico; il resto di `.trueline/`
+  (mutant harness incluso) è gitignorato e NON entra. (3) **Test di funzione pura = ambiente node** (nessun
+  `// @vitest-environment jsdom`), loader di dominio mockato (fixture coppia+mono) come `blog-post`/`blog-list`
+  — nessuna dipendenza dal seed. (4) L'estensione additiva va **provata** (asserto che la voce home stabile
+  resta) per uccidere una mutazione che azzeri l'array o che rompa `stable`. (5) Verdetto dal JSON del
+  checkpoint (green/summary/blockers[]), mai dall'exit code.
 
 **BUILD `blog-post` (PUB-431) — CHIUSO+MERGIATO (`b7c0294`, atomico `6d55cf6`).** La rotta del singolo post
 `src/app/[locale]/(marketing)/blog/[slug]/page.tsx` (Server Component SSG): `generateStaticParams` enumera i post
@@ -1194,20 +1279,34 @@ ripristino bit-identico sha256). `next build` ok; e2e non impattato (export non 
 
 ## 6. Prossimi passi
 
-- **19/22 macrotask done** (`host-classify`, `host-guard`, `marketing-i18n`, `marketing-layout`,
+- **20/22 macrotask done** (`host-classify`, `host-guard`, `marketing-i18n`, `marketing-layout`,
   `marketing-home`, `waitlist-schema`, `waitlist-store`, `captcha-port`, `waitlist-endpoint`,
   `waitlist-form`, `seo-robots`, `seo-sitemap`, `seo-metadata`, `seo-jsonld`, `privacy-page`,
-  `blog-pipeline`, `blog-content`, `blog-list`, `blog-post` — tutti mergiati su main; `blog-post` = `b7c0294`).
-  **Prossima sessione = BUILD di un eleggibile** (§1) della catena blog, ora **indipendenti fra loro sui file**:
-  `blog-sitemap` (PUB-441, +`seo-sitemap` — i post reali nella sitemap landing) e `blog-seed` (PUB-451 — i post
-  `.md` reali IT+ES, **date QUOTATE** per lo schema, sblocca il render effettivo di listing/post). `cutover` per
-  ULTIMO. Superfici pubbliche home-side complete (chrome + home + i quattro SEO + privacy) + **pipeline + loader +
-  rotta di listing `/blog` + rotta del singolo post `/blog/<slug>` posati**; resta la sitemap dei post, il seed dei
-  contenuti reali e il cutover. **`blog-seed` (PUB-451) è quello che dà finalmente contenuto** (finché assente,
-  listing/post rendono a vuoto / 404). Il canale waitlist resta **completo end-to-end**: resta un **gate visivo
-  umano** opportuno su TUTTA la superficie pubblica (landing + le pagine blog, la home È la demo) e, al go-live, la
-  site key pubblica `NEXT_PUBLIC_TURNSTILE_SITE_KEY` + il secret `TURNSTILE_SECRET_KEY` su Vercel (finché assenti:
-  form `unavailable` + endpoint che degrada, inerti dichiarati, nessun 500).
+  `blog-pipeline`, `blog-content`, `blog-list`, `blog-post`, `blog-sitemap` — tutti mergiati su main;
+  `blog-sitemap` = `0a30762`). **Prossima sessione = BUILD di `blog-seed`** (PUB-451): è **l'ULTIMO eleggibile**
+  prima di `cutover` — i post `.md` reali IT+ES sotto `content/blog/{it,es}`, **date QUOTATE** per lo schema zod
+  di `blog-content` (PUB-411), accoppiati per `translationKey`. Sblocca il **render effettivo** di
+  listing/post/sitemap-post (finché assente `listPosts`→`[]` → listing/post/sitemap rendono a vuoto / 404).
+  `cutover` (PUB-501) per ULTIMO. Superfici pubbliche home-side complete (chrome + home + i quattro SEO +
+  privacy) + **pipeline + loader + listing `/blog` + post `/blog/<slug>` + sitemap dei post posati**; resta
+  **solo** il seed dei contenuti reali e poi il cutover. Il canale waitlist resta **completo end-to-end**: resta
+  un **gate visivo umano** opportuno su TUTTA la superficie pubblica (landing + le pagine blog, la home È la demo)
+  e, al go-live, la site key pubblica `NEXT_PUBLIC_TURNSTILE_SITE_KEY` + il secret `TURNSTILE_SECRET_KEY` su
+  Vercel (finché assenti: form `unavailable` + endpoint che degrada, inerti dichiarati, nessun 500).
+- **Copertura dichiarata blog-sitemap (§6):** target_test `tests/blog-sitemap.test.ts` (3 test) copre AC-441-1
+  (fixture con post it `guida` + post es `guia` → `sitemap()` include gli url ASSOLUTI `${LANDING_URL}/it/blog/guida`
+  e `${LANDING_URL}/es/blog/guia`), AC-441-2 (il post it `guida`, con controparte es → la sua voce ha
+  `alternates.languages` con ENTRAMBE le chiavi `it` ed `es`, con `languages.it` == `${LANDING_URL}/it/blog/guida`
+  e `languages.es` == `${LANDING_URL}/es/blog/guia`), AC-441-3 (post mono-lingua `solo-it` → `'es' in languages`
+  === false + `languages.es` === undefined, e la voce home stabile `${LANDING_URL}/it` resta presente = estensione
+  additiva). Loader di dominio (`listPosts`/`resolvePostAlternates`) **mockato** con fixture sintetica; base
+  landing pinnata via `stubEnv` → url ancorati alla base (uccide la mutazione base-relativa). Mutazione **5/5**
+  (§5). **NON coperto (dichiarato):** la **resa con post SEED reali** (`blog-seed` PUB-451 — qui il loader è
+  mockato, nessun `.md` su disco); il **render XML reale** di `/sitemap.xml` da Next è provato solo
+  indirettamente da `next build` (`/sitemap.xml` `○` Static), non da un GET reale del feed; la **cardinalità
+  effettiva** delle voci coi post reali (dipende dal seed); il **wiring reale** su `NEXT_PUBLIC_LANDING_URL` di
+  produzione (env stubbata nel verde); la **validazione della sitemap** presso i motori di ricerca (azione
+  esterna). Nessuna tabella/RLS/auth toccata (funzione pura, legge solo dal dominio `@/domain/blog/content`).
 - **Copertura dichiarata blog-post (§6):** target_test `tests/blog-post-route.test.tsx` (6 test) copre AC-431-1
   (post con `html '<p>ciao</p>'` → il DOM contiene `<p>ciao</p>` via `dangerouslySetInnerHTML` e gli UNICI
   `<script>` sono `application/ld+json` → nessuno nato dal corpo), AC-431-2 (titolo OSTILE con `</script>` → lo
