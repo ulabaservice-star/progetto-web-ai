@@ -10,7 +10,7 @@
 |---|---|
 | **Progetto** | Ulaba/Belora — P6a (superficie pubblica) |
 | **Ecosistema** | supabase-jsts (Next.js 16 App Router + TypeScript + Supabase Cloud EU) |
-| **Ultimo aggiornamento** | 2026-09-06 (BUILD `cutover` — checkpoint 4/4 verde + mutazione 5/5, MERGIATO `a81c489`) — **DAG CHIUSO 22/22** |
+| **Ultimo aggiornamento** | 2026-09-06 (BUILD `cutover` MERGIATO `a81c489` — **DAG CHIUSO 22/22**; poi **gate visivo umano** eseguito headless: 3 rilievi risolti al sorgente, merge polish `fix(p6a/public-surface)`; runbook `visual-gate.md`) |
 | **Sessione corrente (BUILD `cutover`, PUB-501)** | **CHIUSO+MERGIATO** (`a81c489`, atomico `9df57b7`, deploy coupled; nessuna migrazione; nessuna rotta API; nessuna dep nuova). **22/22 macrotask done — DAG CHIUSO.** Ultimo macrotask: `evaluateCutover` puro + runbook P6A-D12. Resta SOLO l'esecuzione manuale del cutover reale (azioni founder VISION §10 + sonde curl, human-gated). |
 | **Sessione precedente (BUILD `blog-seed`, PUB-451)** | **CHIUSO+MERGIATO** (`24fcbc3`, atomico `b3797bf`, deploy coupled; nessuna migrazione; nessuna rotta API; nessuna dep nuova). |
 
@@ -1392,6 +1392,16 @@ ripristino bit-identico sha256). `next build` ok; e2e non impattato (export non 
   su Vercel, Supabase Auth URL, CORS/webhook Stripe-test, Google Search Console, copy/OG) e le **sonde curl** raccolte
   a mano e passate a `evaluateCutover` **nell'ordine obbligato** (P6A-D12): non dichiarare il go-live finché
   `evaluateCutover` non ritorna `go === true`. Il runbook `runbooks/cutover.md` è la guida ordinata.
+  **Gate visivo umano ESEGUITO (2026-09-06, headless Chromium)**: home/privacy/blog IT+ES, desktop+mobile.
+  Sostanza superata (rendering, parità IT↔ES, ES localizzato LATAM autentico — "peluquería en Palermo" +
+  sezione WhatsApp, privacy onesta v1, blog list DESC, corpi sanificati, responsive). **3 rilievi risolti al
+  sorgente** (merge polish `fix(p6a/public-surface)`): (1) header brand `getBrandName()` invece dell'etichetta
+  "Home"; (2) `<title>` di default via `getBrandName()` invece dell'hardcode legacy `Belora` in
+  `[locale]/layout.tsx` (colpiva `/blog` e `/privacy`); (3) classe `.blog-prose` per la tipografia del corpo
+  post (heading + bullet, la preflight Tailwind li azzerava). **⚠️ Prereq prod:** `NEXT_PUBLIC_BRAND_NAME=Ulaba`
+  su Vercel, o header/title/JSON-LD mostrano `Belora` (default legacy di `getBrandName`) mentre il copy dice
+  Ulaba — aggiunto alle azioni founder del runbook `cutover.md` e a `visual-gate.md`. Guida al gate:
+  `runbooks/visual-gate.md`. Restano azioni founder: copy definitivo IT+ES + og:image 1200×630.
   Tutte le superfici pubbliche a monte sono complete e mergiate:
   chrome + home + i quattro SEO + privacy + **catena blog completa** (pipeline + loader + listing `/blog` + post
   `/blog/<slug>` + sitemap-post + **contenuti seed reali IT+ES**). Il render blog **non è più a vuoto**: con i 2

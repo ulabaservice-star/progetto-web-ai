@@ -100,3 +100,19 @@ dell'IT? I titoli reggono come pezzi reali e non «riempitivo»?
 - **Difetti di copy/estetica** → NON sono bug di logica: annotali. Il copy definitivo IT+ES e l'immagine OG sono
   **azioni founder** (VISION §10); ritocchi ai componenti (spaziature, gerarchia, micro-copy dai cataloghi
   `messages/{it,es}.json`) sono una sessione di polish mirata. Solo dopo, il cutover.
+
+## 7. Primo giro (2026-09-06) — 3 rilievi trovati e RISOLTI
+
+Giro headless (Chromium) su home/privacy/blog IT+ES, desktop+mobile. Sostanza superata (rendering,
+parità IT↔ES, ES localizzato LATAM autentico, privacy onesta v1, blog list DESC, corpi sanificati,
+responsive). Tre rilievi, tutti risolti al sorgente (commit `fix(p6a/public-surface)`):
+
+1. **Header brand** mostrava "Home"/"Inicio" invece del brand → ora wordmark `getBrandName()`.
+2. **`<title>` "Belora"** su `/blog` e `/privacy` (hardcode legacy in `[locale]/layout.tsx`) → ora
+   `getBrandName()`.
+3. **Corpo blog senza tipografia** (`##`/liste come paragrafi) → classe scoped `.blog-prose`.
+
+**⚠️ Prerequisito prod (env founder):** header/title/JSON-LD leggono `getBrandName()`, che senza
+`NEXT_PUBLIC_BRAND_NAME` ricade su `Belora`. Impostare **`NEXT_PUBLIC_BRAND_NAME=Ulaba` su Vercel**
+(vedi `cutover.md` §azioni founder) o in produzione il brand mostrato sarà "Belora" mentre il copy dice
+"Ulaba". Restano azioni founder: copy definitivo IT+ES e immagine OG 1200×630.

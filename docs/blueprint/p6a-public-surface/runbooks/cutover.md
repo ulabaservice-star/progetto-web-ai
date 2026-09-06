@@ -31,6 +31,7 @@ Questi passi non sono codice e vanno eseguiti a mano dal founder sulle console d
 - Rescope Cloudflare Access -> protezione solo su `app.ulaba.net`.
 - DNS: record per l'host `app` e per `www`.
 - Turnstile: chiavi site e secret, più `NEXT_PUBLIC_LANDING_URL`, configurate su Vercel. Finché sono assenti, il form della waitlist si mostra `unavailable` e l'endpoint degrada in modo controllato: comportamenti inerti dichiarati, nessun `500`.
+- `NEXT_PUBLIC_BRAND_NAME=Ulaba` su Vercel: il nome mostrato in header/title/JSON-LD viene da `getBrandName()`, che senza questa variabile ricade sul default legacy `Belora`. Il copy dei cataloghi dice già "Ulaba", quindi questa env va impostata perché brand e copy coincidano in produzione.
 - Supabase Auth: Site URL e Redirect URL -> host `app.ulaba.net`.
 - CORS e webhook Stripe-test: sposta l'origine consentita da `ulaba.net` a `app.ulaba.net`.
 - Google Search Console: verifica proprietà via record DNS TXT e invio della sitemap.
