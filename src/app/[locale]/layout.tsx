@@ -7,9 +7,14 @@ import { getMessages, setRequestLocale } from 'next-intl/server';
 import { ThemeProvider } from '@/ui/theme/ThemeProvider';
 import { routing } from '@/i18n/routing';
 import { resolveInitialLocale } from '@/i18n/resolveInitialLocale';
+import { getBrandName } from '@/config/brand';
 
+// Title di DEFAULT dell'app: il nome del brand CONFIGURATO (getBrandName, NEXT_PUBLIC_BRAND_NAME),
+// non un literal hardcoded — così le pagine senza un proprio title (es. /blog, /privacy) mostrano il
+// brand vero (Ulaba in prod), coerente con AppShell e il JSON-LD Organization. Le pagine che vogliono
+// un title descrittivo (home, post) lo dichiarano nel proprio generateMetadata.
 export const metadata: Metadata = {
-  title: 'Belora',
+  title: getBrandName(),
   description: 'AI website builder per micro-business locali',
 };
 

@@ -6,6 +6,7 @@ import type { ReactNode } from 'react';
 import itMessages from '../messages/it.json';
 import { MarketingHeader } from '@/ui/marketing/MarketingHeader';
 import { MarketingFooter } from '@/ui/marketing/MarketingFooter';
+import { getBrandName } from '@/config/brand';
 
 // PUB-131 (macrotask marketing-layout, p6a-public-surface) — ORACOLO del chrome marketing.
 // Le stringhe NON si mockano: si risolvono dai cataloghi REALI (itMessages) dentro
@@ -38,7 +39,8 @@ describe('PUB-131 marketing chrome — nav landing + footer, nessun link app', (
     );
 
     const header = within(screen.getByRole('banner'));
-    const home = header.getByRole('link', { name: L.nav.home });
+    // Il link home è il WORDMARK del brand (getBrandName), non l'etichetta nav.home.
+    const home = header.getByRole('link', { name: getBrandName() });
     const blog = header.getByRole('link', { name: L.nav.blog });
     const privacy = header.getByRole('link', { name: L.nav.privacy });
     expect(home.getAttribute('href')).toBe('/it'); // covers: AC-131-1

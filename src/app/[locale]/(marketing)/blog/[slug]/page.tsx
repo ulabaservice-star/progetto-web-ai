@@ -131,7 +131,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps): Promi
               nella pipeline pura renderMarkdown (PUB-401) dentro getPost (PUB-411). Mai il testo grezzo
               del corpo o del frontmatter. */}
           <div
-            className="flex flex-col gap-md text-foreground"
+            className="blog-prose flex flex-col gap-md text-foreground"
             dangerouslySetInnerHTML={{ __html: post.html }}
           />
         </article>
