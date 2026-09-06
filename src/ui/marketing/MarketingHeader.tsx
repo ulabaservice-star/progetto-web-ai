@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import type { ReactElement } from 'react';
+import { getBrandName } from '@/config/brand';
 
 // PUB-131 (macrotask marketing-layout, p6a-public-surface) — l'HEADER del chrome marketing: la nav
 // landing (home/blog/privacy). Estratto in un componente client renderizzabile in jsdom (pattern
@@ -19,8 +20,11 @@ export function MarketingHeader(): ReactElement {
   return (
     <header className="border-b border-border">
       <nav className="mx-auto flex max-w-5xl items-center justify-between gap-md px-md py-sm">
+        {/* Wordmark del brand (getBrandName, config pubblica come AppShell): è la home, ma mostra il
+            NOME del brand, non l'etichetta 'home'. La chiave landing.nav.home resta nei cataloghi
+            (parità i18n) per usi futuri. */}
         <Link href={`/${locale}`} className="font-semibold text-foreground">
-          {t('home')}
+          {getBrandName()}
         </Link>
         <ul className="flex items-center gap-md">
           <li>

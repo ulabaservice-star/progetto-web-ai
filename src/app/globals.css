@@ -33,3 +33,47 @@ body {
   background-color: var(--color-background);
   color: var(--color-foreground);
 }
+
+/* Tipografia del corpo articolo del blog (HTML già sanificato da renderMarkdown, PUB-401): la
+   preflight di Tailwind azzera dimensioni di heading e marker di lista, così i `##` e le liste dei
+   post rendevano come paragrafi. Queste regole (più specifiche della preflight, non-layered ⇒
+   vincono) ridanno gerarchia e leggibilità SENZA il plugin @tailwindcss/typography. Scoped a
+   .blog-prose: non tocca il resto della UI. */
+.blog-prose h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.3;
+  margin-top: 0.5rem;
+}
+.blog-prose h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.blog-prose p {
+  line-height: 1.7;
+}
+.blog-prose ul {
+  list-style: disc;
+  padding-left: 1.5rem;
+}
+.blog-prose ol {
+  list-style: decimal;
+  padding-left: 1.5rem;
+}
+.blog-prose li {
+  margin: 0.25rem 0;
+  line-height: 1.6;
+}
+.blog-prose a {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+.blog-prose strong {
+  font-weight: 600;
+}
+.blog-prose blockquote {
+  border-left: 3px solid var(--color-border);
+  padding-left: 1rem;
+  color: var(--color-muted-foreground);
+}
